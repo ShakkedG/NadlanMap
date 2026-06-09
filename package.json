@@ -1,0 +1,147 @@
+<script setup>
+import { computed, onMounted, ref } from 'vue'
+import { loadGovMapApi } from './govmapLoader'
+
+const MAP_DIV_ID = 'govmap-map'
+
+// אפשר להעביר אותם גם דרך קובץ .env.local:
+// VITE_GOVMAP_TOKEN=your-token
+// VITE_GOVMAP_LAYER=235146
+const GOVMAP_TOKEN = import.meta.env.VITE_GOVMAP_TOKEN || 'ede9a5fd-7c23-432f-8ffb-d85feffa3f3c'
+const GOVMAP_LAYER = String(import.meta.env.VITE_GOVMAP_LAYER || '235146')
+
+const isLoading = ref(true)
+const layerVisible = ref(true)
+const statusMessage = ref('טוען את GovMap...')
+const lastClick = ref(null)
+const errorMessage = ref('')
+
+const directGovmapUrl = computed(() => {
+  // קישור בדיקה ישיר לאתר GovMap עם הפרמטר lay=235146
+  // אם ה-API לא מציג את השכבה לפי מזהה מספרי, הקישור הזה עוזר לבדוק שהשכבה עצמה קיימת.
+  const params = new URLSearchParams({
+    c: '219529,626907',
+    z: '7',
+    b: '0',
+    lay: GOVMAP_LAYER
+  })
+  return `https://www.govmap.gov.il/?${params.toString()}`
+})
+
+async function initMap() {
+  isLoading.value = true
+  errorMessage.value = ''
+  statusMessage.value = 'טוען את ספריית GovMap...'
+
+  try {
+    const govmap = await loadGovMapApi()
+
+    statusMessage.value = `יוצר מפה ומדליק שכבה ${GOVMAP_LAYER}...`
+
+    govmap.createMap(MAP_DIV_ID, {
+      token: GOVMAP_TOKEN,
+      layers: [GOVMAP_LAYER],
+      visibleLayers: [GOVMAP_LAYER],
+      showXY: true,
+      identifyOnClick: true,
+      identifyOnlyBubble: false,
+      isEmbeddedToggle: false,
+      background: '1',
+      layersMode: 1,
+      zoomButtons: true,
+      center: { x: 219529, y: 626907 },
+      level: 7,
+      onLoad: () => {
+        isLoading.value = false
+        statusMessage.value = `המפה נטענה. שכבה ${GOVMAP_LAYER} אמורה להיות דלוקה.`
+        try {
+          govmap.setVisibleLayers([GOVMAP_LAYER], [])
+        } catch (err) {
+          console.warn('setVisibleLayers failed:', err)
+        }
+      },
+      onClick: (e) => {
+        lastClick.value = e
+      },
+      onError: (e) => {
+        errorMessage.value = 'GovMap החזיר שגיאה. בדוק שהטוקן מתאים לדומיין ושהשכבה זמינה ל-API.'
+        console.error('GovMap error:', e)
+      }
+    })
+  } catch (err) {
+    isLoading.value = false
+    errorMessage.value = err?.message || 'שגיאה בטעינת GovMap.'
+    statusMessage.value = 'הטעינה נכשלה.'
+    console.error(err)
+  }
+}
+
+function turnLayerOn() {
+  if (!window.govmap) return
+  window.govmap.setVisibleLayers([GOVMAP_LAYER], [])
+  layerVisible.value = true
+  statusMessage.value = `שכבה ${GOVMAP_LAYER} הודלקה.`
+}
+
+function turnLayerOff() {
+  if (!window.govmap) return
+  window.govmap.setVisibleLayers([], [GOVMAP_LAYER])
+  layerVisible.value = false
+  statusMessage.value = `שכבה ${GOVMAP_LAYER} כובתה.`
+}
+
+function refreshMap() {
+  if (!window.govmap) return
+  try {
+    window.govmap.refreshMap()
+    statusMessage.value = 'המפה רועננה.'
+  } catch (err) {
+    statusMessage.value = 'לא הצלחתי לרענן דרך ה-API.'
+    console.warn(err)
+  }
+}
+
+onMounted(initMap)
+</script>
+
+<template>
+  <main class="page-shell">
+    <section class="topbar">
+      <div>
+        <p class="eyebrow">GovMap + Vue</p>
+        <h1>מפת GovMap עם שכבה {{ GOVMAP_LAYER }}</h1>
+        <p class="subtitle">אתר Vue שמטעין את GovMap API ומדליק את השכבה המבוקשת כבר בעלייה.</p>
+      </div>
+
+      <div class="actions">
+        <button class="primary" @click="turnLayerOn" :disabled="isLoading || layerVisible">הדלק שכבה</button>
+        <button @click="turnLayerOff" :disabled="isLoading || !layerVisible">כבה שכבה</button>
+        <button @click="refreshMap" :disabled="isLoading">רענן מפה</button>
+        <a class="link-button" :href="directGovmapUrl" target="_blank" rel="noreferrer">בדיקה ב-GovMap</a>
+      </div>
+    </section>
+
+    <section class="status-card" :class="{ error: errorMessage }">
+      <strong>{{ errorMessage ? 'שגיאה' : 'סטטוס' }}</strong>
+      <span>{{ errorMessage || statusMessage }}</span>
+    </section>
+
+    <section class="map-card">
+      <div v-if="isLoading" class="loader">טוען מפה...</div>
+      <div :id="MAP_DIV_ID" class="map"></div>
+    </section>
+
+    <section class="info-grid">
+      <article>
+        <h2>פרטי חיבור</h2>
+        <p><b>Token:</b> {{ GOVMAP_TOKEN }}</p>
+        <p><b>Layer:</b> {{ GOVMAP_LAYER }}</p>
+      </article>
+
+      <article>
+        <h2>לחיצה אחרונה במפה</h2>
+        <pre>{{ lastClick ? JSON.stringify(lastClick, null, 2) : 'עדיין לא לחצת על המפה' }}</pre>
+      </article>
+    </section>
+  </main>
+</template>
