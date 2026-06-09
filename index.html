@@ -247,15 +247,15 @@
     const FIXED_AVERAGE_END_YEAR = 2024;
 
     const COLOR_SCALE = [
-      { min: -Infinity, max: 0.50, color: [153, 27, 27, 0.76], label: 'עד 50% מהממוצע - אדום כהה' },
-      { min: 0.50, max: 0.80, color: [239, 68, 68, 0.68], label: '50%–80% מהממוצע - אדום' },
-      { min: 0.80, max: 1.00, color: [249, 115, 22, 0.62], label: '80%–100% מהממוצע - כתום' },
-      { min: 1.00, max: 1.20, color: [234, 179, 8, 0.58], label: '100%–120% מהממוצע - צהוב' },
-      { min: 1.20, max: 1.50, color: [74, 222, 128, 0.64], label: '120%–150% מהממוצע - ירוק בהיר' },
-      { min: 1.50, max: Infinity, color: [22, 101, 52, 0.74], label: 'מעל 150% מהממוצע - ירוק כהה' }
+      { min: -Infinity, max: 0.50, color: [153, 27, 27, 0.42], label: 'עד 50% מהממוצע - אדום כהה' },
+      { min: 0.50, max: 0.80, color: [239, 68, 68, 0.38], label: '50%–80% מהממוצע - אדום' },
+      { min: 0.80, max: 1.00, color: [249, 115, 22, 0.34], label: '80%–100% מהממוצע - כתום' },
+      { min: 1.00, max: 1.20, color: [234, 179, 8, 0.32], label: '100%–120% מהממוצע - צהוב' },
+      { min: 1.20, max: 1.50, color: [74, 222, 128, 0.36], label: '120%–150% מהממוצע - ירוק בהיר' },
+      { min: 1.50, max: Infinity, color: [22, 101, 52, 0.42], label: 'מעל 150% מהממוצע - ירוק כהה' }
     ];
-    const NO_DATA_COLOR = [148, 163, 184, 0.30];
-    const OUTLINE_COLOR = [25, 25, 25, 0.82];
+    const NO_DATA_COLOR = [148, 163, 184, 0.16];
+    const OUTLINE_COLOR = [25, 25, 25, 0.70];
 
     function loadScript(id, src) {
       return new Promise((resolve, reject) => {
@@ -681,6 +681,8 @@
           isDrawing.value = true; errorMessage.value = '';
           try {
             await clearOverlay();
+            // Keep the original GovMap source layer hidden; otherwise it can cover the analytical colors.
+            try { window.govmap.setVisibleLayers([], [GOVMAP_LAYER]); baseLayerVisible.value = false; } catch (_) {}
             const names = [], wkts = [], symbols = [], tooltips = [], headers = [];
             const valueBySid = new Map(joinedSettlements.value.map((item) => [String(item.sid), item]));
             for (const feature of wktFeatures.value) {
@@ -690,7 +692,7 @@
             const geometryClick = window.govmap.displayGeometries({
               wkts,
               names,
-              geometryType: window.govmap.drawType?.Polygon || window.govmap.geometryType?.POLYGON || window.govmap.geometryType?.Polygon || 3,
+              geometryType: (window.govmap.geometryType && window.govmap.geometryType.POLYGON) || 'POLYGON',
               defaultSymbol: { outlineColor: OUTLINE_COLOR, outlineWidth: 1, fillColor: NO_DATA_COLOR },
               symbols,
               clearExisting: true,
@@ -710,7 +712,7 @@
             // displayGeometries can replace GovMap's CLICK event handler, so install the map-click fallback again after drawing.
             installGovMapClickSelection();
 
-            drawnNames.value = names; statusMessage.value = `המפה מוכנה · ${wkts.length.toLocaleString('he-IL')} פוליגונים · ${stats.value.joined.toLocaleString('he-IL')} יישובים עם נתונים`;
+            drawnNames.value = names; statusMessage.value = `המפה מוכנה · הצביעה שקופה כדי לראות את המפה · ${wkts.length.toLocaleString('he-IL')} פוליגונים · ${stats.value.joined.toLocaleString('he-IL')} יישובים עם נתונים`;
           } catch (error) { console.error(error); errorMessage.value = error?.message || 'שגיאה בצביעת הפוליגונים.'; } finally { isDrawing.value = false; }
         }
         async function toggleOverlay() { overlayVisible.value = !overlayVisible.value; if (overlayVisible.value) await drawOverlay(); else await clearOverlay(); }

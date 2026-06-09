@@ -1,4 +1,4 @@
-# Market Map - click progress fixed
+# Market Map - visible colors fix
 
 Upload these files together to GitHub Pages:
 
@@ -6,4 +6,4 @@ Upload these files together to GitHub Pages:
 - settlements_flat.json
 - settlements_wkt_2039.json
 
-The click selection now uses GovMap displayGeometries().progress(...) for drawn polygons, plus GovMap getLayerData and local point-in-polygon as fallbacks.
+This version keeps click selection working and makes the coloring transparent enough to see GovMap underneath.
