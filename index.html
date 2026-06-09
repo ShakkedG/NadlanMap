@@ -195,7 +195,7 @@
                   </div>
                   <input class="year-slider" type="range" :min="yearSliderMin" :max="yearSliderMax" step="1" v-model.number="reversedYearSliderValue" @input="handleYearSliderInput" @change="handleYearChanged" />
                   <div class="year-slider-labels"><span>{{ yearSliderMax }}</span><span>{{ targetYear }}</span><span>{{ yearSliderMin }}</span></div>
-                  <p class="year-slider-note">הסליידר משנה את השנה שלפיה מחושבת הצביעה במפה והאחוז מהממוצע.</p>
+                  <p class="year-slider-note">הסליידר והגרפים מוצגים באותו כיוון: 2025 משמאל ו-1999 מימין.</p>
                 </div>
               </div>
               <div v-else class="chart-empty">בחר יישוב כדי להציג גרפים שנתיים</div>
@@ -759,7 +759,17 @@
         }
         function selectFirstSearchResult() { if (filteredSettlementList.value.length) selectSettlement(filteredSettlementList.value[0]); }
         async function focusSettlement(item) { const shape = wktFeatures.value.find((feature) => String(feature.sid) === String(item.sid) && feature.bbox); if (!shape || !window.govmap) return; const [xmin, ymin, xmax, ymax] = shape.bbox; const x = (xmin + xmax) / 2, y = (ymin + ymax) / 2; try { if (typeof window.govmap.zoomToXY === 'function') window.govmap.zoomToXY({ x, y, level: 8 }); } catch (e) { console.warn(e); } }
-        function chartData() { const rows = selectedRows.value; return { labels: rows.map((row) => String(row.year)), deals: rows.map((row) => normalizeNumber(row.deals)), prices: rows.map((row) => normalizeNumber(row.ppsqm)), avgLine: rows.map(() => selectedSettlement.value?.avgAnnualDeals ?? null) }; }
+        function chartData() {
+          // The year slider is intentionally reversed: left = latest year, right = earliest year.
+          // Keep the charts in the same visual direction so the highlighted year moves together with the slider.
+          const rows = [...selectedRows.value].sort((a, b) => Number(b.year) - Number(a.year));
+          return {
+            labels: rows.map((row) => String(row.year)),
+            deals: rows.map((row) => normalizeNumber(row.deals)),
+            prices: rows.map((row) => normalizeNumber(row.ppsqm)),
+            avgLine: rows.map(() => selectedSettlement.value?.avgAnnualDeals ?? null)
+          };
+        }
         function destroyCharts() { if (priceChart) { priceChart.destroy(); priceChart = null; } if (salesChart) { salesChart.destroy(); salesChart = null; } }
         function renderCharts(options = {}) {
           if (!selectedSettlement.value || !window.Chart) return;
