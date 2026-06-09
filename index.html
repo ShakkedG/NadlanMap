@@ -383,8 +383,33 @@
           statusMessage.value = 'טוען את ספריית GovMap...'; await loadScript(GOVMAP_SCRIPT_ID, GOVMAP_SCRIPT_URL); if (!window.govmap) throw new Error('ספריית GovMap לא זמינה.');
           statusMessage.value = 'יוצר מפה...';
           await new Promise((resolve) => {
-            let resolved = false; const done = () => { if (!resolved) { resolved = true; mapReady.value = true; resolve(); } };
-            window.govmap.createMap(MAP_DIV_ID, { token: GOVMAP_TOKEN, layers: [GOVMAP_LAYER], visibleLayers: [], showXY: true, identifyOnClick: false, identifyOnlyBubble: false, isEmbeddedToggle: false, background: '1', layersMode: 1, zoomButtons: true, center: { x: 219529, y: 626907 }, level: 7, onLoad: done, onError: () => { errorMessage.value = 'GovMap החזיר שגיאה. בדוק שהטוקן מתאים לדומיין.'; } });
+            let resolved = false;
+            const done = () => {
+              if (!resolved) {
+                resolved = true;
+                mapReady.value = true;
+                resolve();
+              }
+            };
+            window.govmap.createMap(MAP_DIV_ID, {
+              token: GOVMAP_TOKEN,
+              layers: [GOVMAP_LAYER],
+              visibleLayers: [],
+              showXY: true,
+              identifyOnClick: false,
+              identifyOnlyBubble: true,
+              isEmbeddedToggle: false,
+              background: '1',
+              layersMode: 1,
+              zoomButtons: true,
+              center: { x: 219529, y: 626907 },
+              level: 7,
+              // הכי חשוב: משתמשים ב-onClick של createMap עצמו כדי שלחיצה על המפה
+              // תעדכן את היישוב והגרפים גם כשיש שכבת פוליגונים מצוירת מעל GovMap.
+              onClick: handleMapClick,
+              onLoad: done,
+              onError: () => { errorMessage.value = 'GovMap החזיר שגיאה. בדוק שהטוקן מתאים לדומיין.'; }
+            });
             setTimeout(done, 2600);
           });
           try { window.govmap.setVisibleLayers([], [GOVMAP_LAYER]); baseLayerVisible.value = false; } catch (e) { console.warn(e); }
@@ -432,18 +457,48 @@
           });
           return candidates.find((feature) => pointInFeature(feature, x, y)) || null;
         }
+        let lastHandledClick = '';
+        function extractMapPoint(event) {
+          const candidates = [
+            event?.mapPoint,
+            event?.data?.mapPoint,
+            event?.event?.mapPoint,
+            event?.originalEvent?.mapPoint,
+            event?.point,
+            event?.data?.point,
+            event
+          ];
+          for (const point of candidates) {
+            const x = Number(point?.x ?? point?.X);
+            const y = Number(point?.y ?? point?.Y);
+            // GovMap עובד כאן ב-ITM / EPSG:2039. ערכי X/Y סבירים בישראל הם בערך מאות אלפים.
+            if (Number.isFinite(x) && Number.isFinite(y) && x > 10000 && y > 10000) return { x, y };
+          }
+          return null;
+        }
+        function handleMapClick(event) {
+          const point = extractMapPoint(event);
+          if (!point) return;
+          const key = `${Math.round(point.x)}:${Math.round(point.y)}`;
+          if (key === lastHandledClick) return;
+          lastHandledClick = key;
+          const feature = settlementAtPoint(point.x, point.y);
+          if (feature) {
+            selectSettlementBySid(feature.sid, false);
+            // סוגר בועית GovMap אם היא בכל זאת נפתחה מאחת משכבות המפה.
+            try { window.govmap?.closeBubble?.(); } catch (_) {}
+          } else {
+            statusMessage.value = 'לא נמצא יישוב בנקודה שנלחצה. נסה ללחוץ בתוך פוליגון יישוב.';
+          }
+        }
         function installGovMapClickSelection() {
-          if (!window.govmap?.onEvent || !window.govmap?.events?.CLICK) return;
+          if (!window.govmap?.onEvent) return;
+          const clickEventName = window.govmap.events?.CLICK ?? 'CLICK';
           try {
-            window.govmap.onEvent(window.govmap.events.CLICK, MAP_DIV_ID).progress((event) => {
-              const point = event?.mapPoint || event?.data?.mapPoint;
-              const x = Number(point?.x), y = Number(point?.y);
-              if (!Number.isFinite(x) || !Number.isFinite(y)) return;
-              const feature = settlementAtPoint(x, y);
-              if (feature) selectSettlementBySid(feature.sid, false);
-            });
+            window.govmap.onEvent(clickEventName, MAP_DIV_ID).progress(handleMapClick);
           } catch (e) {
-            console.warn('GovMap click event registration failed', e);
+            try { window.govmap.onEvent(clickEventName).progress(handleMapClick); }
+            catch (err) { console.warn('GovMap click event registration failed', err); }
           }
         }
         async function clearOverlay() { if (!window.govmap || !drawnNames.value.length) return; try { await window.govmap.removeGeometries(drawnNames.value); } catch (e) { try { await window.govmap.clearGeometries(); } catch (_) {} } drawnNames.value = []; }

@@ -1,12 +1,9 @@
-# מפת מגמות נדלן
+# Market Map - click selects settlement
 
-קבצים להעלאה ל-GitHub Pages:
+Upload these three files to the same GitHub Pages folder:
+
 - index.html
 - settlements_flat.json
 - settlements_wkt_2039.json
 
-האתר מציג מפת GovMap וגרפים שנתיים ליישוב הנבחר:
-- מחיר למ״ר לאורך השנים
-- מספר מכירות לאורך השנים
-
-לחיצה על יישוב במפה מעדכנת את הפאנל והגרפים בלי לפתוח בועת מידע.
+Clicking a settlement polygon updates the right-side charts without opening the GovMap identify popup.
