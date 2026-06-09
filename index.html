@@ -43,7 +43,7 @@
     .report-pane { direction: rtl; height: 100vh; overflow: auto; padding: 16px 16px 28px 12px; }
     .report-card { min-height: calc(100vh - 32px); background: #ffffff; border: 1px solid #dfe6ef; border-radius: 18px; box-shadow: 0 10px 30px rgba(17, 34, 64, .08); position: relative; padding: 36px 18px 28px; }
     .blue-tab { position: absolute; top: -16px; left: 40%; right: 40%; height: 3px; background: #1f5bff; border-radius: 99px; }
-    .top-controls { display: grid; grid-template-columns: minmax(210px, .9fr) 150px 220px auto; gap: 10px; align-items: end; margin: 0 auto 14px; max-width: 1060px; }
+    .top-controls { display: grid; grid-template-columns: minmax(240px, 1fr) auto; gap: 10px; align-items: end; margin: 0 auto 14px; max-width: 760px; }
     .field { display: grid; gap: 5px; font-size: 12px; font-weight: 800; color: #667085; }
     input, select { width: 100%; border: 1px solid #dfe6ef; border-radius: 12px; background: #fff; padding: 10px 12px; color: #08285a; outline: none; }
     input:focus, select:focus { border-color: #2364f6; box-shadow: 0 0 0 3px rgba(35,100,246,.12); }
@@ -59,10 +59,12 @@
     .status { display: inline-flex; margin-top: 12px; gap: 8px; border-radius: 999px; padding: 6px 12px; background: #e8fff2; border: 1px solid #bce9cf; color: #08714d; font-size: 12px; font-weight: 800; }
     .status.error { background: #fff1f2; border-color: #fecdd3; color: #9f1239; }
 
-    .stat-cards { display: grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap: 18px; max-width: 840px; margin: 0 auto 58px; }
+    .stat-cards { display: grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap: 18px; max-width: 840px; margin: 0 auto 42px; }
     .stat-card { border: 1px solid #dde5ef; border-radius: 14px; min-height: 126px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 22px 24px; background: #fff; }
     .stat-text { text-align: right; min-width: 0; }
-    .stat-value { margin: 0 0 8px; font-size: clamp(22px, 1.6vw, 28px); font-weight: 500; color: #052a5a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stat-value { margin: 0 0 8px; font-size: clamp(22px, 1.6vw, 28px); font-weight: 700; color: #052a5a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sales-kpi .stat-value { font-size: clamp(34px, 3.8vw, 56px); font-weight: 900; letter-spacing: -.04em; color: #0f5bff; line-height: .95; }
+    .sales-kpi .stat-label strong { color: #052a5a; font-size: 16px; }
     .stat-label { color: #718098; font-weight: 700; }
     .stat-icon { flex: 0 0 auto; width: 70px; height: 70px; border-radius: 14px; background: #f3f5f9; display: grid; place-items: center; font-size: 28px; }
 
@@ -90,6 +92,14 @@
     .bullet { display: inline-block; width: 10px; height: 10px; background: #111; margin-inline-start: 6px; }
     .note { color: #667085; font-size: 13px !important; line-height: 1.55; margin-top: 12px !important; }
     .tiny-chart { margin-top: 10px; height: 145px; }
+    .year-slider-card { border: 1px solid #dfe6ef; border-radius: 16px; background: #f8fbff; padding: 16px 18px; box-shadow: 0 8px 20px rgba(6,34,74,.05); }
+    .year-slider-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: #052a5a; font-weight: 900; margin-bottom: 10px; }
+    .year-slider-title small { color: #718098; font-weight: 700; }
+    .year-slider { width: 100%; accent-color: #0f5bff; cursor: pointer; padding: 0; border: 0; }
+    .year-slider-labels { display: flex; justify-content: space-between; color: #667085; font-size: 13px; font-weight: 800; margin-top: 6px; direction: ltr; }
+    .year-slider-note { margin: 8px 0 0; color: #718098; font-size: 13px; text-align: center; }
+    .deals-focus { margin: 10px 0 0; padding: 12px 14px; border-radius: 12px; background: #eef5ff; border: 1px solid #d7e6ff; }
+    .deals-focus b { font-size: 24px; color: #0f5bff; font-weight: 900; }
     .map-select-hint { margin: 0; padding: 12px 14px; border-radius: 12px; background: #f7faff; border: 1px solid #dfe8f7; color: #52627a; font-size: 14px; line-height: 1.45; }
 
     .bottom-tools { max-width: 1130px; margin: 32px auto 0; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
@@ -141,8 +151,6 @@
 
           <div class="top-controls">
             <label class="field"><span>חיפוש יישוב</span><input v-model="searchText" @keyup.enter="selectFirstSearchResult" placeholder="לדוגמה: מודיעין / 1200" /></label>
-            <label class="field"><span>שנה</span><select v-model.number="targetYear" @change="handleAverageModeChanged"><option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option></select></label>
-            <label class="field"><span>ממוצע להשוואה</span><select v-model="averageMode" @change="handleAverageModeChanged"><option value="all-except">כל השנים חוץ מהשנה</option><option value="previous">רק השנים שלפני</option><option value="fixed">1999–2024 קבוע</option></select></label>
             <button class="primary-btn" @click="selectFirstSearchResult" :disabled="filteredSettlementList.length===0">בחר</button>
           </div>
           <label class="toggle-line"><input type="checkbox" v-model="ignoreZeroYears" @change="handleAverageModeChanged" /> להתעלם משנים עם 0 עסקאות בחישוב הממוצע</label>
@@ -154,9 +162,9 @@
           </header>
 
           <section class="stat-cards">
-            <article class="stat-card">
-              <div class="stat-text"><p class="stat-value">{{ marketScoreLabel(selectedSettlement?.ratio) }}</p><div class="stat-label">ציון יוקר/פעילות של היישוב</div></div>
-              <div class="stat-icon">🏅</div>
+            <article class="stat-card sales-kpi">
+              <div class="stat-text"><p class="stat-value">{{ formatInteger(selectedSettlement?.dealsSelected) }}</p><div class="stat-label"><strong>עסקאות בשנת {{ targetYear }}</strong><br>מספר המכירות בשנה שלפיה המפה נצבעת</div></div>
+              <div class="stat-icon">🏘️</div>
             </article>
             <article class="stat-card">
               <div class="stat-text"><p class="stat-value">עליית מחירים - {{ formatPercent(selectedSettlement?.demandYoySelected) }}</p><div class="stat-label">שינוי מחיר למ״ר / ביקוש</div></div>
@@ -180,6 +188,15 @@
                   <h3>מספר מכירות לאורך השנים</h3>
                   <div class="chart-wrap sales-chart-wrap"><canvas id="salesChart"></canvas></div>
                 </article>
+                <div class="year-slider-card">
+                  <div class="year-slider-title">
+                    <span>שנת צביעה במפה: {{ targetYear }}</span>
+                    <small>ממוצע: כל השנים חוץ מהשנה הנבחרת</small>
+                  </div>
+                  <input class="year-slider" type="range" :min="yearSliderMin" :max="yearSliderMax" step="1" v-model.number="targetYear" @input="handleYearSliderInput" @change="handleYearChanged" />
+                  <div class="year-slider-labels"><span>{{ yearSliderMin }}</span><span>{{ targetYear }}</span><span>{{ yearSliderMax }}</span></div>
+                  <p class="year-slider-note">הסליידר משנה את השנה שלפיה מחושבת הצביעה במפה והאחוז מהממוצע.</p>
+                </div>
               </div>
               <div v-else class="chart-empty">בחר יישוב כדי להציג גרפים שנתיים</div>
             </div>
@@ -189,8 +206,8 @@
                 <h3>⌂ מחירי עסקאות ממוצעים</h3>
                 <p>משוקלל לכל החדרים: <b>{{ formatCurrency(selectedSettlement?.ppsqmSelected) }}</b></p>
                 <p>עסקאות ביחס לממוצע: <b>{{ formatRatio(selectedSettlement?.ratio) }}</b></p>
-                <p>עסקאות {{ targetYear }}: <b>{{ formatInteger(selectedSettlement?.dealsSelected) }}</b></p>
-                <p>ממוצע להשוואה: <b>{{ formatNumber(selectedSettlement?.avgAnnualDeals) }}</b></p>
+                <p class="deals-focus">עסקאות {{ targetYear }}: <b>{{ formatInteger(selectedSettlement?.dealsSelected) }}</b></p>
+                <p>ממוצע להשוואה: <b>{{ formatNumber(selectedSettlement?.avgAnnualDeals) }}</b> <small>(כל השנים חוץ מ־{{ targetYear }})</small></p>
               </article>
 
               <article class="info-box">
@@ -198,12 +215,6 @@
                 <p><span class="bullet"></span> מחיר חציוני שנתי: <b>{{ formatCurrency(selectedSettlement?.ppsqmSelected) }}</b></p>
                 <p><span class="bullet"></span> אחוז מהממוצע: <b>{{ formatRatio(selectedSettlement?.ratio) }}</b></p>
                 <p class="note">הנתונים מוצגים בהתאם לשנה שבחרת וביחס לממוצע ההשוואה.</p>
-              </article>
-
-              <article class="info-box">
-                <h3>תקציר עסקאות</h3>
-                <div v-if="selectedSettlement" class="tiny-chart"><canvas id="dealsChart"></canvas></div>
-                <p v-else class="note">בחר יישוב כדי להציג עסקאות.</p>
               </article>
 
               <p class="map-select-hint">לחיצה על יישוב במפה תעדכן כאן את המדדים והגרפים של היישוב שנבחר.</p>
@@ -243,14 +254,14 @@
     const FIXED_AVERAGE_END_YEAR = 2024;
 
     const COLOR_SCALE = [
-      { min: -Infinity, max: 0.50, color: [153, 27, 27, 0.72], label: 'עד 50% מהממוצע - אדום כהה' },
-      { min: 0.50, max: 0.80, color: [239, 68, 68, 0.70], label: '50%–80% מהממוצע - אדום' },
-      { min: 0.80, max: 1.00, color: [249, 115, 22, 0.68], label: '80%–100% מהממוצע - כתום' },
-      { min: 1.00, max: 1.20, color: [234, 179, 8, 0.66], label: '100%–120% מהממוצע - צהוב' },
-      { min: 1.20, max: 1.50, color: [74, 222, 128, 0.68], label: '120%–150% מהממוצע - ירוק בהיר' },
-      { min: 1.50, max: Infinity, color: [22, 101, 52, 0.72], label: 'מעל 150% מהממוצע - ירוק כהה' }
+      { min: -Infinity, max: 0.50, color: [153, 27, 27, 0.88], label: 'עד 50% מהממוצע - אדום כהה' },
+      { min: 0.50, max: 0.80, color: [239, 68, 68, 0.86], label: '50%–80% מהממוצע - אדום' },
+      { min: 0.80, max: 1.00, color: [249, 115, 22, 0.84], label: '80%–100% מהממוצע - כתום' },
+      { min: 1.00, max: 1.20, color: [234, 179, 8, 0.84], label: '100%–120% מהממוצע - צהוב' },
+      { min: 1.20, max: 1.50, color: [74, 222, 128, 0.84], label: '120%–150% מהממוצע - ירוק בהיר' },
+      { min: 1.50, max: Infinity, color: [22, 101, 52, 0.88], label: 'מעל 150% מהממוצע - ירוק כהה' }
     ];
-    const NO_DATA_COLOR = [148, 163, 184, 0.32];
+    const NO_DATA_COLOR = [148, 163, 184, 0.50];
     const OUTLINE_COLOR = [25, 25, 25, 0.86];
 
     function loadScript(id, src) {
@@ -296,13 +307,10 @@
         const drawnNames = ref([]);
         const ignoreZeroYears = ref(false);
         const targetYear = ref(DEFAULT_TARGET_YEAR);
-        const averageMode = ref('all-except');
         const showLayers = ref(false);
         const mapFullscreen = ref(false);
-        const selectedBackground = ref('streets');
         const activeRoomTab = ref('כל החדרים');
         const roomTabs = ['כל החדרים', '3 חדרים', '4 חדרים', '5 חדרים'];
-        let dealsChart = null;
         let priceChart = null;
         let salesChart = null;
 
@@ -317,6 +325,8 @@
           return groups;
         });
         const availableYears = computed(() => [...new Set(rawRows.value.map((row) => Number(row.year)).filter(Number.isFinite))].sort((a, b) => a - b));
+        const yearSliderMin = computed(() => availableYears.value.length ? availableYears.value[0] : AVERAGE_START_YEAR);
+        const yearSliderMax = computed(() => availableYears.value.length ? availableYears.value[availableYears.value.length - 1] : DEFAULT_TARGET_YEAR);
         const uniqueGeometrySettlements = computed(() => {
           const unique = new Map();
           for (const feature of wktFeatures.value) if (!unique.has(String(feature.sid))) unique.set(String(feature.sid), feature);
@@ -326,10 +336,7 @@
           const yearToCompare = Number(chosenYear);
           let values = rows.filter((row) => {
             const year = Number(row.year);
-            if (!Number.isFinite(year)) return false;
-            if (averageMode.value === 'previous') return year >= AVERAGE_START_YEAR && year < yearToCompare;
-            if (averageMode.value === 'fixed') return year >= AVERAGE_START_YEAR && year <= FIXED_AVERAGE_END_YEAR && year !== yearToCompare;
-            return year !== yearToCompare;
+            return Number.isFinite(year) && year !== yearToCompare;
           }).map((row) => normalizeNumber(row.deals)).filter(Number.isFinite);
           if (ignoreZeroYears.value) values = values.filter((value) => value > 0);
           return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
@@ -390,14 +397,14 @@
             };
             window.govmap.createMap(MAP_DIV_ID, {
               token: GOVMAP_TOKEN,
-              layers: [GOVMAP_LAYER],
+              layers: [],
               visibleLayers: [],
               showXY: true,
               identifyOnClick: false,
               identifyOnlyBubble: true,
               isEmbeddedToggle: false,
-              background: '0',
-              layersMode: 1,
+              background: 0,
+              layersMode: 0,
               zoomButtons: true,
               center: { x: 219529, y: 626907 },
               level: 7,
@@ -709,7 +716,7 @@
             // displayGeometries can replace GovMap's CLICK event handler, so install the map-click fallback again after drawing.
             installGovMapClickSelection();
 
-            drawnNames.value = names; statusMessage.value = `המפה מוכנה · הצביעה שקופה כדי לראות את המפה · ${wkts.length.toLocaleString('he-IL')} פוליגונים · ${stats.value.joined.toLocaleString('he-IL')} יישובים עם נתונים`;
+            drawnNames.value = names; statusMessage.value = `המפה מוכנה · הצביעה מוצגת מעל מפת רחובות ומבנים · ${wkts.length.toLocaleString('he-IL')} פוליגונים · ${stats.value.joined.toLocaleString('he-IL')} יישובים עם נתונים`;
           } catch (error) { console.error(error); errorMessage.value = error?.message || 'שגיאה בצביעת הפוליגונים.'; } finally { isDrawing.value = false; }
         }
         async function toggleOverlay() { overlayVisible.value = !overlayVisible.value; if (overlayVisible.value) await drawOverlay(); else await clearOverlay(); }
@@ -717,8 +724,8 @@
         function selectSettlementBySid(sid, shouldFocus = false) {
           const item = joinedSettlements.value.find((settlement) => String(settlement.sid) === String(sid));
           if (!item) return false;
-          selectSettlement(item, shouldFocus);
-          statusMessage.value = `הגרפים עודכנו לפי ${item.name}.`;
+          const changed = selectSettlement(item, shouldFocus);
+          statusMessage.value = changed ? `הגרפים עודכנו לפי ${item.name}.` : `${item.name} כבר מוצג.`;
           return true;
         }
         function installMapSelectionBridge() {
@@ -729,22 +736,25 @@
           };
         }
         function selectSettlement(item, shouldFocus = true) {
-          if (!item) return;
-          // Assign a fresh object so Vue reactivity fires even if the same reference is selected again.
+          if (!item) return false;
+          const previousSid = selectedSettlement.value?.sid == null ? null : String(selectedSettlement.value.sid);
+          const nextSid = String(item.sid);
+          const isSameSettlement = previousSid === nextSid;
           selectedSettlement.value = { ...item };
-          nextTick(renderCharts);
-          if (shouldFocus) focusSettlement(item);
+          if (!isSameSettlement) nextTick(() => renderCharts({ animate: true }));
+          if (shouldFocus && !isSameSettlement) focusSettlement(item);
+          return !isSameSettlement;
         }
         function selectFirstSearchResult() { if (filteredSettlementList.value.length) selectSettlement(filteredSettlementList.value[0]); }
         async function focusSettlement(item) { const shape = wktFeatures.value.find((feature) => String(feature.sid) === String(item.sid) && feature.bbox); if (!shape || !window.govmap) return; const [xmin, ymin, xmax, ymax] = shape.bbox; const x = (xmin + xmax) / 2, y = (ymin + ymax) / 2; try { if (typeof window.govmap.zoomToXY === 'function') window.govmap.zoomToXY({ x, y, level: 8 }); } catch (e) { console.warn(e); } }
         function chartData() { const rows = selectedRows.value; return { labels: rows.map((row) => String(row.year)), deals: rows.map((row) => normalizeNumber(row.deals)), prices: rows.map((row) => normalizeNumber(row.ppsqm)), avgLine: rows.map(() => selectedSettlement.value?.avgAnnualDeals ?? null) }; }
-        function destroyCharts() { if (dealsChart) { dealsChart.destroy(); dealsChart = null; } if (priceChart) { priceChart.destroy(); priceChart = null; } if (salesChart) { salesChart.destroy(); salesChart = null; } }
-        function renderCharts() {
+        function destroyCharts() { if (priceChart) { priceChart.destroy(); priceChart = null; } if (salesChart) { salesChart.destroy(); salesChart = null; } }
+        function renderCharts(options = {}) {
           if (!selectedSettlement.value || !window.Chart) return;
+          const { animate = true } = options;
           const priceCanvas = document.getElementById('priceChart');
           const salesCanvas = document.getElementById('salesChart');
-          const dealsCanvas = document.getElementById('dealsChart');
-          if (!priceCanvas && !salesCanvas && !dealsCanvas) return;
+          if (!priceCanvas && !salesCanvas) return;
           destroyCharts();
           const { labels, deals, prices, avgLine } = chartData();
           const selectedIndex = labels.findIndex((y) => y === String(targetYear.value));
@@ -772,6 +782,7 @@
             options: {
               responsive: true,
               maintainAspectRatio: false,
+              animation: animate ? undefined : false,
               interaction: { mode: 'index', intersect: false },
               plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } },
               scales: {
@@ -807,6 +818,7 @@
             options: {
               responsive: true,
               maintainAspectRatio: false,
+              animation: animate ? undefined : false,
               interaction: { mode: 'index', intersect: false },
               plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } },
               scales: {
@@ -816,23 +828,40 @@
             }
           });
 
-          if (dealsCanvas) dealsChart = new Chart(dealsCanvas, {
-            type: 'bar',
-            data: {
-              labels,
-              datasets: [{ label: 'עסקאות', data: deals, backgroundColor: selectedYearColors, borderColor: 'rgba(15,91,255,1)', borderWidth: 1 }, { type: 'line', label: 'ממוצע', data: avgLine, borderColor: 'rgba(0,0,0,.75)', pointRadius: 0, borderWidth: 1.5 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { beginAtZero: true, ticks: { maxTicksLimit: 4 } } } }
-          });
         }
-        async function handleAverageModeChanged() { const sid = selectedSettlement.value?.sid; if (sid) { const updated = joinedSettlements.value.find((item) => item.sid === sid); if (updated) selectedSettlement.value = updated; } await drawOverlay(); await nextTick(); renderCharts(); }
+        let yearChangeTimer = null;
+        function refreshSelectedSettlementForCurrentYear() {
+          const sid = selectedSettlement.value?.sid;
+          if (!sid) return;
+          const updated = joinedSettlements.value.find((item) => String(item.sid) === String(sid));
+          if (updated) selectedSettlement.value = { ...updated };
+        }
+        async function redrawAfterYearChange() {
+          refreshSelectedSettlementForCurrentYear();
+          await drawOverlay();
+          await nextTick();
+          renderCharts({ animate: false });
+          statusMessage.value = `המפה נצבעה לפי שנת ${targetYear.value}.`;
+        }
+        function handleYearSliderInput() {
+          refreshSelectedSettlementForCurrentYear();
+          nextTick(() => renderCharts({ animate: false }));
+          if (yearChangeTimer) clearTimeout(yearChangeTimer);
+          yearChangeTimer = setTimeout(() => { redrawAfterYearChange(); }, 260);
+        }
+        async function handleYearChanged() {
+          if (yearChangeTimer) clearTimeout(yearChangeTimer);
+          await redrawAfterYearChange();
+        }
+        async function handleAverageModeChanged() { await handleYearChanged(); }
         async function boot() {
           isBooting.value = true; errorMessage.value = '';
           try { await Promise.all([loadLocalFiles(), initGovMap()]); if (availableYears.value.includes(DEFAULT_TARGET_YEAR)) targetYear.value = DEFAULT_TARGET_YEAR; else if (availableYears.value.length) targetYear.value = availableYears.value[availableYears.value.length - 1]; const defaultItem = joinedSettlements.value.find((item) => item.sid === '1200') || joinedSettlements.value.find((item) => item.hasData) || null; if (defaultItem) selectSettlement(defaultItem, false); await drawOverlay(); statusMessage.value = `המפה מוכנה. הצביעה לפי אחוז עסקאות בשנת ${targetYear.value} מהממוצע.`; } catch (error) { console.error(error); errorMessage.value = error?.message || 'שגיאה כללית בטעינת האתר.'; } finally { isBooting.value = false; }
         }
-        watch(selectedRows, () => nextTick(renderCharts));
+        watch(selectedRows, () => nextTick(() => renderCharts({ animate: true })));
+        watch(targetYear, () => refreshSelectedSettlementForCurrentYear());
         onMounted(() => { installMapSelectionBridge(); boot(); });
-        return { isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, selectedSettlement, ignoreZeroYears, targetYear, averageMode, availableYears, filteredSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, selectedBackground, activeRoomTab, roomTabs, formatNumber, formatInteger, formatRatio, formatCurrency, formatPercent, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, handleAverageModeChanged };
+        return { isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, selectedSettlement, ignoreZeroYears, targetYear, availableYears, filteredSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, activeRoomTab, roomTabs, formatNumber, formatInteger, formatRatio, formatCurrency, formatPercent, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, yearSliderMin, yearSliderMax };
       }
     }).mount('#app');
   </script>
