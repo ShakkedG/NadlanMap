@@ -1,15 +1,13 @@
-# GovNadlan + GovMap — v2 fixed
+# GovNadlan + GovMap UI
 
-קבצים להעלאה לאותה תיקייה ב-GitHub Pages:
+Upload these files together to GitHub Pages:
 
 - index.html
 - settlements_flat.json
 - settlements_wkt_2039.json
 
-תיקון עיקרי בגרסה הזאת:
-שכבת המקור GovMap 235146 כבויה כברירת מחדל, כי הסגנון הכחול שלה הסתיר את הצביעה האנליטית.
-הצביעה האמיתית מגיעה מהפוליגונים שמצוירים בצד לקוח לפי:
+The app colors settlements by:
 
-deals_2025 / avg(deals_1999_2024)
+selected year deals / annual average deals
 
-אדום = פחות מהממוצע, ירוק = יותר מהממוצע.
+GovMap source layer 235146 is off by default so the analytical coloring is visible.
