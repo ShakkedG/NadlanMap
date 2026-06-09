@@ -95,7 +95,7 @@
     .year-slider-card { border: 1px solid #dfe6ef; border-radius: 16px; background: #f8fbff; padding: 16px 18px; box-shadow: 0 8px 20px rgba(6,34,74,.05); }
     .year-slider-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: #052a5a; font-weight: 900; margin-bottom: 10px; }
     .year-slider-title small { color: #718098; font-weight: 700; }
-    .year-slider { width: 100%; accent-color: #0f5bff; cursor: pointer; padding: 0; border: 0; }
+    .year-slider { width: 100%; accent-color: #0f5bff; cursor: pointer; padding: 0; border: 0; direction: rtl; }
     .year-slider-labels { display: flex; justify-content: space-between; color: #667085; font-size: 13px; font-weight: 800; margin-top: 6px; direction: ltr; }
     .year-slider-note { margin: 8px 0 0; color: #718098; font-size: 13px; text-align: center; }
     .deals-focus { margin: 10px 0 0; padding: 12px 14px; border-radius: 12px; background: #eef5ff; border: 1px solid #d7e6ff; }
@@ -194,7 +194,7 @@
                     <small>ממוצע: כל השנים חוץ מהשנה הנבחרת</small>
                   </div>
                   <input class="year-slider" type="range" :min="yearSliderMin" :max="yearSliderMax" step="1" v-model.number="targetYear" @input="handleYearSliderInput" @change="handleYearChanged" />
-                  <div class="year-slider-labels"><span>{{ yearSliderMin }}</span><span>{{ targetYear }}</span><span>{{ yearSliderMax }}</span></div>
+                  <div class="year-slider-labels"><span>{{ yearSliderMax }}</span><span>{{ targetYear }}</span><span>{{ yearSliderMin }}</span></div>
                   <p class="year-slider-note">הסליידר משנה את השנה שלפיה מחושבת הצביעה במפה והאחוז מהממוצע.</p>
                 </div>
               </div>
@@ -404,7 +404,7 @@
               identifyOnlyBubble: true,
               isEmbeddedToggle: false,
               background: 0,
-              layersMode: 0,
+              layersMode: 4, // hide GovMap native layers button/panel
               zoomButtons: true,
               center: { x: 219529, y: 626907 },
               level: 7,
