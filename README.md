@@ -1,2 +1,9 @@
-להעלאה ל-GitHub Pages: העלה את index.html, settlements_flat.json, settlements_wkt_2039.json לאותה תיקייה.
-בגרסה זו כפתור/חלון שכבות המידע של GovMap מוסתר באמצעות layersMode: 4.
+# NadlanMap
+
+קבצים להעלאה ל-GitHub Pages:
+
+- index.html
+- settlements_flat.json
+- settlements_wkt_2039.json
+
+הסליידר של שנת הצביעה מוגדר בכיוון הפוך: 2025 בצד שמאל ו-1999 בצד ימין.
