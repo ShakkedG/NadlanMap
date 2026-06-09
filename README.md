@@ -1,13 +1,9 @@
-# GovNadlan + GovMap UI
+# מפת מגמות נדל״ן לפי יישובים
 
-Upload these files together to GitHub Pages:
-
+קבצים להעלאה ל-GitHub Pages:
 - index.html
 - settlements_flat.json
 - settlements_wkt_2039.json
 
-The app colors settlements by:
-
-selected year deals / annual average deals
-
-GovMap source layer 235146 is off by default so the analytical coloring is visible.
+הצביעה לפי יחס העסקאות בשנה הנבחרת מול ממוצע העסקאות השנתי.
+לחיצה על יישוב במפה פותחת בועה ומעדכנת את הגרפים והמדדים בצד ימין.

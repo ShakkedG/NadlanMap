@@ -3,11 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>GovNadlan + GovMap</title>
+  <title>מפת מגמות נדל״ן</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800;900&display=swap');
     * { box-sizing: border-box; }
     html, body, #app { width: 100%; height: 100%; margin: 0; }
-    body { font-family: Arial, "Noto Sans Hebrew", sans-serif; background: #eef3fb; color: #06224a; overflow: hidden; }
+    body { font-family: "Assistant", "Heebo", "Noto Sans Hebrew", Arial, sans-serif; font-size: 16px; font-weight: 400; letter-spacing: -.01em; background: #eef3fb; color: #06224a; overflow: hidden; }
     button, input, select, a { font: inherit; }
     button { cursor: pointer; }
     button:disabled { opacity: .55; cursor: not-allowed; }
@@ -84,6 +85,7 @@
     .bullet { display: inline-block; width: 10px; height: 10px; background: #111; margin-inline-start: 6px; }
     .note { color: #667085; font-size: 13px !important; line-height: 1.55; margin-top: 12px !important; }
     .tiny-chart { margin-top: 10px; height: 145px; }
+    .map-select-hint { margin: 0; padding: 12px 14px; border-radius: 12px; background: #f7faff; border: 1px solid #dfe8f7; color: #52627a; font-size: 14px; line-height: 1.45; }
 
     .bottom-tools { max-width: 1130px; margin: 32px auto 0; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
     .mini-panel { border: 1px solid #dfe6ef; border-radius: 14px; padding: 14px; background: #fff; max-height: 310px; overflow: auto; }
@@ -226,7 +228,7 @@
                 <p v-else class="note">בחר יישוב כדי להציג עסקאות.</p>
               </article>
 
-              <a v-if="selectedSettlement" class="primary-btn green-btn" :href="buildGovNadlanUrl(selectedSettlement.sid)" target="_blank" rel="noopener">פתח ב־Nadlan.gov</a>
+              <p class="map-select-hint">לחיצה על יישוב במפה תעדכן כאן את המדדים והגרפים של היישוב שנבחר.</p>
             </aside>
           </section>
 
@@ -255,13 +257,12 @@
     const GOVMAP_SCRIPT_ID = 'govmap-api-script';
     const GOVMAP_SCRIPT_URL = 'https://www.govmap.gov.il/govmap/api/govmap.api.js';
     const MAP_DIV_ID = 'govmap-map';
-    const DRAWING_NAME_PREFIX = 'govnadlan-ratio-';
+    const DRAWING_NAME_PREFIX = 'market-ratio-';
     const GOVMAP_TOKEN = 'ede9a5fd-7c23-432f-8ffb-d85feffa3f3c';
     const GOVMAP_LAYER = '235146';
     const DEFAULT_TARGET_YEAR = 2025;
     const AVERAGE_START_YEAR = 1999;
     const FIXED_AVERAGE_END_YEAR = 2024;
-    const GOVNADLAN_SETTLEMENT_URL = 'https://www.nadlan.gov.il/?id={sid}&page=deals&view=settlement';
 
     const COLOR_SCALE = [
       { min: -Infinity, max: 0.50, color: [153, 27, 27, 0.76], label: 'עד 50% מהממוצע - אדום כהה' },
@@ -416,16 +417,40 @@
             for (const feature of wktFeatures.value) {
               const item = valueBySid.get(String(feature.sid)); const ratio = item?.ratio ?? null; const color = colorForRatio(ratio); const name = `${DRAWING_NAME_PREFIX}${feature.sid}-${feature.part}`;
               names.push(name); wkts.push(feature.wkt); symbols.push({ outlineColor: OUTLINE_COLOR, outlineWidth: 1, fillColor: color }); tooltips.push(`${feature.name}: ${formatRatio(ratio)}`); headers.push(feature.name);
-              bubbleHTMLParameters.push([feature.name, String(feature.sid), formatRatio(ratio), formatInteger(item?.dealsSelected), formatNumber(item?.avgAnnualDeals), formatCurrency(item?.ppsqmSelected), ratioExplanation(ratio, targetYear.value), buildGovNadlanUrl(feature.sid)]);
+              bubbleHTMLParameters.push([feature.name, String(feature.sid), formatRatio(ratio), formatInteger(item?.dealsSelected), formatNumber(item?.avgAnnualDeals), formatCurrency(item?.ppsqmSelected), ratioExplanation(ratio, targetYear.value)]);
             }
-            const bubbleContent = `<div style="direction:rtl;text-align:right;font-family:Arial;padding:9px;min-width:270px"><div style="font-weight:800;font-size:16px;margin-bottom:3px">{0}</div><div style="color:#64748b;margin-bottom:8px">סמל יישוב: {1}</div><div style="font-size:14px;margin-bottom:6px"><b>יחס מול ממוצע:</b> {2}</div><hr style="border:0;border-top:1px solid #e2e8f0;margin:8px 0"/><div>עסקאות: {3}</div><div>ממוצע שנתי: {4}</div><div>מחיר למ״ר: {5}</div><div style="margin-top:8px;color:#334155">{6}</div><a href="{7}" target="_blank" style="display:inline-block;margin-top:10px;color:#2456d6;font-weight:700">פתח ב־Nadlan.gov</a></div>`;
+            const bubbleContent = `<div data-settlement-sid="{1}" style="direction:rtl;text-align:right;font-family:Assistant,Arial,sans-serif;padding:10px;min-width:270px;color:#052a5a"><div style="font-weight:800;font-size:17px;margin-bottom:3px">{0}</div><div style="color:#64748b;margin-bottom:8px">סמל יישוב: {1}</div><div style="font-size:14px;margin-bottom:6px"><b>יחס מול ממוצע:</b> {2}</div><hr style="border:0;border-top:1px solid #e2e8f0;margin:8px 0"/><div>עסקאות: {3}</div><div>ממוצע שנתי: {4}</div><div>מחיר למ״ר: {5}</div><div style="margin-top:8px;color:#334155">{6}</div><button type="button" data-select-settlement-sid="{1}" onclick="window.__selectSettlementFromMap && window.__selectSettlementFromMap('{1}')" style="margin-top:10px;border:0;border-radius:10px;background:#0f5bff;color:#fff;padding:8px 12px;font-weight:800;cursor:pointer">הצג גרפים ליישוב</button></div>`;
             await window.govmap.displayGeometries({ wkts, names, geometryType: (window.govmap.geometryType && window.govmap.geometryType.POLYGON) || 'POLYGON', defaultSymbol: { outlineColor: OUTLINE_COLOR, outlineWidth: 1, fillColor: NO_DATA_COLOR }, symbols, clearExisting: true, showBubble: true, data: { tooltips, headers, bubbleHTML: bubbleContent, bubbleHTMLParameters } });
             drawnNames.value = names; statusMessage.value = `המפה מוכנה · ${wkts.length.toLocaleString('he-IL')} פוליגונים · ${stats.value.joined.toLocaleString('he-IL')} יישובים עם נתונים`;
           } catch (error) { console.error(error); errorMessage.value = error?.message || 'שגיאה בצביעת הפוליגונים.'; } finally { isDrawing.value = false; }
         }
         async function toggleOverlay() { overlayVisible.value = !overlayVisible.value; if (overlayVisible.value) await drawOverlay(); else await clearOverlay(); }
         async function toggleBaseLayer() { if (!window.govmap) return; try { if (baseLayerVisible.value) { window.govmap.setVisibleLayers([], [GOVMAP_LAYER]); baseLayerVisible.value = false; statusMessage.value = 'שכבת המקור כבויה כדי שהצביעה תיראה.'; if (overlayVisible.value) await drawOverlay(); } else { window.govmap.setVisibleLayers([GOVMAP_LAYER], []); baseLayerVisible.value = true; statusMessage.value = 'שכבת המקור דולקת ועלולה להסתיר את הצביעה.'; } } catch (e) { console.warn(e); } }
-        function buildGovNadlanUrl(sid) { return GOVNADLAN_SETTLEMENT_URL.replace('{sid}', encodeURIComponent(String(sid))); }
+        function selectSettlementBySid(sid, shouldFocus = false) {
+          const item = joinedSettlements.value.find((settlement) => String(settlement.sid) === String(sid));
+          if (!item) return;
+          selectSettlement(item, shouldFocus);
+          statusMessage.value = `הגרפים עודכנו לפי ${item.name}.`;
+        }
+        function installMapSelectionBridge() {
+          window.__selectSettlementFromMap = (sid) => selectSettlementBySid(sid, false);
+          document.addEventListener('click', (event) => {
+            const trigger = event.target.closest && event.target.closest('[data-select-settlement-sid]');
+            if (trigger) selectSettlementBySid(trigger.getAttribute('data-select-settlement-sid'), false);
+          });
+          const observer = new MutationObserver((mutations) => {
+            for (const mutation of mutations) {
+              for (const node of mutation.addedNodes) {
+                if (!(node instanceof Element)) continue;
+                const marker = node.matches('[data-settlement-sid]') ? node : node.querySelector('[data-settlement-sid]');
+                if (!marker) continue;
+                const sid = marker.getAttribute('data-settlement-sid');
+                if (sid && String(selectedSettlement.value?.sid) !== String(sid)) selectSettlementBySid(sid, false);
+              }
+            }
+          });
+          observer.observe(document.body, { childList: true, subtree: true });
+        }
         function selectSettlement(item, shouldFocus = true) { selectedSettlement.value = item; nextTick(renderCharts); if (shouldFocus) focusSettlement(item); }
         function selectFirstSearchResult() { if (filteredSettlementList.value.length) selectSettlement(filteredSettlementList.value[0]); }
         async function focusSettlement(item) { const shape = wktFeatures.value.find((feature) => String(feature.sid) === String(item.sid) && feature.bbox); if (!shape || !window.govmap) return; const [xmin, ymin, xmax, ymax] = shape.bbox; const x = (xmin + xmax) / 2, y = (ymin + ymax) / 2; try { if (typeof window.govmap.zoomToXY === 'function') window.govmap.zoomToXY({ x, y, level: 8 }); } catch (e) { console.warn(e); } }
@@ -435,7 +460,7 @@
           if (!selectedSettlement.value || !window.Chart) return;
           const priceCanvas = document.getElementById('priceChart'); const dealsCanvas = document.getElementById('dealsChart'); if (!priceCanvas && !dealsCanvas) return; destroyCharts(); const { labels, deals, prices, avgLine } = chartData();
           const selectedIndex = labels.findIndex((y) => y === String(targetYear.value));
-          if (priceCanvas) priceChart = new Chart(priceCanvas, { type: 'line', data: { labels, datasets: [{ label: 'מחיר חציוני ארצי', data: prices, borderColor: '#111111', backgroundColor: 'rgba(17,17,17,.05)', borderWidth: 2, pointRadius: labels.map((_, i) => i === selectedIndex ? 5 : 2.5), pointBackgroundColor: '#111111', tension: .28, fill: false, spanGaps: true }] }, options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } }, scales: { y: { ticks: { callback: (v) => '₪' + Number(v).toLocaleString('he-IL') } } } } });
+          if (priceCanvas) priceChart = new Chart(priceCanvas, { type: 'line', data: { labels, datasets: [{ label: 'מחיר חציוני ביישוב', data: prices, borderColor: '#111111', backgroundColor: 'rgba(17,17,17,.05)', borderWidth: 2, pointRadius: labels.map((_, i) => i === selectedIndex ? 5 : 2.5), pointBackgroundColor: '#111111', tension: .28, fill: false, spanGaps: true }] }, options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } }, scales: { y: { ticks: { callback: (v) => '₪' + Number(v).toLocaleString('he-IL') } } } } });
           if (dealsCanvas) dealsChart = new Chart(dealsCanvas, { type: 'bar', data: { labels, datasets: [{ label: 'עסקאות', data: deals, backgroundColor: labels.map((y) => y === String(targetYear.value) ? 'rgba(15,91,255,.85)' : 'rgba(15,91,255,.25)'), borderColor: 'rgba(15,91,255,1)', borderWidth: 1 }, { type: 'line', label: 'ממוצע', data: avgLine, borderColor: 'rgba(0,0,0,.75)', pointRadius: 0, borderWidth: 1.5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { beginAtZero: true, ticks: { maxTicksLimit: 4 } } } } });
         }
         async function handleAverageModeChanged() { const sid = selectedSettlement.value?.sid; if (sid) { const updated = joinedSettlements.value.find((item) => item.sid === sid); if (updated) selectedSettlement.value = updated; } await drawOverlay(); await nextTick(); renderCharts(); }
@@ -444,8 +469,8 @@
           try { await Promise.all([loadLocalFiles(), initGovMap()]); if (availableYears.value.includes(DEFAULT_TARGET_YEAR)) targetYear.value = DEFAULT_TARGET_YEAR; else if (availableYears.value.length) targetYear.value = availableYears.value[availableYears.value.length - 1]; const defaultItem = joinedSettlements.value.find((item) => item.sid === '1200') || joinedSettlements.value.find((item) => item.hasData) || null; if (defaultItem) selectSettlement(defaultItem, false); await drawOverlay(); statusMessage.value = `המפה מוכנה. הצביעה לפי יחס עסקאות בשנת ${targetYear.value} מול הממוצע.`; } catch (error) { console.error(error); errorMessage.value = error?.message || 'שגיאה כללית בטעינת האתר.'; } finally { isBooting.value = false; }
         }
         watch(selectedRows, () => nextTick(renderCharts));
-        onMounted(boot);
-        return { isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, selectedSettlement, ignoreZeroYears, targetYear, averageMode, availableYears, filteredSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, selectedBackground, activeRoomTab, roomTabs, formatNumber, formatInteger, formatRatio, formatCurrency, formatPercent, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, buildGovNadlanUrl, handleAverageModeChanged };
+        onMounted(() => { installMapSelectionBridge(); boot(); });
+        return { isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, selectedSettlement, ignoreZeroYears, targetYear, averageMode, availableYears, filteredSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, selectedBackground, activeRoomTab, roomTabs, formatNumber, formatInteger, formatRatio, formatCurrency, formatPercent, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, handleAverageModeChanged };
       }
     }).mount('#app');
   </script>
