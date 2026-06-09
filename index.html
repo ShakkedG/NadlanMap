@@ -458,47 +458,169 @@
           return candidates.find((feature) => pointInFeature(feature, x, y)) || null;
         }
         let lastHandledClick = '';
-        function extractMapPoint(event) {
-          const candidates = [
-            event?.mapPoint,
-            event?.data?.mapPoint,
-            event?.event?.mapPoint,
-            event?.originalEvent?.mapPoint,
-            event?.point,
-            event?.data?.point,
-            event
-          ];
-          for (const point of candidates) {
-            const x = Number(point?.x ?? point?.X);
-            const y = Number(point?.y ?? point?.Y);
-            // GovMap עובד כאן ב-ITM / EPSG:2039. ערכי X/Y סבירים בישראל הם בערך מאות אלפים.
-            if (Number.isFinite(x) && Number.isFinite(y) && x > 10000 && y > 10000) return { x, y };
+
+        function normalizeMapPoint(input) {
+          const mp = input?.mapPoint ?? input?.Point ?? input?.point ?? input?.data?.mapPoint ?? input?.data?.point ?? input ?? null;
+          if (!mp) return null;
+          const x = mp.x ?? mp.X ?? mp.lon ?? mp.Lon ?? mp.centerX ?? mp.CenterX;
+          const y = mp.y ?? mp.Y ?? mp.lat ?? mp.Lat ?? mp.centerY ?? mp.CenterY;
+          const nx = Number(x);
+          const ny = Number(y);
+          if (!Number.isFinite(nx) || !Number.isFinite(ny)) return null;
+          if (nx < 10000 || ny < 10000) return null;
+          return { x: nx, y: ny };
+        }
+        function extractMapPoint(event) { return normalizeMapPoint(event); }
+
+        function fieldsToObject(fields) {
+          if (!Array.isArray(fields)) return fields;
+          const obj = {};
+          for (const f of fields) {
+            const key = f?.FieldName ?? f?.fieldName ?? f?.name;
+            const value = f?.Value ?? f?.value;
+            if (key != null && value !== undefined) obj[key] = value;
           }
+          return obj;
+        }
+        function normalizeFieldName(name) {
+          return String(name ?? '')
+            .trim()
+            .replace(/\s+/g, ' ')
+            .replace(/[׳״"'`]/g, '')
+            .replace(/[:;.,()\[\]{}<>!@#$%^&*+=?~\|\/\-־‐-―]/g, '')
+            .toLowerCase();
+        }
+        function getFieldFromAttrs(attrsRaw, candidates) {
+          const wanted = (candidates || []).map(normalizeFieldName);
+          if (Array.isArray(attrsRaw)) {
+            for (const f of attrsRaw) {
+              const fn = normalizeFieldName(f?.FieldName ?? f?.fieldName ?? f?.name);
+              if (!fn) continue;
+              if (wanted.includes(fn)) return f?.Value ?? f?.value;
+              for (const w of wanted) if (fn.includes(w)) return f?.Value ?? f?.value;
+            }
+          }
+          const attrsObj = fieldsToObject(attrsRaw) || attrsRaw;
+          if (!attrsObj || typeof attrsObj !== 'object') return null;
+          for (const c of candidates || []) if (attrsObj[c] != null && String(attrsObj[c]).trim() !== '') return attrsObj[c];
+          const normMap = {};
+          for (const k in attrsObj) normMap[normalizeFieldName(k)] = attrsObj[k];
+          for (const w of wanted) if (normMap[w] != null && String(normMap[w]).trim() !== '') return normMap[w];
           return null;
         }
-        function handleMapClick(event) {
-          const point = extractMapPoint(event);
+        function normalizeSettlementNameForClick(name) {
+          return String(name ?? '')
+            .trim()
+            .replace(/^עיריית\s+/g, '')
+            .replace(/^עיריה\s+/g, '')
+            .replace(/^מועצה\s+מקומית\s+/g, '')
+            .replace(/[׳״"']/g, '')
+            .replace(/[()\[\],.:]/g, '')
+            .replace(/[\s\-־‐-―]/g, '')
+            .toLowerCase();
+        }
+        function detectSettlementSid(attrsRaw) {
+          const value = getFieldFromAttrs(attrsRaw, [
+            'sid', 'SID', 'סמל ישוב', 'סמל_ישוב', 'סמל יישוב', 'סמל_יישוב',
+            'SEMEL_YISHUV', 'SEMELYESHUV', 'YISHUV_STAT11', 'SETL_CODE', 'CODE', 'code'
+          ]);
+          if (value == null) return null;
+          const sid = String(value).trim();
+          return sid || null;
+        }
+        function detectSettlementName(attrsRaw) {
+          const value = getFieldFromAttrs(attrsRaw, [
+            'name', 'Name', 'NAME', 'שם', 'שם ישוב', 'שם יישוב', 'שם_ישוב', 'שם_יישוב',
+            'SHEM_YISHUV', 'SHEMYESHUV', 'שם רשות', 'שם רשות מקומית'
+          ]);
+          if (value == null) return null;
+          const name = String(value).trim();
+          return name || null;
+        }
+        function selectSettlementFromGeometryName(geometryName) {
+          const s = String(geometryName || '');
+          if (!s.startsWith(DRAWING_NAME_PREFIX)) return false;
+          const rest = s.slice(DRAWING_NAME_PREFIX.length);
+          const sid = rest.split('-')[0];
+          if (!sid) return false;
+          return selectSettlementBySid(sid, false);
+        }
+        function selectSettlementByNameFromClick(name) {
+          const wanted = normalizeSettlementNameForClick(name);
+          if (!wanted) return false;
+          const item = joinedSettlements.value.find((settlement) => normalizeSettlementNameForClick(settlement.name) === wanted);
+          if (!item) return false;
+          selectSettlement(item, false);
+          statusMessage.value = `הגרפים עודכנו לפי ${item.name}.`;
+          return true;
+        }
+        function selectSettlementFromLayerAttrs(attrsRaw) {
+          const attrs = fieldsToObject(attrsRaw) || attrsRaw || {};
+          const sid = detectSettlementSid(attrs);
+          if (sid && selectSettlementBySid(sid, false)) return true;
+          const name = detectSettlementName(attrs);
+          if (name && selectSettlementByNameFromClick(name)) return true;
+          return false;
+        }
+        async function handleMapClick(event) {
+          const geometryName = event?.data?.[0]?.name ?? event?.data?.name ?? event?.name;
+          if (selectSettlementFromGeometryName(geometryName)) {
+            try { window.govmap?.closeBubble?.(); } catch (_) {}
+            return;
+          }
+
+          const point = normalizeMapPoint(event);
           if (!point) return;
           const key = `${Math.round(point.x)}:${Math.round(point.y)}`;
           if (key === lastHandledClick) return;
           lastHandledClick = key;
-          const feature = settlementAtPoint(point.x, point.y);
-          if (feature) {
-            selectSettlementBySid(feature.sid, false);
-            // סוגר בועית GovMap אם היא בכל זאת נפתחה מאחת משכבות המפה.
-            try { window.govmap?.closeBubble?.(); } catch (_) {}
-          } else {
-            statusMessage.value = 'לא נמצא יישוב בנקודה שנלחצה. נסה ללחוץ בתוך פוליגון יישוב.';
+
+          try {
+            if (typeof window.govmap?.getLayerData === 'function') {
+              const resp = await window.govmap.getLayerData({
+                LayerName: GOVMAP_LAYER,
+                Point: { x: point.x, y: point.y, X: point.x, Y: point.y },
+                Radius: 300
+              });
+              const items = resp?.data || resp?.Data || [];
+              for (const item of items) {
+                const attrs = item?.Fields || item?.fields || item?.Attributes || item?.attributes || item;
+                if (selectSettlementFromLayerAttrs(attrs)) {
+                  try { window.govmap?.closeBubble?.(); } catch (_) {}
+                  return;
+                }
+              }
+            }
+          } catch (error) {
+            console.warn('GovMap getLayerData click selection failed:', error);
           }
+
+          const feature = settlementAtPoint(point.x, point.y);
+          if (feature && selectSettlementBySid(feature.sid, false)) {
+            try { window.govmap?.closeBubble?.(); } catch (_) {}
+            return;
+          }
+
+          statusMessage.value = 'לא נמצא יישוב בנקודה שנלחצה. נסה ללחוץ בתוך פוליגון יישוב.';
         }
         function installGovMapClickSelection() {
           if (!window.govmap?.onEvent) return;
           const clickEventName = window.govmap.events?.CLICK ?? 'CLICK';
+          try { window.govmap.unbindEvent?.(clickEventName); } catch (_) {}
           try {
-            window.govmap.onEvent(clickEventName, MAP_DIV_ID).progress(handleMapClick);
+            window.govmap.onEvent(clickEventName).progress((e) => {
+              const point = normalizeMapPoint(e);
+              handleMapClick(point ? { mapPoint: point, __fromGovmap: true } : e);
+            });
           } catch (e) {
-            try { window.govmap.onEvent(clickEventName).progress(handleMapClick); }
-            catch (err) { console.warn('GovMap click event registration failed', err); }
+            try {
+              window.govmap.onEvent(clickEventName, MAP_DIV_ID).progress((e) => {
+                const point = normalizeMapPoint(e);
+                handleMapClick(point ? { mapPoint: point, __fromGovmap: true } : e);
+              });
+            } catch (err) {
+              console.warn('GovMap click event registration failed', err);
+            }
           }
         }
         async function clearOverlay() { if (!window.govmap || !drawnNames.value.length) return; try { await window.govmap.removeGeometries(drawnNames.value); } catch (e) { try { await window.govmap.clearGeometries(); } catch (_) {} } drawnNames.value = []; }
@@ -513,7 +635,10 @@
               const item = valueBySid.get(String(feature.sid)); const ratio = item?.ratio ?? null; const color = colorForRatio(ratio); const name = `${DRAWING_NAME_PREFIX}${feature.sid}-${feature.part}`;
               names.push(name); wkts.push(feature.wkt); symbols.push({ outlineColor: OUTLINE_COLOR, outlineWidth: 1, fillColor: color }); tooltips.push(`${feature.name}: ${formatRatio(ratio)}`); headers.push(feature.name);
             }
-            await window.govmap.displayGeometries({ wkts, names, geometryType: (window.govmap.geometryType && window.govmap.geometryType.POLYGON) || 'POLYGON', defaultSymbol: { outlineColor: OUTLINE_COLOR, outlineWidth: 1, fillColor: NO_DATA_COLOR }, symbols, clearExisting: true, showBubble: false, data: { tooltips, headers } });
+            const geometryClick = window.govmap.displayGeometries({ wkts, names, geometryType: (window.govmap.geometryType && window.govmap.geometryType.POLYGON) || 'POLYGON', defaultSymbol: { outlineColor: OUTLINE_COLOR, outlineWidth: 1, fillColor: NO_DATA_COLOR }, symbols, clearExisting: true, showBubble: false, data: { tooltips, headers } });
+            if (geometryClick && typeof geometryClick.then === 'function') {
+              geometryClick.then((ev) => handleMapClick(ev), (err) => console.warn('displayGeometries click promise rejected:', err));
+            }
             drawnNames.value = names; statusMessage.value = `המפה מוכנה · ${wkts.length.toLocaleString('he-IL')} פוליגונים · ${stats.value.joined.toLocaleString('he-IL')} יישובים עם נתונים`;
           } catch (error) { console.error(error); errorMessage.value = error?.message || 'שגיאה בצביעת הפוליגונים.'; } finally { isDrawing.value = false; }
         }
@@ -521,9 +646,10 @@
         async function toggleBaseLayer() { if (!window.govmap) return; try { if (baseLayerVisible.value) { window.govmap.setVisibleLayers([], [GOVMAP_LAYER]); baseLayerVisible.value = false; statusMessage.value = 'שכבת המקור כבויה כדי שהצביעה תיראה.'; if (overlayVisible.value) await drawOverlay(); } else { window.govmap.setVisibleLayers([GOVMAP_LAYER], []); baseLayerVisible.value = true; statusMessage.value = 'שכבת המקור דולקת ועלולה להסתיר את הצביעה.'; } } catch (e) { console.warn(e); } }
         function selectSettlementBySid(sid, shouldFocus = false) {
           const item = joinedSettlements.value.find((settlement) => String(settlement.sid) === String(sid));
-          if (!item) return;
+          if (!item) return false;
           selectSettlement(item, shouldFocus);
           statusMessage.value = `הגרפים עודכנו לפי ${item.name}.`;
+          return true;
         }
         function installMapSelectionBridge() {
           window.__selectSettlementFromMap = (sid) => selectSettlementBySid(sid, false);
