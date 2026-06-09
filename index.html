@@ -59,7 +59,7 @@
     .status { display: inline-flex; margin-top: 12px; gap: 8px; border-radius: 999px; padding: 6px 12px; background: #e8fff2; border: 1px solid #bce9cf; color: #08714d; font-size: 12px; font-weight: 800; }
     .status.error { background: #fff1f2; border-color: #fecdd3; color: #9f1239; }
 
-    .stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; max-width: 1120px; margin: 0 auto 58px; }
+    .stat-cards { display: grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap: 18px; max-width: 840px; margin: 0 auto 58px; }
     .stat-card { border: 1px solid #dde5ef; border-radius: 14px; min-height: 126px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 22px 24px; background: #fff; }
     .stat-text { text-align: right; min-width: 0; }
     .stat-value { margin: 0 0 8px; font-size: clamp(22px, 1.6vw, 28px); font-weight: 500; color: #052a5a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -162,10 +162,6 @@
               <div class="stat-text"><p class="stat-value">עליית מחירים - {{ formatPercent(selectedSettlement?.demandYoySelected) }}</p><div class="stat-label">שינוי מחיר למ״ר / ביקוש</div></div>
               <div class="stat-icon">📊</div>
             </article>
-            <article class="stat-card">
-              <div class="stat-text"><p class="stat-value">תשואה - לא ידוע</p><div class="stat-label">תשואה שכירות חציונית שנתית</div></div>
-              <div class="stat-icon">💸</div>
-            </article>
           </section>
 
           <section class="section-heading">
@@ -192,7 +188,7 @@
               <article class="info-box">
                 <h3>⌂ מחירי עסקאות ממוצעים</h3>
                 <p>משוקלל לכל החדרים: <b>{{ formatCurrency(selectedSettlement?.ppsqmSelected) }}</b></p>
-                <p>יחס עסקאות לשנה: <b>{{ formatRatio(selectedSettlement?.ratio) }}</b></p>
+                <p>עסקאות ביחס לממוצע: <b>{{ formatRatio(selectedSettlement?.ratio) }}</b></p>
                 <p>עסקאות {{ targetYear }}: <b>{{ formatInteger(selectedSettlement?.dealsSelected) }}</b></p>
                 <p>ממוצע להשוואה: <b>{{ formatNumber(selectedSettlement?.avgAnnualDeals) }}</b></p>
               </article>
@@ -200,7 +196,7 @@
               <article class="info-box">
                 <h3>רבעון שלישי {{ targetYear }}</h3>
                 <p><span class="bullet"></span> מחיר חציוני שנתי: <b>{{ formatCurrency(selectedSettlement?.ppsqmSelected) }}</b></p>
-                <p><span class="bullet"></span> מדד פעילות: <b>{{ formatRatio(selectedSettlement?.ratio) }}</b></p>
+                <p><span class="bullet"></span> אחוז מהממוצע: <b>{{ formatRatio(selectedSettlement?.ratio) }}</b></p>
                 <p class="note">הנתונים מוצגים בהתאם לשנה שבחרת וביחס לממוצע ההשוואה.</p>
               </article>
 
@@ -247,15 +243,15 @@
     const FIXED_AVERAGE_END_YEAR = 2024;
 
     const COLOR_SCALE = [
-      { min: -Infinity, max: 0.50, color: [153, 27, 27, 0.42], label: 'עד 50% מהממוצע - אדום כהה' },
-      { min: 0.50, max: 0.80, color: [239, 68, 68, 0.38], label: '50%–80% מהממוצע - אדום' },
-      { min: 0.80, max: 1.00, color: [249, 115, 22, 0.34], label: '80%–100% מהממוצע - כתום' },
-      { min: 1.00, max: 1.20, color: [234, 179, 8, 0.32], label: '100%–120% מהממוצע - צהוב' },
-      { min: 1.20, max: 1.50, color: [74, 222, 128, 0.36], label: '120%–150% מהממוצע - ירוק בהיר' },
-      { min: 1.50, max: Infinity, color: [22, 101, 52, 0.42], label: 'מעל 150% מהממוצע - ירוק כהה' }
+      { min: -Infinity, max: 0.50, color: [153, 27, 27, 0.72], label: 'עד 50% מהממוצע - אדום כהה' },
+      { min: 0.50, max: 0.80, color: [239, 68, 68, 0.70], label: '50%–80% מהממוצע - אדום' },
+      { min: 0.80, max: 1.00, color: [249, 115, 22, 0.68], label: '80%–100% מהממוצע - כתום' },
+      { min: 1.00, max: 1.20, color: [234, 179, 8, 0.66], label: '100%–120% מהממוצע - צהוב' },
+      { min: 1.20, max: 1.50, color: [74, 222, 128, 0.68], label: '120%–150% מהממוצע - ירוק בהיר' },
+      { min: 1.50, max: Infinity, color: [22, 101, 52, 0.72], label: 'מעל 150% מהממוצע - ירוק כהה' }
     ];
-    const NO_DATA_COLOR = [148, 163, 184, 0.16];
-    const OUTLINE_COLOR = [25, 25, 25, 0.70];
+    const NO_DATA_COLOR = [148, 163, 184, 0.32];
+    const OUTLINE_COLOR = [25, 25, 25, 0.86];
 
     function loadScript(id, src) {
       return new Promise((resolve, reject) => {
@@ -372,7 +368,7 @@
 
         function formatNumber(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return value.toLocaleString('he-IL', { maximumFractionDigits: value >= 100 ? 0 : 1 }); }
         function formatInteger(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return value.toLocaleString('he-IL', { maximumFractionDigits: 0 }); }
-        function formatRatio(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return `${value.toLocaleString('he-IL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}×`; }
+        function formatRatio(value) { if (!Number.isFinite(value)) return 'לא ידוע'; const percent = value * 100; return `${percent.toLocaleString('he-IL', { maximumFractionDigits: 0 })}%`; }
         function formatCurrency(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return `₪${value.toLocaleString('he-IL', { maximumFractionDigits: 0 })}`; }
         function formatPercent(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return `${value.toLocaleString('he-IL', { maximumFractionDigits: 1 })}%`; }
         function marketScoreLabel(ratio) { if (!Number.isFinite(ratio)) return 'נתון לא ידוע'; if (ratio >= 1.5) return 'חזק מאוד'; if (ratio >= 1.2) return 'חזק'; if (ratio >= 0.95) return 'מאוזן'; if (ratio >= 0.8) return 'חלש'; return 'חלש מאוד'; }
@@ -388,6 +384,7 @@
               if (!resolved) {
                 resolved = true;
                 mapReady.value = true;
+                try { window.govmap.setBackground && window.govmap.setBackground(0); } catch (_) {}
                 resolve();
               }
             };
@@ -399,7 +396,7 @@
               identifyOnClick: false,
               identifyOnlyBubble: true,
               isEmbeddedToggle: false,
-              background: '1',
+              background: '0',
               layersMode: 1,
               zoomButtons: true,
               center: { x: 219529, y: 626907 },
@@ -831,7 +828,7 @@
         async function handleAverageModeChanged() { const sid = selectedSettlement.value?.sid; if (sid) { const updated = joinedSettlements.value.find((item) => item.sid === sid); if (updated) selectedSettlement.value = updated; } await drawOverlay(); await nextTick(); renderCharts(); }
         async function boot() {
           isBooting.value = true; errorMessage.value = '';
-          try { await Promise.all([loadLocalFiles(), initGovMap()]); if (availableYears.value.includes(DEFAULT_TARGET_YEAR)) targetYear.value = DEFAULT_TARGET_YEAR; else if (availableYears.value.length) targetYear.value = availableYears.value[availableYears.value.length - 1]; const defaultItem = joinedSettlements.value.find((item) => item.sid === '1200') || joinedSettlements.value.find((item) => item.hasData) || null; if (defaultItem) selectSettlement(defaultItem, false); await drawOverlay(); statusMessage.value = `המפה מוכנה. הצביעה לפי יחס עסקאות בשנת ${targetYear.value} מול הממוצע.`; } catch (error) { console.error(error); errorMessage.value = error?.message || 'שגיאה כללית בטעינת האתר.'; } finally { isBooting.value = false; }
+          try { await Promise.all([loadLocalFiles(), initGovMap()]); if (availableYears.value.includes(DEFAULT_TARGET_YEAR)) targetYear.value = DEFAULT_TARGET_YEAR; else if (availableYears.value.length) targetYear.value = availableYears.value[availableYears.value.length - 1]; const defaultItem = joinedSettlements.value.find((item) => item.sid === '1200') || joinedSettlements.value.find((item) => item.hasData) || null; if (defaultItem) selectSettlement(defaultItem, false); await drawOverlay(); statusMessage.value = `המפה מוכנה. הצביעה לפי אחוז עסקאות בשנת ${targetYear.value} מהממוצע.`; } catch (error) { console.error(error); errorMessage.value = error?.message || 'שגיאה כללית בטעינת האתר.'; } finally { isBooting.value = false; }
         }
         watch(selectedRows, () => nextTick(renderCharts));
         onMounted(() => { installMapSelectionBridge(); boot(); });

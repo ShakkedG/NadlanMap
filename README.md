@@ -1,9 +1,9 @@
-# Market Map - visible colors fix
+# Market Map - final adjustments
 
-Upload these files together to GitHub Pages:
+קבצים לפריסה ב-GitHub Pages:
 
 - index.html
 - settlements_flat.json
 - settlements_wkt_2039.json
 
-This version keeps click selection working and makes the coloring transparent enough to see GovMap underneath.
+עדכונים: הוסר כרטיס תשואה, הצבעים פחות שקופים, מפת הרקע מתחילה ב"רחובות ומבנים", והיחס מוצג כאחוז מהממוצע במקום כפול.
