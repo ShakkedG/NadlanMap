@@ -76,7 +76,11 @@
 
     .analysis-grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 22px; max-width: 1130px; margin: 0 auto; align-items: start; direction: ltr; }
     .chart-area { direction: rtl; min-height: 390px; position: relative; }
-    .chart-wrap { height: 380px; width: 100%; }
+    .chart-stack { display: grid; gap: 22px; }
+    .chart-panel { border: 1px solid #edf1f6; border-radius: 16px; background: #fff; padding: 8px 6px 4px; }
+    .chart-panel h3 { margin: 6px 12px 8px; color: #052a5a; font-size: 18px; font-weight: 800; text-align: center; }
+    .chart-wrap { height: 340px; width: 100%; }
+    .sales-chart-wrap { height: 300px; }
     .chart-empty { height: 380px; display: grid; place-items: center; color: #667085; border: 1px dashed #cbd5e1; border-radius: 14px; background: #fbfdff; }
     .info-column { direction: rtl; display: grid; gap: 24px; }
     .info-box { border: 1px solid #dfe6ef; border-radius: 14px; min-height: 118px; padding: 20px 22px; background: #fff; color: #052a5a; }
@@ -115,7 +119,7 @@
       .layer-popover { width: calc(100% - 36px); }
       .layer-grid { grid-template-columns: repeat(2, 1fr); }
       .analysis-grid { gap: 12px; }
-      .chart-wrap, .chart-empty { height: 320px; }
+      .chart-wrap, .sales-chart-wrap, .chart-empty { height: 320px; }
       .stat-card { padding: 16px; }
       .stat-icon { width: 54px; height: 54px; }
       .room-tabs { gap: 12px; font-size: 14px; }
@@ -165,14 +169,23 @@
           </section>
 
           <section class="section-heading">
-            <h2>מחיר למ״ר לאורך השנים</h2>
-            <p class="section-subtitle">הגרף מתעדכן אוטומטית לפי היישוב שנבחר במפה או בחיפוש.</p>
+            <h2>גרפים שנתיים לפי יישוב</h2>
+            <p class="section-subtitle">הגרפים מתעדכנים אוטומטית לפי היישוב שנבחר במפה או בחיפוש.</p>
           </section>
 
           <section class="analysis-grid">
             <div class="chart-area">
-              <div v-if="selectedSettlement" class="chart-wrap"><canvas id="priceChart"></canvas></div>
-              <div v-else class="chart-empty">בחר יישוב כדי להציג גרף שנתי</div>
+              <div v-if="selectedSettlement" class="chart-stack">
+                <article class="chart-panel">
+                  <h3>מחיר למ״ר לאורך השנים</h3>
+                  <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+                </article>
+                <article class="chart-panel">
+                  <h3>מספר מכירות לאורך השנים</h3>
+                  <div class="chart-wrap sales-chart-wrap"><canvas id="salesChart"></canvas></div>
+                </article>
+              </div>
+              <div v-else class="chart-empty">בחר יישוב כדי להציג גרפים שנתיים</div>
             </div>
 
             <aside class="info-column">
@@ -192,7 +205,7 @@
               </article>
 
               <article class="info-box">
-                <h3>עסקאות לפי שנה</h3>
+                <h3>תקציר עסקאות</h3>
                 <div v-if="selectedSettlement" class="tiny-chart"><canvas id="dealsChart"></canvas></div>
                 <p v-else class="note">בחר יישוב כדי להציג עסקאות.</p>
               </article>
@@ -295,6 +308,7 @@
         const roomTabs = ['כל החדרים', '3 חדרים', '4 חדרים', '5 חדרים'];
         let dealsChart = null;
         let priceChart = null;
+        let salesChart = null;
 
         const rowGroups = computed(() => {
           const groups = new Map();
@@ -463,13 +477,92 @@
         function selectFirstSearchResult() { if (filteredSettlementList.value.length) selectSettlement(filteredSettlementList.value[0]); }
         async function focusSettlement(item) { const shape = wktFeatures.value.find((feature) => String(feature.sid) === String(item.sid) && feature.bbox); if (!shape || !window.govmap) return; const [xmin, ymin, xmax, ymax] = shape.bbox; const x = (xmin + xmax) / 2, y = (ymin + ymax) / 2; try { if (typeof window.govmap.zoomToXY === 'function') window.govmap.zoomToXY({ x, y, level: 8 }); } catch (e) { console.warn(e); } }
         function chartData() { const rows = selectedRows.value; return { labels: rows.map((row) => String(row.year)), deals: rows.map((row) => normalizeNumber(row.deals)), prices: rows.map((row) => normalizeNumber(row.ppsqm)), avgLine: rows.map(() => selectedSettlement.value?.avgAnnualDeals ?? null) }; }
-        function destroyCharts() { if (dealsChart) { dealsChart.destroy(); dealsChart = null; } if (priceChart) { priceChart.destroy(); priceChart = null; } }
+        function destroyCharts() { if (dealsChart) { dealsChart.destroy(); dealsChart = null; } if (priceChart) { priceChart.destroy(); priceChart = null; } if (salesChart) { salesChart.destroy(); salesChart = null; } }
         function renderCharts() {
           if (!selectedSettlement.value || !window.Chart) return;
-          const priceCanvas = document.getElementById('priceChart'); const dealsCanvas = document.getElementById('dealsChart'); if (!priceCanvas && !dealsCanvas) return; destroyCharts(); const { labels, deals, prices, avgLine } = chartData();
+          const priceCanvas = document.getElementById('priceChart');
+          const salesCanvas = document.getElementById('salesChart');
+          const dealsCanvas = document.getElementById('dealsChart');
+          if (!priceCanvas && !salesCanvas && !dealsCanvas) return;
+          destroyCharts();
+          const { labels, deals, prices, avgLine } = chartData();
           const selectedIndex = labels.findIndex((y) => y === String(targetYear.value));
-          if (priceCanvas) priceChart = new Chart(priceCanvas, { type: 'line', data: { labels, datasets: [{ label: 'מחיר למ״ר ביישוב', data: prices, borderColor: '#111111', backgroundColor: 'rgba(17,17,17,.05)', borderWidth: 2, pointRadius: labels.map((_, i) => i === selectedIndex ? 5 : 2.5), pointBackgroundColor: '#111111', tension: .28, fill: false, spanGaps: true }] }, options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } }, scales: { y: { ticks: { callback: (v) => '₪' + Number(v).toLocaleString('he-IL') } } } } });
-          if (dealsCanvas) dealsChart = new Chart(dealsCanvas, { type: 'bar', data: { labels, datasets: [{ label: 'עסקאות', data: deals, backgroundColor: labels.map((y) => y === String(targetYear.value) ? 'rgba(15,91,255,.85)' : 'rgba(15,91,255,.25)'), borderColor: 'rgba(15,91,255,1)', borderWidth: 1 }, { type: 'line', label: 'ממוצע', data: avgLine, borderColor: 'rgba(0,0,0,.75)', pointRadius: 0, borderWidth: 1.5 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { beginAtZero: true, ticks: { maxTicksLimit: 4 } } } } });
+          const selectedYearColors = labels.map((y) => y === String(targetYear.value) ? 'rgba(15,91,255,.88)' : 'rgba(15,91,255,.24)');
+          const selectedYearBorders = labels.map((y) => y === String(targetYear.value) ? 'rgba(15,91,255,1)' : 'rgba(15,91,255,.65)');
+
+          if (priceCanvas) priceChart = new Chart(priceCanvas, {
+            type: 'line',
+            data: {
+              labels,
+              datasets: [{
+                label: 'מחיר למ״ר ביישוב',
+                data: prices,
+                borderColor: '#111111',
+                backgroundColor: 'rgba(17,17,17,.05)',
+                borderWidth: 2,
+                pointRadius: labels.map((_, i) => i === selectedIndex ? 5 : 2.5),
+                pointBackgroundColor: labels.map((_, i) => i === selectedIndex ? '#0f5bff' : '#111111'),
+                pointBorderColor: labels.map((_, i) => i === selectedIndex ? '#0f5bff' : '#111111'),
+                tension: .28,
+                fill: false,
+                spanGaps: true
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: { mode: 'index', intersect: false },
+              plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } },
+              scales: {
+                x: { ticks: { maxTicksLimit: 9 } },
+                y: { ticks: { callback: (v) => '₪' + Number(v).toLocaleString('he-IL') } }
+              }
+            }
+          });
+
+          if (salesCanvas) salesChart = new Chart(salesCanvas, {
+            type: 'bar',
+            data: {
+              labels,
+              datasets: [{
+                label: 'מספר מכירות',
+                data: deals,
+                backgroundColor: selectedYearColors,
+                borderColor: selectedYearBorders,
+                borderWidth: 1.2,
+                borderRadius: 5,
+                maxBarThickness: 28
+              }, {
+                type: 'line',
+                label: 'ממוצע השוואה',
+                data: avgLine,
+                borderColor: 'rgba(0,0,0,.72)',
+                backgroundColor: 'rgba(0,0,0,.08)',
+                pointRadius: 0,
+                borderWidth: 1.6,
+                borderDash: [5, 4]
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: { mode: 'index', intersect: false },
+              plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } },
+              scales: {
+                x: { ticks: { maxTicksLimit: 9 } },
+                y: { beginAtZero: true, ticks: { callback: (v) => Number(v).toLocaleString('he-IL') } }
+              }
+            }
+          });
+
+          if (dealsCanvas) dealsChart = new Chart(dealsCanvas, {
+            type: 'bar',
+            data: {
+              labels,
+              datasets: [{ label: 'עסקאות', data: deals, backgroundColor: selectedYearColors, borderColor: 'rgba(15,91,255,1)', borderWidth: 1 }, { type: 'line', label: 'ממוצע', data: avgLine, borderColor: 'rgba(0,0,0,.75)', pointRadius: 0, borderWidth: 1.5 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { beginAtZero: true, ticks: { maxTicksLimit: 4 } } } }
+          });
         }
         async function handleAverageModeChanged() { const sid = selectedSettlement.value?.sid; if (sid) { const updated = joinedSettlements.value.find((item) => item.sid === sid); if (updated) selectedSettlement.value = updated; } await drawOverlay(); await nextTick(); renderCharts(); }
         async function boot() {
