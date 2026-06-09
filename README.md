@@ -1,16 +1,18 @@
-# GovMap Vue - גרסה סטטית מוכנה להעלאה
+# GovNadlan + GovMap Market Layer
 
-הקובץ `index.html` הוא קובץ HTML אמיתי ולא קובץ CSS.
+אתר סטטי מבוסס Vue שמציג את GovMap, מדליק שכבה 235146, וצובע יישובים לפי יחס:
 
-כדי להעלות ל-GitHub Pages, העלה את שלושת הקבצים הבאים לאותה תיקייה:
+`עסקאות 2025 / ממוצע עסקאות שנתי 1999-2024`
+
+## קבצים להעלאה ל-GitHub Pages
 
 - `index.html`
 - `settlements_flat.json`
 - `settlements_wkt_2039.json`
 
-האתר טוען את Vue דרך CDN, טוען את GovMap, מדליק את שכבת `235146`, ומצייר מעליה פוליגונים צבעוניים לפי `sid`.
+## הרצה מקומית
 
-בדיקה מקומית:
+מומלץ להריץ דרך שרת סטטי ולא לפתוח את הקובץ ישירות:
 
 ```bash
 python -m http.server 8000
@@ -18,8 +20,9 @@ python -m http.server 8000
 
 ואז לפתוח:
 
-```text
-http://localhost:8000
-```
+`http://localhost:8000`
 
-פתיחה ישירה ב-double click על `index.html` לא מומלצת כי הדפדפן בדרך כלל חוסם טעינת JSON מקובץ מקומי.
+## אינטגרציה עתידית ל-GovNadlan
+
+כרגע הנתונים נטענים מקובץ מקומי. בהמשך יש להחליף את `fetchJson('settlements_flat.json')`
+בקריאה ל-Backend שמחזיר סיכום שנתי לפי יישוב.
