@@ -1,28 +1,15 @@
-# GovNadlan + GovMap Market Layer
+# GovNadlan + GovMap — v2 fixed
 
-אתר סטטי מבוסס Vue שמציג את GovMap, מדליק שכבה 235146, וצובע יישובים לפי יחס:
+קבצים להעלאה לאותה תיקייה ב-GitHub Pages:
 
-`עסקאות 2025 / ממוצע עסקאות שנתי 1999-2024`
+- index.html
+- settlements_flat.json
+- settlements_wkt_2039.json
 
-## קבצים להעלאה ל-GitHub Pages
+תיקון עיקרי בגרסה הזאת:
+שכבת המקור GovMap 235146 כבויה כברירת מחדל, כי הסגנון הכחול שלה הסתיר את הצביעה האנליטית.
+הצביעה האמיתית מגיעה מהפוליגונים שמצוירים בצד לקוח לפי:
 
-- `index.html`
-- `settlements_flat.json`
-- `settlements_wkt_2039.json`
+deals_2025 / avg(deals_1999_2024)
 
-## הרצה מקומית
-
-מומלץ להריץ דרך שרת סטטי ולא לפתוח את הקובץ ישירות:
-
-```bash
-python -m http.server 8000
-```
-
-ואז לפתוח:
-
-`http://localhost:8000`
-
-## אינטגרציה עתידית ל-GovNadlan
-
-כרגע הנתונים נטענים מקובץ מקומי. בהמשך יש להחליף את `fetchJson('settlements_flat.json')`
-בקריאה ל-Backend שמחזיר סיכום שנתי לפי יישוב.
+אדום = פחות מהממוצע, ירוק = יותר מהממוצע.

@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>GovNadlan Analytics + GovMap</title>
+  <!-- v2-fixed: source layer 235146 is hidden by default so analytical colors are visible -->
 
   <style>
     * { box-sizing: border-box; }
@@ -296,7 +297,7 @@
             <strong>{{ errorMessage ? 'שגיאה' : 'סטטוס' }}</strong>
             <span>{{ errorMessage || statusMessage }}</span>
           </div>
-          <span class="pill">שכבה 235146 · Vue · GovMap</span>
+          <span class="pill">צביעה אנליטית · שכבת 235146 כבויה כברירת מחדל</span>
         </section>
 
         <section class="main-grid">
@@ -310,7 +311,7 @@
                 {{ overlayVisible ? 'הסתר צבעים' : 'הצג צבעים' }}
               </button>
               <button @click="toggleBaseLayer" :disabled="isBooting">
-                {{ baseLayerVisible ? 'כבה שכבת GovMap' : 'הדלק שכבת GovMap' }}
+                {{ baseLayerVisible ? 'כבה שכבת מקור 235146' : 'הצג שכבת מקור 235146' }}
               </button>
             </div>
           </section>
@@ -355,6 +356,7 @@
                 <i :style="{ background: rgbaCss(item.color) }"></i>
                 <span>{{ item.label }}</span>
               </div>
+              <p class="hint"><b>חשוב:</b> שכבת המקור 235146 כבויה כברירת מחדל, כי הסימבולוגיה הכחולה שלה מסתירה את הצביעה האדום/ירוק.</p>
             </article>
           </aside>
         </section>
@@ -515,7 +517,7 @@
         const isDrawing = ref(false);
         const statusMessage = ref('טוען את GovMap...');
         const errorMessage = ref('');
-        const baseLayerVisible = ref(true);
+        const baseLayerVisible = ref(false);
         const overlayVisible = ref(true);
         const mapReady = ref(false);
         const rawRows = ref([]);
@@ -673,9 +675,9 @@
             window.govmap.createMap(MAP_DIV_ID, {
               token: GOVMAP_TOKEN,
               layers: [GOVMAP_LAYER],
-              visibleLayers: [GOVMAP_LAYER],
+              visibleLayers: [],
               showXY: true,
-              identifyOnClick: true,
+              identifyOnClick: false,
               identifyOnlyBubble: false,
               isEmbeddedToggle: false,
               background: '1',
@@ -693,7 +695,8 @@
           });
 
           try {
-            window.govmap.setVisibleLayers([GOVMAP_LAYER], []);
+            window.govmap.setVisibleLayers([], [GOVMAP_LAYER]);
+            baseLayerVisible.value = false;
           } catch (error) {
             console.warn('setVisibleLayers failed:', error);
           }
@@ -790,15 +793,18 @@
           else await clearOverlay();
         }
 
-        function toggleBaseLayer() {
+        async function toggleBaseLayer() {
           if (!window.govmap) return;
           try {
             if (baseLayerVisible.value) {
               window.govmap.setVisibleLayers([], [GOVMAP_LAYER]);
               baseLayerVisible.value = false;
+              statusMessage.value = 'שכבת המקור 235146 כבויה. עכשיו רואים את הצביעה האנליטית האדום/ירוק.';
+              if (overlayVisible.value) await drawOverlay();
             } else {
               window.govmap.setVisibleLayers([GOVMAP_LAYER], []);
               baseLayerVisible.value = true;
+              statusMessage.value = 'שכבת המקור 235146 דולקת. אם הכול נראה כחול, כבה אותה כדי לראות את הצביעה לפי היחס.';
             }
           } catch (error) {
             console.warn('toggleBaseLayer failed:', error);
@@ -940,7 +946,7 @@
             const defaultItem = joinedSettlements.value.find((item) => item.sid === '1200') || joinedSettlements.value.find((item) => item.hasData) || null;
             if (defaultItem) selectSettlement(defaultItem, false);
             await drawOverlay();
-            statusMessage.value = 'המפה מוכנה. הצביעה היא לפי יחס עסקאות 2025 מול ממוצע עסקאות שנתי 1999–2024.';
+            statusMessage.value = 'המפה מוכנה. שכבת המקור 235146 כבויה כדי שלא תסתיר את הצביעה לפי יחס עסקאות 2025 מול ממוצע 1999–2024.';
           } catch (error) {
             console.error(error);
             errorMessage.value = error?.message || 'שגיאה כללית בטעינת האתר.';
