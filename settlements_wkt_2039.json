@@ -1,0 +1,45 @@
+# GovMap Vue - צביעת יישובים לפי נתוני נדל״ן
+
+הפרויקט טוען את GovMap, מדליק את שכבת `235146`, ומצייר מעליה פוליגונים צבעוניים לפי הנתונים שבקובץ `settlements_flat.json`.
+
+## הרצה מקומית
+
+```bash
+npm install
+npm run dev
+```
+
+פתח את הכתובת ש-Vite מציג, בדרך כלל:
+
+```text
+http://localhost:5173
+```
+
+## איך עובד ה-Join
+
+- `public/settlements_flat.json` מכיל נתונים לפי `sid`, שנה ושדות מדידה.
+- `public/settlements_wkt_2039.json` נוצר מתוך `settlements.geojson`.
+- ה-GeoJSON המקורי היה ב-WGS84, ולכן הומר מראש ל-WKT בקואורדינטות ישראל החדשה EPSG:2039, כדי ש-`govmap.displayGeometries` יוכל לצייר אותו.
+- החיבור מתבצע לפי `sid`.
+
+## החלפת טוקן או שכבה
+
+אפשר ליצור קובץ `.env.local` בשורש הפרויקט:
+
+```env
+VITE_GOVMAP_TOKEN=your-token
+VITE_GOVMAP_LAYER=235146
+```
+
+## המרה מחדש של GeoJSON
+
+אם מחליפים את `public/settlements.geojson`, אפשר ליצור מחדש את קובץ ה-WKT כך:
+
+```bash
+pip install pyproj
+python tools/convert_geojson_to_wkt.py
+```
+
+## הערה חשובה
+
+ה-API של GovMap לא מאפשר לצבוע מחדש שכבת שרת קיימת ישירות לפי JSON חיצוני בצד לקוח. לכן הפתרון מציג את שכבת GovMap כרפרנס, ומעליה מצייר שכבה גרפית עצמאית וצבועה לפי הנתונים שלך.

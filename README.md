@@ -1,17 +1,12 @@
-{
-  "name": "govmap-vue-layer-235146",
-  "version": "1.0.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0"
-  },
-  "dependencies": {
-    "@vitejs/plugin-vue": "latest",
-    "vite": "latest",
-    "vue": "latest"
-  },
-  "devDependencies": {}
-}
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GovMap Vue - צביעת יישובים לפי נתוני נדל״ן</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
