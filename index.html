@@ -1,197 +1,738 @@
-* {
-  box-sizing: border-box;
-}
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>מפת נדל״ן GovMap - צביעת יישובים</title>
 
-html,
-body,
-#app {
-  width: 100%;
-  height: 100%;
-  margin: 0;
-}
+  <style>
+    * { box-sizing: border-box; }
+    html, body, #app { width: 100%; min-height: 100%; margin: 0; }
+    body {
+      font-family: Arial, "Noto Sans Hebrew", sans-serif;
+      background: #eef2f7;
+      color: #142033;
+    }
+    button, select, input, a { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled, select:disabled { cursor: not-allowed; opacity: 0.55; }
 
-body {
-  font-family: Arial, "Noto Sans Hebrew", sans-serif;
-  background: #f4f6fb;
-  color: #172033;
-}
+    .page-shell {
+      min-height: 100vh;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .panel {
+      background: #ffffff;
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(12, 29, 64, 0.08);
+      border: 1px solid rgba(148, 163, 184, 0.20);
+    }
+    .hero {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      padding: 18px;
+    }
+    .eyebrow {
+      margin: 0 0 6px;
+      color: #4169e1;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    h1, h2, p { margin-top: 0; }
+    h1 { margin-bottom: 8px; font-size: clamp(24px, 4vw, 38px); }
+    h2 { margin-bottom: 12px; font-size: 18px; }
+    .subtitle { margin-bottom: 0; color: #5c667a; line-height: 1.55; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+    button, .link-button {
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      background: #e8ecf7;
+      color: #172033;
+      text-decoration: none;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+    button:hover, .link-button:hover { transform: translateY(-1px); }
+    .primary { background: #2557d6; color: #ffffff; }
 
-button,
-a {
-  font: inherit;
-}
+    .controls {
+      display: grid;
+      grid-template-columns: 170px 240px minmax(240px, 1fr);
+      gap: 12px;
+      padding: 14px;
+      align-items: end;
+    }
+    label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; color: #334155; }
+    select, input {
+      width: 100%;
+      border: 1px solid #dbe3ef;
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #ffffff;
+      color: #172033;
+      outline: none;
+    }
+    select:focus, input:focus { border-color: #4169e1; box-shadow: 0 0 0 3px rgba(65, 105, 225, 0.12); }
+    .status-card {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 16px;
+      border-radius: 14px;
+      background: #e8fff2;
+      border: 1px solid #bce9cf;
+    }
+    .status-card.error { background: #fff0f0; border-color: #ffc6c6; }
+    .status-card strong { flex: 0 0 auto; }
 
-.page-shell {
-  min-height: 100%;
-  padding: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
+    .content-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 14px;
+      align-items: stretch;
+    }
+    .map-card {
+      position: relative;
+      overflow: hidden;
+      min-height: 650px;
+      border-radius: 18px;
+      background: #ffffff;
+      box-shadow: 0 10px 30px rgba(12, 29, 64, 0.08);
+    }
+    .map { width: 100%; height: 650px; }
+    .loader {
+      position: absolute;
+      inset: 18px 18px auto auto;
+      z-index: 10;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.93);
+      box-shadow: 0 6px 20px rgba(12, 29, 64, 0.12);
+      font-weight: 700;
+    }
+    .side-panel { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+    .stats-panel, .legend-panel, .selected-panel { padding: 16px; }
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid #eef2f7;
+    }
+    .stat-row:last-child { border-bottom: 0; }
+    .legend-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; color: #334155; }
+    .legend-row i { width: 22px; height: 16px; border-radius: 5px; border: 1px solid rgba(15, 23, 42, 0.25); flex: 0 0 auto; }
 
-.topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 18px;
-  padding: 18px;
-  border-radius: 18px;
-  background: #ffffff;
-  box-shadow: 0 10px 30px rgba(12, 29, 64, 0.08);
-}
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr;
+      gap: 14px;
+    }
+    .list-panel { padding: 16px; max-height: 420px; overflow: auto; }
+    .settlement-row {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      background: #f8fafc;
+      text-align: right;
+    }
+    .settlement-row b { white-space: nowrap; direction: ltr; }
+    .empty { color: #64748b; margin: 0; }
 
-.eyebrow {
-  margin: 0 0 6px;
-  color: #4169e1;
-  font-size: 14px;
-  font-weight: 700;
-}
+    @media (max-width: 1000px) {
+      .content-grid { grid-template-columns: 1fr; }
+      .side-panel { display: grid; grid-template-columns: 1fr 1fr; }
+      .bottom-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 760px) {
+      .page-shell { padding: 10px; }
+      .hero { align-items: stretch; flex-direction: column; }
+      .hero-actions { justify-content: stretch; }
+      .hero-actions > * { flex: 1; }
+      .controls { grid-template-columns: 1fr; }
+      .map-card { min-height: 70vh; }
+      .map { height: 70vh; }
+      .side-panel { grid-template-columns: 1fr; }
+      .status-card { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
 
-h1,
-h2,
-p {
-  margin-top: 0;
-}
+<body>
+  <div id="app">
+    <main class="page-shell">
+      <section class="panel hero">
+        <div>
+          <p class="eyebrow">GovMap + Vue + Join לפי sid</p>
+          <h1>צביעת יישובים לפי נתוני נדל״ן</h1>
+          <p class="subtitle">
+            שכבת GovMap 235146 נטענת כרפרנס, ומעליה מצוירת שכבת פוליגונים צבעונית לפי הקבצים settlements_flat.json ו-settlements_wkt_2039.json.
+          </p>
+        </div>
 
-h1 {
-  margin-bottom: 8px;
-  font-size: clamp(24px, 4vw, 38px);
-}
+        <div class="hero-actions">
+          <button class="primary" @click="drawOverlay" :disabled="isBooting || isDrawing || !overlayVisible">
+            {{ isDrawing ? 'צובע...' : 'צבע מחדש' }}
+          </button>
+          <button @click="toggleOverlay" :disabled="isBooting || isDrawing">
+            {{ overlayVisible ? 'הסתר צבעים' : 'הצג צבעים' }}
+          </button>
+          <button @click="toggleBaseLayer" :disabled="isBooting">
+            {{ baseLayerVisible ? 'כבה שכבת GovMap' : 'הדלק שכבת GovMap' }}
+          </button>
+        </div>
+      </section>
 
-h2 {
-  font-size: 18px;
-  margin-bottom: 10px;
-}
+      <section class="panel controls">
+        <label>
+          <span>שנה</span>
+          <select v-model.number="selectedYear" :disabled="isBooting || isDrawing">
+            <option v-for="year in years" :key="year" :value="year">{{ year }}</option>
+          </select>
+        </label>
 
-.subtitle {
-  margin-bottom: 0;
-  color: #5c667a;
-}
+        <label>
+          <span>נתון לצביעה</span>
+          <select v-model="selectedMetric" :disabled="isBooting || isDrawing">
+            <option v-for="metric in metricOptions" :key="metric.key" :value="metric.key">
+              {{ metric.label }}
+            </option>
+          </select>
+        </label>
 
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: flex-end;
-}
+        <label>
+          <span>חיפוש יישוב</span>
+          <input v-model="searchText" placeholder="לדוגמה: מודיעין / 1200" />
+        </label>
+      </section>
 
-button,
-.link-button {
-  border: 0;
-  border-radius: 12px;
-  padding: 10px 14px;
-  background: #e8ecf7;
-  color: #172033;
-  cursor: pointer;
-  text-decoration: none;
-  transition: transform 0.15s ease, opacity 0.15s ease;
-}
+      <section class="status-card" :class="{ error: errorMessage }">
+        <strong>{{ errorMessage ? 'שגיאה' : 'סטטוס' }}</strong>
+        <span>{{ errorMessage || statusMessage }}</span>
+      </section>
 
-button:hover,
-.link-button:hover {
-  transform: translateY(-1px);
-}
+      <section class="content-grid">
+        <section class="map-card">
+          <div v-if="isBooting || isDrawing" class="loader">
+            {{ isBooting ? 'טוען מפה ונתונים...' : 'מצייר פוליגונים...' }}
+          </div>
+          <div id="govmap-map" class="map"></div>
+        </section>
 
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-  transform: none;
-}
+        <aside class="side-panel">
+          <article class="panel stats-panel">
+            <h2>סיכום</h2>
+            <div class="stat-row"><span>יישובים בגיאומטריה</span><b>{{ stats.totalSettlements.toLocaleString('he-IL') }}</b></div>
+            <div class="stat-row"><span>חלקי פוליגונים</span><b>{{ stats.totalFeatures.toLocaleString('he-IL') }}</b></div>
+            <div class="stat-row"><span>יישובים עם נתון</span><b>{{ stats.joined.toLocaleString('he-IL') }}</b></div>
+            <div class="stat-row"><span>מינימום</span><b>{{ formatValue(stats.min) }}</b></div>
+            <div class="stat-row"><span>ממוצע</span><b>{{ formatValue(stats.avg) }}</b></div>
+            <div class="stat-row"><span>מקסימום</span><b>{{ formatValue(stats.max) }}</b></div>
+          </article>
 
-.primary {
-  background: #2557d6;
-  color: #ffffff;
-}
+          <article class="panel legend-panel">
+            <h2>מקרא</h2>
+            <div v-for="item in legendItems" :key="item.label" class="legend-row">
+              <i :style="{ background: rgbaCss(item.color) }"></i>
+              <span>{{ item.label }}</span>
+            </div>
+          </article>
 
-.status-card {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  padding: 12px 16px;
-  border-radius: 14px;
-  background: #e8fff2;
-  border: 1px solid #bce9cf;
-}
+          <article v-if="selectedSettlement" class="panel selected-panel">
+            <h2>{{ selectedSettlement.name }}</h2>
+            <p>סמל יישוב: {{ selectedSettlement.sid }}</p>
+            <p><b>{{ selectedMetricDef.label }}:</b> {{ formatValue(selectedSettlement.value) }}</p>
+            <p><b>מחיר למ״ר:</b> {{ formatValue(selectedSettlement.row && selectedSettlement.row.ppsqm, '₪/מ״ר') }}</p>
+            <p><b>עסקאות:</b> {{ formatValue(selectedSettlement.row && selectedSettlement.row.deals, 'עסקאות') }}</p>
+          </article>
+        </aside>
+      </section>
 
-.status-card.error {
-  background: #fff0f0;
-  border-color: #ffc6c6;
-}
+      <section class="bottom-grid">
+        <article class="panel list-panel">
+          <h2>חיפוש ותוצאות</h2>
+          <p v-if="filteredSettlementList.length === 0" class="empty">לא נמצאו יישובים.</p>
+          <button v-for="item in filteredSettlementList" :key="item.sid" class="settlement-row" @click="focusSettlement(item)">
+            <span>{{ item.name }}</span>
+            <b>{{ formatValue(item.value) }}</b>
+          </button>
+        </article>
 
-.map-card {
-  position: relative;
-  overflow: hidden;
-  min-height: 620px;
-  border-radius: 18px;
-  background: #ffffff;
-  box-shadow: 0 10px 30px rgba(12, 29, 64, 0.08);
-}
+        <article class="panel list-panel">
+          <h2>הגבוהים ביותר</h2>
+          <button v-for="item in topSettlements" :key="item.sid" class="settlement-row" @click="focusSettlement(item)">
+            <span>{{ item.name }}</span>
+            <b>{{ formatValue(item.value) }}</b>
+          </button>
+        </article>
 
-.map {
-  width: 100%;
-  height: 620px;
-}
+        <article class="panel list-panel">
+          <h2>הנמוכים ביותר</h2>
+          <button v-for="item in bottomSettlements" :key="item.sid" class="settlement-row" @click="focusSettlement(item)">
+            <span>{{ item.name }}</span>
+            <b>{{ formatValue(item.value) }}</b>
+          </button>
+        </article>
+      </section>
+    </main>
+  </div>
 
-.loader {
-  position: absolute;
-  inset: 18px 18px auto auto;
-  z-index: 10;
-  padding: 10px 14px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 6px 20px rgba(12, 29, 64, 0.12);
-  font-weight: 700;
-}
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 
-.info-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
+  <script>
+    const GOVMAP_SCRIPT_ID = 'govmap-api-script';
+    const GOVMAP_SCRIPT_URL = 'https://www.govmap.gov.il/govmap/api/govmap.api.js';
+    const MAP_DIV_ID = 'govmap-map';
+    const DRAWING_NAME_PREFIX = 'settlement-color-';
+    const GOVMAP_TOKEN = 'ede9a5fd-7c23-432f-8ffb-d85feffa3f3c';
+    const GOVMAP_LAYER = '235146';
 
-.info-grid article {
-  padding: 16px;
-  border-radius: 18px;
-  background: #ffffff;
-  box-shadow: 0 10px 30px rgba(12, 29, 64, 0.08);
-}
+    function loadScript(id, src) {
+      return new Promise((resolve, reject) => {
+        const existing = document.getElementById(id);
+        if (existing) {
+          existing.addEventListener('load', resolve, { once: true });
+          existing.addEventListener('error', reject, { once: true });
+          return;
+        }
+        const script = document.createElement('script');
+        script.id = id;
+        script.src = src;
+        script.async = true;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('לא הצלחתי לטעון סקריפט: ' + src));
+        document.head.appendChild(script);
+      });
+    }
 
-pre {
-  margin: 0;
-  padding: 12px;
-  max-height: 180px;
-  overflow: auto;
-  direction: ltr;
-  text-align: left;
-  border-radius: 12px;
-  background: #f2f4f8;
-  font-size: 12px;
-}
+    function dataUrl(fileName) {
+      return new URL(fileName, window.location.href).toString();
+    }
 
-@media (max-width: 850px) {
-  .topbar {
-    align-items: stretch;
-    flex-direction: column;
-  }
+    function normalizeNumber(value) {
+      if (value === null || value === undefined || value === '') return null;
+      const number = Number(value);
+      return Number.isFinite(number) ? number : null;
+    }
 
-  .actions {
-    justify-content: stretch;
-  }
+    function formatRaw(value) {
+      if (!Number.isFinite(value)) return '';
+      const abs = Math.abs(value);
+      const maximumFractionDigits = abs >= 100 ? 0 : abs >= 10 ? 1 : 2;
+      return value.toLocaleString('he-IL', { maximumFractionDigits });
+    }
 
-  .actions > * {
-    flex: 1;
-    text-align: center;
-  }
+    function quantile(sortedValues, q) {
+      if (!sortedValues.length) return null;
+      const pos = (sortedValues.length - 1) * q;
+      const base = Math.floor(pos);
+      const rest = pos - base;
+      const next = sortedValues[base + 1];
+      if (next !== undefined) return sortedValues[base] + rest * (next - sortedValues[base]);
+      return sortedValues[base];
+    }
 
-  .map-card {
-    min-height: 70vh;
-  }
+    const { createApp, ref, computed, onMounted, watch } = Vue;
 
-  .map {
-    height: 70vh;
-  }
+    createApp({
+      setup() {
+        const metricOptions = [
+          { key: 'ppsqm', label: 'מחיר למ״ר', suffix: '₪/מ״ר', mode: 'sequential' },
+          { key: 'deals', label: 'מספר עסקאות', suffix: 'עסקאות', mode: 'sequential' },
+          { key: 'smooth', label: 'עסקאות מוחלק', suffix: 'עסקאות', mode: 'sequential' },
+          { key: 'syoy', label: 'שינוי עסקאות YoY', suffix: '%', mode: 'diverging' },
+          { key: 'demand_yoy', label: 'שינוי ביקוש/מחיר YoY', suffix: '%', mode: 'diverging' }
+        ];
 
-  .info-grid {
-    grid-template-columns: 1fr;
-  }
-}
+        const isBooting = ref(true);
+        const isDrawing = ref(false);
+        const statusMessage = ref('טוען את GovMap...');
+        const errorMessage = ref('');
+        const baseLayerVisible = ref(true);
+        const overlayVisible = ref(true);
+        const mapReady = ref(false);
+        const rawRows = ref([]);
+        const wktFeatures = ref([]);
+        const years = ref([]);
+        const selectedYear = ref(2025);
+        const selectedMetric = ref('ppsqm');
+        const searchText = ref('');
+        const selectedSettlement = ref(null);
+        const drawnNames = ref([]);
+
+        const selectedMetricDef = computed(() => metricOptions.find((metric) => metric.key === selectedMetric.value) || metricOptions[0]);
+
+        const rowIndex = computed(() => {
+          const index = new Map();
+          for (const row of rawRows.value) {
+            const sid = String(row.sid);
+            if (!index.has(sid)) index.set(sid, new Map());
+            index.get(sid).set(Number(row.year), row);
+          }
+          return index;
+        });
+
+        const joinedSettlements = computed(() => {
+          const unique = new Map();
+          for (const feature of wktFeatures.value) {
+            if (!unique.has(feature.sid)) unique.set(feature.sid, feature);
+          }
+          return [...unique.values()].map((feature) => {
+            const row = rowIndex.value.get(String(feature.sid))?.get(Number(selectedYear.value)) || null;
+            const value = normalizeNumber(row?.[selectedMetric.value]);
+            return { sid: feature.sid, name: feature.name, row, value, hasData: Number.isFinite(value) };
+          });
+        });
+
+        const filteredSettlementList = computed(() => {
+          const q = searchText.value.trim().toLowerCase();
+          return joinedSettlements.value
+            .filter((item) => !q || item.name.toLowerCase().includes(q) || item.sid.includes(q))
+            .sort((a, b) => {
+              if (a.hasData && b.hasData) return b.value - a.value;
+              if (a.hasData) return -1;
+              if (b.hasData) return 1;
+              return a.name.localeCompare(b.name, 'he');
+            })
+            .slice(0, 80);
+        });
+
+        const stats = computed(() => {
+          const values = joinedSettlements.value.map((item) => item.value).filter(Number.isFinite);
+          if (!values.length) {
+            return { totalFeatures: wktFeatures.value.length, totalSettlements: joinedSettlements.value.length, joined: 0, min: null, max: null, avg: null };
+          }
+          const sum = values.reduce((acc, value) => acc + value, 0);
+          return {
+            totalFeatures: wktFeatures.value.length,
+            totalSettlements: joinedSettlements.value.length,
+            joined: values.length,
+            min: Math.min(...values),
+            max: Math.max(...values),
+            avg: sum / values.length
+          };
+        });
+
+        function formatValue(value, suffix = selectedMetricDef.value.suffix) {
+          if (!Number.isFinite(value)) return 'אין נתון';
+          const abs = Math.abs(value);
+          const maximumFractionDigits = abs >= 100 ? 0 : abs >= 10 ? 1 : 2;
+          return `${value.toLocaleString('he-IL', { maximumFractionDigits })}${suffix ? ` ${suffix}` : ''}`;
+        }
+
+        function rgbaCss(color) {
+          return `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${color[3]})`;
+        }
+
+        function createColorScale(items, mode) {
+          const noData = [175, 184, 199, 0.28];
+          const outline = [26, 41, 64, 0.85];
+          const values = items.map((item) => item.value).filter(Number.isFinite).sort((a, b) => a - b);
+          if (!values.length) {
+            return { colorForValue: () => noData, outline, legend: [{ label: 'אין נתונים', color: noData }] };
+          }
+          if (mode === 'diverging') {
+            const maxAbs = Math.max(...values.map((value) => Math.abs(value))) || 1;
+            const buckets = [
+              { min: -Infinity, max: -0.6 * maxAbs, color: [185, 28, 28, 0.68], label: `ירידה חזקה: עד ${formatRaw(-0.6 * maxAbs)}%` },
+              { min: -0.6 * maxAbs, max: -0.2 * maxAbs, color: [239, 68, 68, 0.58], label: `ירידה: ${formatRaw(-0.6 * maxAbs)}% עד ${formatRaw(-0.2 * maxAbs)}%` },
+              { min: -0.2 * maxAbs, max: 0.2 * maxAbs, color: [245, 158, 11, 0.52], label: 'כמעט ללא שינוי' },
+              { min: 0.2 * maxAbs, max: 0.6 * maxAbs, color: [34, 197, 94, 0.58], label: `עלייה: ${formatRaw(0.2 * maxAbs)}% עד ${formatRaw(0.6 * maxAbs)}%` },
+              { min: 0.6 * maxAbs, max: Infinity, color: [22, 101, 52, 0.68], label: `עלייה חזקה: מעל ${formatRaw(0.6 * maxAbs)}%` }
+            ];
+            return {
+              colorForValue(value) {
+                if (!Number.isFinite(value)) return noData;
+                return buckets.find((bucket) => value >= bucket.min && value < bucket.max)?.color || buckets[buckets.length - 1].color;
+              },
+              outline,
+              legend: [...buckets.map(({ label, color }) => ({ label, color })), { label: 'אין נתון', color: noData }]
+            };
+          }
+          const palette = [
+            [239, 246, 255, 0.52],
+            [191, 219, 254, 0.58],
+            [96, 165, 250, 0.62],
+            [37, 99, 235, 0.66],
+            [30, 64, 175, 0.72]
+          ];
+          const q20 = quantile(values, 0.2);
+          const q40 = quantile(values, 0.4);
+          const q60 = quantile(values, 0.6);
+          const q80 = quantile(values, 0.8);
+          const min = values[0];
+          const max = values[values.length - 1];
+          const buckets = [
+            { min: -Infinity, max: q20, color: palette[0], label: `${formatRaw(min)} - ${formatRaw(q20)}` },
+            { min: q20, max: q40, color: palette[1], label: `${formatRaw(q20)} - ${formatRaw(q40)}` },
+            { min: q40, max: q60, color: palette[2], label: `${formatRaw(q40)} - ${formatRaw(q60)}` },
+            { min: q60, max: q80, color: palette[3], label: `${formatRaw(q60)} - ${formatRaw(q80)}` },
+            { min: q80, max: Infinity, color: palette[4], label: `${formatRaw(q80)} - ${formatRaw(max)}` }
+          ];
+          return {
+            colorForValue(value) {
+              if (!Number.isFinite(value)) return noData;
+              return buckets.find((bucket) => value >= bucket.min && value < bucket.max)?.color || palette[palette.length - 1];
+            },
+            outline,
+            legend: [...buckets.map(({ label, color }) => ({ label, color })), { label: 'אין נתון', color: noData }]
+          };
+        }
+
+        const colorScale = computed(() => createColorScale(joinedSettlements.value, selectedMetricDef.value.mode));
+        const legendItems = computed(() => colorScale.value.legend);
+        const topSettlements = computed(() => joinedSettlements.value.filter((item) => item.hasData).sort((a, b) => b.value - a.value).slice(0, 8));
+        const bottomSettlements = computed(() => joinedSettlements.value.filter((item) => item.hasData).sort((a, b) => a.value - b.value).slice(0, 8));
+
+        async function fetchJson(fileName) {
+          const response = await fetch(dataUrl(fileName), { cache: 'no-store' });
+          if (!response.ok) throw new Error(`לא הצלחתי לטעון ${fileName}: ${response.status}`);
+          return response.json();
+        }
+
+        async function loadLocalFiles() {
+          statusMessage.value = 'טוען קבצי נתונים מקומיים...';
+          const [rows, geometry] = await Promise.all([
+            fetchJson('settlements_flat.json'),
+            fetchJson('settlements_wkt_2039.json')
+          ]);
+          rawRows.value = rows;
+          wktFeatures.value = geometry.features || [];
+          years.value = [...new Set(rows.map((row) => Number(row.year)).filter(Number.isFinite))].sort((a, b) => a - b);
+          selectedYear.value = years.value[years.value.length - 1] || 2025;
+        }
+
+        async function initGovMap() {
+          statusMessage.value = 'טוען את ספריית GovMap...';
+          await loadScript(GOVMAP_SCRIPT_ID, GOVMAP_SCRIPT_URL);
+          if (!window.govmap) throw new Error('ספריית GovMap נטענה, אבל window.govmap לא נמצא.');
+
+          statusMessage.value = 'יוצר מפה...';
+          await new Promise((resolve) => {
+            let resolved = false;
+            const done = () => {
+              if (!resolved) {
+                resolved = true;
+                mapReady.value = true;
+                resolve();
+              }
+            };
+            window.govmap.createMap(MAP_DIV_ID, {
+              token: GOVMAP_TOKEN,
+              layers: [GOVMAP_LAYER],
+              visibleLayers: [GOVMAP_LAYER],
+              showXY: true,
+              identifyOnClick: true,
+              identifyOnlyBubble: false,
+              isEmbeddedToggle: false,
+              background: '1',
+              layersMode: 1,
+              zoomButtons: true,
+              center: { x: 219529, y: 626907 },
+              level: 7,
+              onLoad: done,
+              onError: (event) => {
+                console.error('GovMap error:', event);
+                errorMessage.value = 'GovMap החזיר שגיאה. בדוק שהטוקן מתאים לדומיין ושהשכבה זמינה.';
+              }
+            });
+            setTimeout(done, 2500);
+          });
+
+          try {
+            window.govmap.setVisibleLayers([GOVMAP_LAYER], []);
+          } catch (error) {
+            console.warn('setVisibleLayers failed:', error);
+          }
+        }
+
+        async function clearOverlay() {
+          if (!window.govmap || !drawnNames.value.length) return;
+          try {
+            if (typeof window.govmap.clearGeometriesByName === 'function') {
+              await window.govmap.clearGeometriesByName(drawnNames.value);
+            }
+          } catch (error) {
+            console.warn('clearGeometriesByName failed:', error);
+          }
+          drawnNames.value = [];
+        }
+
+        async function drawOverlay() {
+          if (!window.govmap || !mapReady.value || !overlayVisible.value || !wktFeatures.value.length) return;
+          isDrawing.value = true;
+          errorMessage.value = '';
+
+          try {
+            await clearOverlay();
+            const names = [];
+            const wkts = [];
+            const symbols = [];
+            const tooltips = [];
+            const headers = [];
+            const bubbleHTMLParameters = [];
+            const valueBySid = new Map(joinedSettlements.value.map((item) => [item.sid, item]));
+
+            for (const feature of wktFeatures.value) {
+              const item = valueBySid.get(feature.sid);
+              const value = item?.value ?? null;
+              const color = colorScale.value.colorForValue(value);
+              const name = `${DRAWING_NAME_PREFIX}${feature.sid}-${feature.part}`;
+              const row = item?.row;
+
+              names.push(name);
+              wkts.push(feature.wkt);
+              symbols.push({ outlineColor: colorScale.value.outline, outlineWidth: 1, fillColor: color });
+              tooltips.push(`${feature.name}: ${formatValue(value)}`);
+              headers.push(feature.name);
+              bubbleHTMLParameters.push([
+                feature.name,
+                String(feature.sid),
+                String(selectedYear.value),
+                selectedMetricDef.value.label,
+                formatValue(value),
+                formatValue(row?.ppsqm, '₪/מ״ר'),
+                formatValue(row?.deals, 'עסקאות'),
+                formatValue(row?.smooth, 'עסקאות'),
+                formatValue(row?.syoy, '%'),
+                formatValue(row?.demand_yoy, '%')
+              ]);
+            }
+
+            const bubbleContent = `
+              <div style="direction:rtl;text-align:right;font-family:Arial;padding:8px;min-width:220px">
+                <div style="font-weight:700;font-size:16px;margin-bottom:4px">{0}</div>
+                <div style="color:#64748b;margin-bottom:8px">סמל יישוב: {1} · שנה: {2}</div>
+                <div style="font-size:14px;margin-bottom:6px"><b>{3}:</b> {4}</div>
+                <hr style="border:0;border-top:1px solid #e2e8f0;margin:8px 0" />
+                <div>מחיר למ״ר: {5}</div>
+                <div>עסקאות: {6}</div>
+                <div>עסקאות מוחלק: {7}</div>
+                <div>שינוי עסקאות YoY: {8}</div>
+                <div>שינוי ביקוש/מחיר YoY: {9}</div>
+              </div>
+            `;
+
+            await window.govmap.displayGeometries({
+              wkts,
+              names,
+              geometryType: (window.govmap.geometryType && window.govmap.geometryType.POLYGON) || 'POLYGON',
+              defaultSymbol: { outlineColor: [26, 41, 64, 0.85], outlineWidth: 1, fillColor: [96, 165, 250, 0.5] },
+              symbols,
+              clearExisting: true,
+              showBubble: true,
+              data: { tooltips, headers, bubbleHTML: bubbleContent, bubbleHTMLParameters }
+            });
+
+            drawnNames.value = names;
+            statusMessage.value = `צוירו ${wkts.length.toLocaleString('he-IL')} חלקי פוליגונים עבור ${stats.value.joined.toLocaleString('he-IL')} יישובים עם נתונים.`;
+          } catch (error) {
+            console.error(error);
+            errorMessage.value = error?.message || 'שגיאה בצביעת הפוליגונים על GovMap.';
+          } finally {
+            isDrawing.value = false;
+          }
+        }
+
+        async function toggleOverlay() {
+          overlayVisible.value = !overlayVisible.value;
+          if (overlayVisible.value) await drawOverlay();
+          else await clearOverlay();
+        }
+
+        function toggleBaseLayer() {
+          if (!window.govmap) return;
+          try {
+            if (baseLayerVisible.value) {
+              window.govmap.setVisibleLayers([], [GOVMAP_LAYER]);
+              baseLayerVisible.value = false;
+            } else {
+              window.govmap.setVisibleLayers([GOVMAP_LAYER], []);
+              baseLayerVisible.value = true;
+            }
+          } catch (error) {
+            console.warn('toggleBaseLayer failed:', error);
+          }
+        }
+
+        async function focusSettlement(item) {
+          selectedSettlement.value = item;
+          const shape = wktFeatures.value.find((feature) => feature.sid === item.sid && feature.bbox);
+          if (!shape || !window.govmap) return;
+          const [xmin, ymin, xmax, ymax] = shape.bbox;
+          const x = (xmin + xmax) / 2;
+          const y = (ymin + ymax) / 2;
+          try {
+            if (typeof window.govmap.zoomToXY === 'function') {
+              window.govmap.zoomToXY({ x, y, level: 8 });
+            }
+          } catch (error) {
+            console.warn('focusSettlement failed:', error);
+          }
+        }
+
+        async function boot() {
+          isBooting.value = true;
+          errorMessage.value = '';
+          try {
+            await Promise.all([loadLocalFiles(), initGovMap()]);
+            await drawOverlay();
+            statusMessage.value = 'המפה מוכנה. הפוליגונים נצבעו לפי הנתון שנבחר.';
+          } catch (error) {
+            console.error(error);
+            errorMessage.value = error?.message || 'שגיאה כללית בטעינת האתר.';
+          } finally {
+            isBooting.value = false;
+          }
+        }
+
+        watch([selectedYear, selectedMetric], async () => {
+          selectedSettlement.value = null;
+          if (!isBooting.value && overlayVisible.value) await drawOverlay();
+        });
+
+        onMounted(boot);
+
+        return {
+          GOVMAP_LAYER,
+          metricOptions,
+          isBooting,
+          isDrawing,
+          statusMessage,
+          errorMessage,
+          baseLayerVisible,
+          overlayVisible,
+          years,
+          selectedYear,
+          selectedMetric,
+          searchText,
+          selectedSettlement,
+          selectedMetricDef,
+          joinedSettlements,
+          filteredSettlementList,
+          stats,
+          legendItems,
+          topSettlements,
+          bottomSettlements,
+          formatValue,
+          rgbaCss,
+          drawOverlay,
+          toggleOverlay,
+          toggleBaseLayer,
+          focusSettlement
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
