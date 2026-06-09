@@ -554,6 +554,52 @@
           statusMessage.value = `הגרפים עודכנו לפי ${item.name}.`;
           return true;
         }
+
+        function findDrawnGeometryNameDeep(value, depth = 0, seen = new Set()) {
+          if (value == null || depth > 8) return null;
+          if (typeof value === 'string') {
+            return value.startsWith(DRAWING_NAME_PREFIX) ? value : null;
+          }
+          if (typeof value !== 'object') return null;
+          if (seen.has(value)) return null;
+          seen.add(value);
+
+          const direct = value.name ?? value.Name ?? value.id ?? value.Id ?? value.objectId ?? value.ObjectId;
+          if (typeof direct === 'string' && direct.startsWith(DRAWING_NAME_PREFIX)) return direct;
+
+          if (Array.isArray(value)) {
+            for (const item of value) {
+              const found = findDrawnGeometryNameDeep(item, depth + 1, seen);
+              if (found) return found;
+            }
+            return null;
+          }
+
+          // GovMap displayGeometries usually returns the clicked geometry through e.data.name
+          // or e.data[0].name. We scan common containers first, then the whole object.
+          for (const key of ['data', 'Data', 'graphic', 'graphics', 'feature', 'features', 'attributes', 'Attributes']) {
+            if (value[key] != null) {
+              const found = findDrawnGeometryNameDeep(value[key], depth + 1, seen);
+              if (found) return found;
+            }
+          }
+          for (const key of Object.keys(value)) {
+            const found = findDrawnGeometryNameDeep(value[key], depth + 1, seen);
+            if (found) return found;
+          }
+          return null;
+        }
+
+        function extractLayerItems(resp) {
+          if (!resp) return [];
+          if (Array.isArray(resp)) return resp;
+          if (Array.isArray(resp.data)) return resp.data;
+          if (Array.isArray(resp.Data)) return resp.Data;
+          if (Array.isArray(resp.result)) return resp.result;
+          if (Array.isArray(resp.Result)) return resp.Result;
+          if (Array.isArray(resp.features)) return resp.features;
+          return [];
+        }
         function selectSettlementFromLayerAttrs(attrsRaw) {
           const attrs = fieldsToObject(attrsRaw) || attrsRaw || {};
           const sid = detectSettlementSid(attrs);
@@ -563,14 +609,19 @@
           return false;
         }
         async function handleMapClick(event) {
-          const geometryName = event?.data?.[0]?.name ?? event?.data?.name ?? event?.name;
+          // 1) First priority: clicks on our drawn GovMap geometries.
+          // This is the same idea as the CrimesMap implementation: displayGeometries().progress(...)
+          // returns the clicked geometry name, and we encode the settlement sid inside that name.
+          const geometryName = findDrawnGeometryNameDeep(event);
           if (selectSettlementFromGeometryName(geometryName)) {
             try { window.govmap?.closeBubble?.(); } catch (_) {}
             return;
           }
 
+          // 2) Fallback: click event with map coordinates -> ask GovMap layer data.
           const point = normalizeMapPoint(event);
           if (!point) return;
+
           const key = `${Math.round(point.x)}:${Math.round(point.y)}`;
           if (key === lastHandledClick) return;
           lastHandledClick = key;
@@ -582,7 +633,7 @@
                 Point: { x: point.x, y: point.y, X: point.x, Y: point.y },
                 Radius: 300
               });
-              const items = resp?.data || resp?.Data || [];
+              const items = extractLayerItems(resp);
               for (const item of items) {
                 const attrs = item?.Fields || item?.fields || item?.Attributes || item?.attributes || item;
                 if (selectSettlementFromLayerAttrs(attrs)) {
@@ -595,6 +646,7 @@
             console.warn('GovMap getLayerData click selection failed:', error);
           }
 
+          // 3) Final fallback: point-in-polygon against our own WKT geometry cache.
           const feature = settlementAtPoint(point.x, point.y);
           if (feature && selectSettlementBySid(feature.sid, false)) {
             try { window.govmap?.closeBubble?.(); } catch (_) {}
@@ -635,10 +687,29 @@
               const item = valueBySid.get(String(feature.sid)); const ratio = item?.ratio ?? null; const color = colorForRatio(ratio); const name = `${DRAWING_NAME_PREFIX}${feature.sid}-${feature.part}`;
               names.push(name); wkts.push(feature.wkt); symbols.push({ outlineColor: OUTLINE_COLOR, outlineWidth: 1, fillColor: color }); tooltips.push(`${feature.name}: ${formatRatio(ratio)}`); headers.push(feature.name);
             }
-            const geometryClick = window.govmap.displayGeometries({ wkts, names, geometryType: (window.govmap.geometryType && window.govmap.geometryType.POLYGON) || 'POLYGON', defaultSymbol: { outlineColor: OUTLINE_COLOR, outlineWidth: 1, fillColor: NO_DATA_COLOR }, symbols, clearExisting: true, showBubble: false, data: { tooltips, headers } });
-            if (geometryClick && typeof geometryClick.then === 'function') {
+            const geometryClick = window.govmap.displayGeometries({
+              wkts,
+              names,
+              geometryType: window.govmap.drawType?.Polygon || window.govmap.geometryType?.POLYGON || window.govmap.geometryType?.Polygon || 3,
+              defaultSymbol: { outlineColor: OUTLINE_COLOR, outlineWidth: 1, fillColor: NO_DATA_COLOR },
+              symbols,
+              clearExisting: true,
+              showBubble: false,
+              allowIdentify: true,
+              data: { tooltips, headers }
+            });
+
+            // GovMap returns a jQuery Deferred for displayGeometries.
+            // The click event is delivered through .progress(...), not through .then(...).
+            if (geometryClick && typeof geometryClick.progress === 'function') {
+              geometryClick.progress((ev) => handleMapClick(ev));
+            } else if (geometryClick && typeof geometryClick.then === 'function') {
               geometryClick.then((ev) => handleMapClick(ev), (err) => console.warn('displayGeometries click promise rejected:', err));
             }
+
+            // displayGeometries can replace GovMap's CLICK event handler, so install the map-click fallback again after drawing.
+            installGovMapClickSelection();
+
             drawnNames.value = names; statusMessage.value = `המפה מוכנה · ${wkts.length.toLocaleString('he-IL')} פוליגונים · ${stats.value.joined.toLocaleString('he-IL')} יישובים עם נתונים`;
           } catch (error) { console.error(error); errorMessage.value = error?.message || 'שגיאה בצביעת הפוליגונים.'; } finally { isDrawing.value = false; }
         }
@@ -653,8 +724,18 @@
         }
         function installMapSelectionBridge() {
           window.__selectSettlementFromMap = (sid) => selectSettlementBySid(sid, false);
+          window.__marketMapDebugSelect = (sidOrName) => {
+            if (selectSettlementBySid(sidOrName, false)) return true;
+            return selectSettlementByNameFromClick(sidOrName);
+          };
         }
-        function selectSettlement(item, shouldFocus = true) { selectedSettlement.value = item; nextTick(renderCharts); if (shouldFocus) focusSettlement(item); }
+        function selectSettlement(item, shouldFocus = true) {
+          if (!item) return;
+          // Assign a fresh object so Vue reactivity fires even if the same reference is selected again.
+          selectedSettlement.value = { ...item };
+          nextTick(renderCharts);
+          if (shouldFocus) focusSettlement(item);
+        }
         function selectFirstSearchResult() { if (filteredSettlementList.value.length) selectSettlement(filteredSettlementList.value[0]); }
         async function focusSettlement(item) { const shape = wktFeatures.value.find((feature) => String(feature.sid) === String(item.sid) && feature.bbox); if (!shape || !window.govmap) return; const [xmin, ymin, xmax, ymax] = shape.bbox; const x = (xmin + xmax) / 2, y = (ymin + ymax) / 2; try { if (typeof window.govmap.zoomToXY === 'function') window.govmap.zoomToXY({ x, y, level: 8 }); } catch (e) { console.warn(e); } }
         function chartData() { const rows = selectedRows.value; return { labels: rows.map((row) => String(row.year)), deals: rows.map((row) => normalizeNumber(row.deals)), prices: rows.map((row) => normalizeNumber(row.ppsqm)), avgLine: rows.map(() => selectedSettlement.value?.avgAnnualDeals ?? null) }; }

@@ -1,9 +1,9 @@
-# Market Map - click selects settlement
+# Market Map - click progress fixed
 
-Upload these three files to the same GitHub Pages folder:
+Upload these files together to GitHub Pages:
 
 - index.html
 - settlements_flat.json
 - settlements_wkt_2039.json
 
-Clicking a settlement polygon updates the right-side charts without opening the GovMap identify popup.
+The click selection now uses GovMap displayGeometries().progress(...) for drawn polygons, plus GovMap getLayerData and local point-in-polygon as fallbacks.
