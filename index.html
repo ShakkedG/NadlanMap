@@ -95,7 +95,7 @@
     .year-slider-card { border: 1px solid #dfe6ef; border-radius: 16px; background: #f8fbff; padding: 16px 18px; box-shadow: 0 8px 20px rgba(6,34,74,.05); }
     .year-slider-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: #052a5a; font-weight: 900; margin-bottom: 10px; }
     .year-slider-title small { color: #718098; font-weight: 700; }
-    .year-slider { width: 100%; accent-color: #0f5bff; cursor: pointer; padding: 0; border: 0; direction: rtl; }
+    .year-slider { width: 100%; accent-color: #0f5bff; cursor: pointer; padding: 0; border: 0; direction: ltr; }
     .year-slider-labels { display: flex; justify-content: space-between; color: #667085; font-size: 13px; font-weight: 800; margin-top: 6px; direction: ltr; }
     .year-slider-note { margin: 8px 0 0; color: #718098; font-size: 13px; text-align: center; }
     .deals-focus { margin: 10px 0 0; padding: 12px 14px; border-radius: 12px; background: #eef5ff; border: 1px solid #d7e6ff; }
@@ -193,7 +193,7 @@
                     <span>שנת צביעה במפה: {{ targetYear }}</span>
                     <small>ממוצע: כל השנים חוץ מהשנה הנבחרת</small>
                   </div>
-                  <input class="year-slider" type="range" :min="yearSliderMin" :max="yearSliderMax" step="1" v-model.number="targetYear" @input="handleYearSliderInput" @change="handleYearChanged" />
+                  <input class="year-slider" type="range" :min="yearSliderMin" :max="yearSliderMax" step="1" v-model.number="reversedYearSliderValue" @input="handleYearSliderInput" @change="handleYearChanged" />
                   <div class="year-slider-labels"><span>{{ yearSliderMax }}</span><span>{{ targetYear }}</span><span>{{ yearSliderMin }}</span></div>
                   <p class="year-slider-note">הסליידר משנה את השנה שלפיה מחושבת הצביעה במפה והאחוז מהממוצע.</p>
                 </div>
@@ -327,6 +327,18 @@
         const availableYears = computed(() => [...new Set(rawRows.value.map((row) => Number(row.year)).filter(Number.isFinite))].sort((a, b) => a - b));
         const yearSliderMin = computed(() => availableYears.value.length ? availableYears.value[0] : AVERAGE_START_YEAR);
         const yearSliderMax = computed(() => availableYears.value.length ? availableYears.value[availableYears.value.length - 1] : DEFAULT_TARGET_YEAR);
+        const reversedYearSliderValue = computed({
+          get() {
+            return Number(yearSliderMin.value) + Number(yearSliderMax.value) - Number(targetYear.value);
+          },
+          set(value) {
+            const min = Number(yearSliderMin.value);
+            const max = Number(yearSliderMax.value);
+            const raw = Number(value);
+            if (!Number.isFinite(min) || !Number.isFinite(max) || !Number.isFinite(raw)) return;
+            targetYear.value = min + max - raw;
+          }
+        });
         const uniqueGeometrySettlements = computed(() => {
           const unique = new Map();
           for (const feature of wktFeatures.value) if (!unique.has(String(feature.sid))) unique.set(String(feature.sid), feature);
@@ -861,7 +873,7 @@
         watch(selectedRows, () => nextTick(() => renderCharts({ animate: true })));
         watch(targetYear, () => refreshSelectedSettlementForCurrentYear());
         onMounted(() => { installMapSelectionBridge(); boot(); });
-        return { isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, selectedSettlement, ignoreZeroYears, targetYear, availableYears, filteredSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, activeRoomTab, roomTabs, formatNumber, formatInteger, formatRatio, formatCurrency, formatPercent, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, yearSliderMin, yearSliderMax };
+        return { isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, selectedSettlement, ignoreZeroYears, targetYear, availableYears, filteredSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, activeRoomTab, roomTabs, formatNumber, formatInteger, formatRatio, formatCurrency, formatPercent, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, yearSliderMin, yearSliderMax, reversedYearSliderValue };
       }
     }).mount('#app');
   </script>

@@ -1,10 +1,9 @@
-# Market Map - GitHub Pages
+# Market Map - slider direction fixed
 
-קבצים להעלאה:
+Upload these files together to GitHub Pages:
+
 - index.html
 - settlements_flat.json
 - settlements_wkt_2039.json
 
-עדכון בגרסה הזו:
-- הכיתוב רבעון שלישי הוחלף לשנת הנתונים, כי הנתונים בקובץ הם שנתיים.
-- צג שכבות המידע של GovMap הוחזר.
+After uploading, hard-refresh the browser with Ctrl+F5.
