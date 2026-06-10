@@ -103,7 +103,7 @@
     .deals-focus b { font-size: 24px; color: #0f5bff; font-weight: 900; }
     .map-select-hint { margin: 0; padding: 12px 14px; border-radius: 12px; background: #f7faff; border: 1px solid #dfe8f7; color: #52627a; font-size: 14px; line-height: 1.45; }
 
-    .bottom-tools { max-width: 1130px; margin: 32px auto 0; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .bottom-tools { max-width: 1130px; margin: 32px auto 0; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .mini-panel { border: 1px solid #dfe6ef; border-radius: 14px; padding: 14px; background: #fff; max-height: 310px; overflow: auto; }
     .mini-panel h3 { margin: 0 0 10px; color: #052a5a; }
     .result-row { width: 100%; border: 0; border-bottom: 1px solid #edf2f7; background: #fff; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 4px; color: #052a5a; text-align: right; }
@@ -197,7 +197,6 @@
                   </div>
                   <input class="year-slider" dir="ltr" type="range" :min="yearSliderMin" :max="yearSliderMax" step="1" v-model.number="targetYear" @input="handleYearSliderInput" @change="handleYearChanged" />
                   <div class="year-slider-labels"><span>{{ yearSliderMin }}</span><span>{{ targetYear }}</span><span>{{ yearSliderMax }}</span></div>
-                  <p class="year-slider-note">הסליידר משמאל לימין: 1999 משמאל ו-2025 מימין. ברירת המחדל היא 2025.</p>
                 </div>
               </div>
               <div v-else class="chart-empty">בחר יישוב כדי להציג גרפים שנתיים</div>
@@ -227,10 +226,6 @@
             <article class="mini-panel">
               <h3>תוצאות חיפוש</h3>
               <button v-for="item in filteredSettlementList.slice(0,12)" :key="item.sid" class="result-row" @click="selectSettlement(item)"><span>{{ item.name }}<small>{{ item.sid }} · {{ targetYear }}: {{ formatInteger(item.dealsSelected) }}</small></span><b class="ratio-badge">{{ formatRatio(item.ratio) }}</b></button>
-            </article>
-            <article class="mini-panel">
-              <h3>יישובים בירוק</h3>
-              <button v-for="item in topSettlements.slice(0,10)" :key="item.sid" class="result-row" @click="selectSettlement(item)"><span>{{ item.name }}<small>מעל הממוצע</small></span><b class="ratio-badge">{{ formatRatio(item.ratio) }}</b></button>
             </article>
             <article class="mini-panel">
               <h3>מקרא צביעה</h3>

@@ -1,4 +1,4 @@
-# Market Map - chart names without legends
+# Market Map - no green list
 
 Upload these files together to GitHub Pages:
 
