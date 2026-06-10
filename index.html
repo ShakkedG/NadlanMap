@@ -81,7 +81,8 @@
     .chart-stack { display: grid; gap: 22px; }
     .chart-panel { border: 1px solid #edf1f6; border-radius: 16px; background: #fff; padding: 8px 6px 4px; }
     .chart-panel h3 { margin: 6px 12px 8px; color: #052a5a; font-size: 18px; font-weight: 800; text-align: center; }
-    .chart-wrap { height: 340px; width: 100%; }
+    .chart-wrap { height: 340px; width: 100%; direction: ltr; }
+    .chart-wrap canvas { direction: ltr; }
     .sales-chart-wrap { height: 300px; }
     .chart-empty { height: 380px; display: grid; place-items: center; color: #667085; border: 1px dashed #cbd5e1; border-radius: 14px; background: #fbfdff; }
     .info-column { direction: rtl; display: grid; gap: 24px; }
@@ -95,7 +96,7 @@
     .year-slider-card { border: 1px solid #dfe6ef; border-radius: 16px; background: #f8fbff; padding: 16px 18px; box-shadow: 0 8px 20px rgba(6,34,74,.05); }
     .year-slider-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: #052a5a; font-weight: 900; margin-bottom: 10px; }
     .year-slider-title small { color: #718098; font-weight: 700; }
-    .year-slider { width: 100%; accent-color: #0f5bff; cursor: pointer; padding: 0; border: 0; direction: ltr; }
+    .year-slider { width: 100%; accent-color: #0f5bff; cursor: pointer; padding: 0; border: 0; direction: ltr; writing-mode: horizontal-tb; transform: none; }
     .year-slider-labels { display: flex; justify-content: space-between; color: #667085; font-size: 13px; font-weight: 800; margin-top: 6px; direction: ltr; }
     .year-slider-note { margin: 8px 0 0; color: #718098; font-size: 13px; text-align: center; }
     .deals-focus { margin: 10px 0 0; padding: 12px 14px; border-radius: 12px; background: #eef5ff; border: 1px solid #d7e6ff; }
@@ -193,9 +194,9 @@
                     <span>שנת צביעה במפה: {{ targetYear }}</span>
                     <small>ממוצע: כל השנים חוץ מהשנה הנבחרת</small>
                   </div>
-                  <input class="year-slider" type="range" :min="yearSliderMin" :max="yearSliderMax" step="1" v-model.number="reversedYearSliderValue" @input="handleYearSliderInput" @change="handleYearChanged" />
-                  <div class="year-slider-labels"><span>{{ yearSliderMax }}</span><span>{{ targetYear }}</span><span>{{ yearSliderMin }}</span></div>
-                  <p class="year-slider-note">הסליידר והגרפים מוצגים באותו כיוון: 2025 משמאל ו-1999 מימין.</p>
+                  <input class="year-slider" dir="ltr" type="range" :min="yearSliderMin" :max="yearSliderMax" step="1" v-model.number="targetYear" @input="handleYearSliderInput" @change="handleYearChanged" />
+                  <div class="year-slider-labels"><span>{{ yearSliderMin }}</span><span>{{ targetYear }}</span><span>{{ yearSliderMax }}</span></div>
+                  <p class="year-slider-note">הסליידר משמאל לימין: 1999 משמאל ו-2025 מימין. ברירת המחדל היא 2025.</p>
                 </div>
               </div>
               <div v-else class="chart-empty">בחר יישוב כדי להציג גרפים שנתיים</div>
@@ -760,9 +761,8 @@
         function selectFirstSearchResult() { if (filteredSettlementList.value.length) selectSettlement(filteredSettlementList.value[0]); }
         async function focusSettlement(item) { const shape = wktFeatures.value.find((feature) => String(feature.sid) === String(item.sid) && feature.bbox); if (!shape || !window.govmap) return; const [xmin, ymin, xmax, ymax] = shape.bbox; const x = (xmin + xmax) / 2, y = (ymin + ymax) / 2; try { if (typeof window.govmap.zoomToXY === 'function') window.govmap.zoomToXY({ x, y, level: 8 }); } catch (e) { console.warn(e); } }
         function chartData() {
-          // The year slider is intentionally reversed: left = latest year, right = earliest year.
-          // Keep the charts in the same visual direction so the highlighted year moves together with the slider.
-          const rows = [...selectedRows.value].sort((a, b) => Number(b.year) - Number(a.year));
+          // Slider and charts are aligned: left = earliest year (1999), right = latest year (2025).
+          const rows = [...selectedRows.value].sort((a, b) => Number(a.year) - Number(b.year));
           return {
             labels: rows.map((row) => String(row.year)),
             deals: rows.map((row) => normalizeNumber(row.deals)),
@@ -806,9 +806,9 @@
               maintainAspectRatio: false,
               animation: animate ? undefined : false,
               interaction: { mode: 'index', intersect: false },
-              plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } },
+              plugins: { legend: { position: 'bottom', rtl: false, textDirection: 'ltr', labels: { usePointStyle: true } } },
               scales: {
-                x: { ticks: { maxTicksLimit: 9 } },
+                x: { reverse: false, ticks: { maxTicksLimit: 9 } },
                 y: { ticks: { callback: (v) => '₪' + Number(v).toLocaleString('he-IL') } }
               }
             }
@@ -842,9 +842,9 @@
               maintainAspectRatio: false,
               animation: animate ? undefined : false,
               interaction: { mode: 'index', intersect: false },
-              plugins: { legend: { position: 'bottom', labels: { usePointStyle: true } } },
+              plugins: { legend: { position: 'bottom', rtl: false, textDirection: 'ltr', labels: { usePointStyle: true } } },
               scales: {
-                x: { ticks: { maxTicksLimit: 9 } },
+                x: { reverse: false, ticks: { maxTicksLimit: 9 } },
                 y: { beginAtZero: true, ticks: { callback: (v) => Number(v).toLocaleString('he-IL') } }
               }
             }
