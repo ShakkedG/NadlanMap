@@ -43,7 +43,7 @@
     .report-pane { direction: rtl; height: 100vh; overflow: auto; padding: 16px 16px 28px 12px; }
     .report-card { min-height: calc(100vh - 32px); background: #ffffff; border: 1px solid #dfe6ef; border-radius: 18px; box-shadow: 0 10px 30px rgba(17, 34, 64, .08); position: relative; padding: 36px 18px 28px; }
     .blue-tab { position: absolute; top: -16px; left: 40%; right: 40%; height: 3px; background: #1f5bff; border-radius: 99px; }
-    .top-controls { display: grid; grid-template-columns: minmax(240px, 1fr) auto; gap: 10px; align-items: end; margin: 0 auto 14px; max-width: 760px; }
+    .top-controls { display: grid; grid-template-columns: minmax(240px, 1fr) auto auto; gap: 10px; align-items: end; margin: 0 auto 14px; max-width: 860px; }
     .field { display: grid; gap: 5px; font-size: 12px; font-weight: 800; color: #667085; }
     input, select { width: 100%; border: 1px solid #dfe6ef; border-radius: 12px; background: #fff; padding: 10px 12px; color: #08285a; outline: none; }
     input:focus, select:focus { border-color: #2364f6; box-shadow: 0 0 0 3px rgba(35,100,246,.12); }
@@ -153,11 +153,12 @@
           <div class="top-controls">
             <label class="field"><span>חיפוש יישוב</span><input v-model="searchText" @keyup.enter="selectFirstSearchResult" placeholder="לדוגמה: מודיעין / 1200" /></label>
             <button class="primary-btn" @click="selectFirstSearchResult" :disabled="filteredSettlementList.length===0">בחר</button>
+            <button class="secondary-btn" @click="selectNational" :disabled="selectedSettlement?.sid === '__national__'">כל הארץ</button>
           </div>
           <label class="toggle-line"><input type="checkbox" v-model="ignoreZeroYears" @change="handleAverageModeChanged" /> להתעלם משנים עם 0 עסקאות בחישוב הממוצע</label>
 
           <header class="report-title">
-            <h1>מגמות המחירים ביישוב</h1>
+            <h1>{{ selectedSettlement?.sid === '__national__' ? 'מגמות המחירים בכל הארץ' : 'מגמות המחירים ביישוב' }}</h1>
             <p>{{ selectedSettlement ? selectedSettlement.name : 'בחר יישוב להצגת מדדים' }} · בהתייחס לשנת {{ targetYear }}</p>
             <div class="status" :class="{error: errorMessage}">{{ errorMessage || statusMessage }}</div>
           </header>
@@ -251,6 +252,7 @@
     const GOVMAP_TOKEN = 'ede9a5fd-7c23-432f-8ffb-d85feffa3f3c';
     const GOVMAP_LAYER = '235146';
     const DEFAULT_TARGET_YEAR = 2025;
+    const NATIONAL_SID = '__national__';
     const AVERAGE_START_YEAR = 1999;
     const FIXED_AVERAGE_END_YEAR = 2024;
 
@@ -325,6 +327,71 @@
           for (const rows of groups.values()) rows.sort((a, b) => Number(a.year) - Number(b.year));
           return groups;
         });
+        const nationalRows = computed(() => {
+          const byYear = new Map();
+          for (const row of rawRows.value) {
+            const year = Number(row.year);
+            if (!Number.isFinite(year)) continue;
+            if (!byYear.has(year)) byYear.set(year, { year, deals: 0, ppsqmWeightedSum: 0, ppsqmWeight: 0, ppsqmSimpleSum: 0, ppsqmSimpleCount: 0 });
+            const acc = byYear.get(year);
+            const deals = normalizeNumber(row.deals) ?? 0;
+            acc.deals += deals;
+            const ppsqm = normalizeNumber(row.ppsqm);
+            if (Number.isFinite(ppsqm)) {
+              if (deals > 0) {
+                acc.ppsqmWeightedSum += ppsqm * deals;
+                acc.ppsqmWeight += deals;
+              }
+              acc.ppsqmSimpleSum += ppsqm;
+              acc.ppsqmSimpleCount += 1;
+            }
+          }
+          const rows = [...byYear.values()].sort((a, b) => a.year - b.year).map((acc) => {
+            const weightedPrice = acc.ppsqmWeight > 0 ? acc.ppsqmWeightedSum / acc.ppsqmWeight : null;
+            const simplePrice = acc.ppsqmSimpleCount > 0 ? acc.ppsqmSimpleSum / acc.ppsqmSimpleCount : null;
+            return {
+              sid: NATIONAL_SID,
+              name: 'כל הארץ',
+              year: acc.year,
+              deals: acc.deals,
+              ppsqm: Number.isFinite(weightedPrice) ? weightedPrice : simplePrice,
+              smooth: null,
+              syoy: null,
+              demand_yoy: null
+            };
+          });
+          for (let i = 0; i < rows.length; i++) {
+            const prev = rows[i - 1];
+            const cur = rows[i];
+            const prevDeals = normalizeNumber(prev?.deals);
+            const curDeals = normalizeNumber(cur?.deals);
+            const prevPrice = normalizeNumber(prev?.ppsqm);
+            const curPrice = normalizeNumber(cur?.ppsqm);
+            cur.syoy = Number.isFinite(prevDeals) && prevDeals > 0 && Number.isFinite(curDeals) ? ((curDeals - prevDeals) / prevDeals) * 100 : null;
+            cur.demand_yoy = Number.isFinite(prevPrice) && prevPrice > 0 && Number.isFinite(curPrice) ? ((curPrice - prevPrice) / prevPrice) * 100 : null;
+          }
+          return rows;
+        });
+        const nationalSettlement = computed(() => {
+          const selectedYear = Number(targetYear.value);
+          const rows = nationalRows.value;
+          const rowSelected = rows.find((row) => Number(row.year) === selectedYear) || null;
+          const dealsSelected = normalizeNumber(rowSelected?.deals);
+          const avgAnnualDeals = averageDeals(rows, selectedYear);
+          const ratio = Number.isFinite(dealsSelected) && Number.isFinite(avgAnnualDeals) && avgAnnualDeals > 0 ? dealsSelected / avgAnnualDeals : null;
+          return {
+            sid: NATIONAL_SID,
+            name: 'כל הארץ',
+            dealsSelected,
+            avgAnnualDeals,
+            ratio,
+            ppsqmSelected: normalizeNumber(rowSelected?.ppsqm),
+            demandYoySelected: normalizeNumber(rowSelected?.demand_yoy),
+            syoySelected: normalizeNumber(rowSelected?.syoy),
+            rowSelected,
+            hasData: Number.isFinite(ratio)
+          };
+        });
         const availableYears = computed(() => [...new Set(rawRows.value.map((row) => Number(row.year)).filter(Number.isFinite))].sort((a, b) => a - b));
         const yearSliderMin = computed(() => availableYears.value.length ? availableYears.value[0] : AVERAGE_START_YEAR);
         const yearSliderMax = computed(() => availableYears.value.length ? availableYears.value[availableYears.value.length - 1] : DEFAULT_TARGET_YEAR);
@@ -368,7 +435,11 @@
             };
           });
         });
-        const selectedRows = computed(() => selectedSettlement.value ? (rowGroups.value.get(String(selectedSettlement.value.sid)) || []) : []);
+        const selectedRows = computed(() => {
+          if (!selectedSettlement.value) return [];
+          if (String(selectedSettlement.value.sid) === NATIONAL_SID) return nationalRows.value;
+          return rowGroups.value.get(String(selectedSettlement.value.sid)) || [];
+        });
         const filteredSettlementList = computed(() => {
           const q = searchText.value.trim().toLowerCase();
           return joinedSettlements.value.filter((item) => !q || item.name.toLowerCase().includes(q) || item.sid.includes(q)).sort((a, b) => {
@@ -417,7 +488,7 @@
               identifyOnlyBubble: true,
               isEmbeddedToggle: false,
               background: 0,
-              layersMode: 0,
+              layersMode: 4,
               zoomButtons: true,
               center: { x: 219529, y: 626907 },
               level: 7,
@@ -735,7 +806,9 @@
         async function toggleOverlay() { overlayVisible.value = !overlayVisible.value; if (overlayVisible.value) await drawOverlay(); else await clearOverlay(); }
         async function toggleBaseLayer() { if (!window.govmap) return; try { if (baseLayerVisible.value) { window.govmap.setVisibleLayers([], [GOVMAP_LAYER]); baseLayerVisible.value = false; statusMessage.value = 'שכבת המקור כבויה כדי שהצביעה תיראה.'; if (overlayVisible.value) await drawOverlay(); } else { window.govmap.setVisibleLayers([GOVMAP_LAYER], []); baseLayerVisible.value = true; statusMessage.value = 'שכבת המקור דולקת ועלולה להסתיר את הצביעה.'; } } catch (e) { console.warn(e); } }
         function selectSettlementBySid(sid, shouldFocus = false) {
-          const item = joinedSettlements.value.find((settlement) => String(settlement.sid) === String(sid));
+          const item = String(sid) === NATIONAL_SID
+            ? nationalSettlement.value
+            : joinedSettlements.value.find((settlement) => String(settlement.sid) === String(sid));
           if (!item) return false;
           const changed = selectSettlement(item, shouldFocus);
           statusMessage.value = changed ? `הגרפים עודכנו לפי ${item.name}.` : `${item.name} כבר מוצג.`;
@@ -759,7 +832,13 @@
           return !isSameSettlement;
         }
         function selectFirstSearchResult() { if (filteredSettlementList.value.length) selectSettlement(filteredSettlementList.value[0]); }
-        async function focusSettlement(item) { const shape = wktFeatures.value.find((feature) => String(feature.sid) === String(item.sid) && feature.bbox); if (!shape || !window.govmap) return; const [xmin, ymin, xmax, ymax] = shape.bbox; const x = (xmin + xmax) / 2, y = (ymin + ymax) / 2; try { if (typeof window.govmap.zoomToXY === 'function') window.govmap.zoomToXY({ x, y, level: 8 }); } catch (e) { console.warn(e); } }
+        function selectNational() {
+          const changed = selectSettlement(nationalSettlement.value, false);
+          statusMessage.value = changed
+            ? `חזרת לנתוני כל הארץ לשנת ${targetYear.value}.`
+            : `נתוני כל הארץ כבר מוצגים.`;
+        }
+        async function focusSettlement(item) { if (!item || String(item.sid) === NATIONAL_SID) return; const shape = wktFeatures.value.find((feature) => String(feature.sid) === String(item.sid) && feature.bbox); if (!shape || !window.govmap) return; const [xmin, ymin, xmax, ymax] = shape.bbox; const x = (xmin + xmax) / 2, y = (ymin + ymax) / 2; try { if (typeof window.govmap.zoomToXY === 'function') window.govmap.zoomToXY({ x, y, level: 8 }); } catch (e) { console.warn(e); } }
         function chartData() {
           // Slider and charts are aligned: left = earliest year (1999), right = latest year (2025).
           const rows = [...selectedRows.value].sort((a, b) => Number(a.year) - Number(b.year));
@@ -788,7 +867,7 @@
             data: {
               labels,
               datasets: [{
-                label: 'מחיר למ״ר ביישוב',
+                label: selectedSettlement.value?.sid === NATIONAL_SID ? 'מחיר למ״ר ארצי' : 'מחיר למ״ר ביישוב',
                 data: prices,
                 borderColor: '#111111',
                 backgroundColor: 'rgba(17,17,17,.05)',
@@ -855,7 +934,9 @@
         function refreshSelectedSettlementForCurrentYear() {
           const sid = selectedSettlement.value?.sid;
           if (!sid) return;
-          const updated = joinedSettlements.value.find((item) => String(item.sid) === String(sid));
+          const updated = String(sid) === NATIONAL_SID
+            ? nationalSettlement.value
+            : joinedSettlements.value.find((item) => String(item.sid) === String(sid));
           if (updated) selectedSettlement.value = { ...updated };
         }
         async function redrawAfterYearChange() {
@@ -878,12 +959,12 @@
         async function handleAverageModeChanged() { await handleYearChanged(); }
         async function boot() {
           isBooting.value = true; errorMessage.value = '';
-          try { await Promise.all([loadLocalFiles(), initGovMap()]); if (availableYears.value.includes(DEFAULT_TARGET_YEAR)) targetYear.value = DEFAULT_TARGET_YEAR; else if (availableYears.value.length) targetYear.value = availableYears.value[availableYears.value.length - 1]; const defaultItem = joinedSettlements.value.find((item) => item.sid === '1200') || joinedSettlements.value.find((item) => item.hasData) || null; if (defaultItem) selectSettlement(defaultItem, false); await drawOverlay(); statusMessage.value = `המפה מוכנה. הצביעה לפי אחוז עסקאות בשנת ${targetYear.value} מהממוצע.`; } catch (error) { console.error(error); errorMessage.value = error?.message || 'שגיאה כללית בטעינת האתר.'; } finally { isBooting.value = false; }
+          try { await Promise.all([loadLocalFiles(), initGovMap()]); if (availableYears.value.includes(DEFAULT_TARGET_YEAR)) targetYear.value = DEFAULT_TARGET_YEAR; else if (availableYears.value.length) targetYear.value = availableYears.value[availableYears.value.length - 1]; selectSettlement(nationalSettlement.value, false); await drawOverlay(); statusMessage.value = `המפה מוכנה. מוצגים נתוני כל הארץ והצביעה לפי אחוז עסקאות בשנת ${targetYear.value} מהממוצע.`; } catch (error) { console.error(error); errorMessage.value = error?.message || 'שגיאה כללית בטעינת האתר.'; } finally { isBooting.value = false; }
         }
         watch(selectedRows, () => nextTick(() => renderCharts({ animate: true })));
         watch(targetYear, () => refreshSelectedSettlementForCurrentYear());
         onMounted(() => { installMapSelectionBridge(); boot(); });
-        return { isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, selectedSettlement, ignoreZeroYears, targetYear, availableYears, filteredSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, activeRoomTab, roomTabs, formatNumber, formatInteger, formatRatio, formatCurrency, formatPercent, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, yearSliderMin, yearSliderMax, reversedYearSliderValue };
+        return { isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, selectedSettlement, ignoreZeroYears, targetYear, availableYears, filteredSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, activeRoomTab, roomTabs, formatNumber, formatInteger, formatRatio, formatCurrency, formatPercent, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement };
       }
     }).mount('#app');
   </script>

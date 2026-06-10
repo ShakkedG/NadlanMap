@@ -1,4 +1,4 @@
-# Market Map - slider direction fixed
+# Market Map - national button
 
 Upload these files together to GitHub Pages:
 
@@ -6,4 +6,4 @@ Upload these files together to GitHub Pages:
 - settlements_flat.json
 - settlements_wkt_2039.json
 
-After uploading, hard-refresh the browser with Ctrl+F5.
+The site opens with aggregate data for all Israel, and the button "כל הארץ" returns from a selected settlement to the national view.
