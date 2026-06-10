@@ -183,11 +183,11 @@
             <div class="chart-area">
               <div v-if="selectedSettlement" class="chart-stack">
                 <article class="chart-panel">
-                  <h3>מחיר למ״ר לאורך השנים</h3>
+                  <h3>מחיר למ״ר לאורך השנים - {{ chartEntityName }}</h3>
                   <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
                 </article>
                 <article class="chart-panel">
-                  <h3>מספר מכירות לאורך השנים</h3>
+                  <h3>מספר מכירות לאורך השנים - {{ chartEntityName }}</h3>
                   <div class="chart-wrap sales-chart-wrap"><canvas id="salesChart"></canvas></div>
                 </article>
                 <div class="year-slider-card">
@@ -439,6 +439,10 @@
           if (!selectedSettlement.value) return [];
           if (String(selectedSettlement.value.sid) === NATIONAL_SID) return nationalRows.value;
           return rowGroups.value.get(String(selectedSettlement.value.sid)) || [];
+        });
+        const chartEntityName = computed(() => {
+          const name = selectedSettlement.value?.name;
+          return name && String(name).trim() ? String(name).trim() : 'כל הארץ';
         });
         const filteredSettlementList = computed(() => {
           const q = searchText.value.trim().toLowerCase();
@@ -867,7 +871,7 @@
             data: {
               labels,
               datasets: [{
-                label: selectedSettlement.value?.sid === NATIONAL_SID ? 'מחיר למ״ר ארצי' : 'מחיר למ״ר ביישוב',
+                label: `מחיר למ״ר - ${chartEntityName.value}`, 
                 data: prices,
                 borderColor: '#111111',
                 backgroundColor: 'rgba(17,17,17,.05)',
@@ -885,7 +889,7 @@
               maintainAspectRatio: false,
               animation: animate ? undefined : false,
               interaction: { mode: 'index', intersect: false },
-              plugins: { legend: { position: 'bottom', rtl: false, textDirection: 'ltr', labels: { usePointStyle: true } } },
+              plugins: { legend: { display: false } },
               scales: {
                 x: { reverse: false, ticks: { maxTicksLimit: 9 } },
                 y: { ticks: { callback: (v) => '₪' + Number(v).toLocaleString('he-IL') } }
@@ -898,7 +902,7 @@
             data: {
               labels,
               datasets: [{
-                label: 'מספר מכירות',
+                label: `מספר מכירות - ${chartEntityName.value}`, 
                 data: deals,
                 backgroundColor: selectedYearColors,
                 borderColor: selectedYearBorders,
@@ -907,7 +911,7 @@
                 maxBarThickness: 28
               }, {
                 type: 'line',
-                label: 'ממוצע השוואה',
+                label: `ממוצע השוואה - ${chartEntityName.value}`, 
                 data: avgLine,
                 borderColor: 'rgba(0,0,0,.72)',
                 backgroundColor: 'rgba(0,0,0,.08)',
@@ -921,7 +925,7 @@
               maintainAspectRatio: false,
               animation: animate ? undefined : false,
               interaction: { mode: 'index', intersect: false },
-              plugins: { legend: { position: 'bottom', rtl: false, textDirection: 'ltr', labels: { usePointStyle: true } } },
+              plugins: { legend: { display: false } },
               scales: {
                 x: { reverse: false, ticks: { maxTicksLimit: 9 } },
                 y: { beginAtZero: true, ticks: { callback: (v) => Number(v).toLocaleString('he-IL') } }
@@ -964,7 +968,7 @@
         watch(selectedRows, () => nextTick(() => renderCharts({ animate: true })));
         watch(targetYear, () => refreshSelectedSettlementForCurrentYear());
         onMounted(() => { installMapSelectionBridge(); boot(); });
-        return { isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, selectedSettlement, ignoreZeroYears, targetYear, availableYears, filteredSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, activeRoomTab, roomTabs, formatNumber, formatInteger, formatRatio, formatCurrency, formatPercent, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement };
+        return { isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, selectedSettlement, ignoreZeroYears, targetYear, availableYears, filteredSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, activeRoomTab, roomTabs, formatNumber, formatInteger, formatRatio, formatCurrency, formatPercent, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartEntityName };
       }
     }).mount('#app');
   </script>
