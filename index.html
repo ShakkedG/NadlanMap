@@ -110,6 +110,10 @@
     .result-row:hover { background: #f7faff; }
     .result-row small { display: block; color: #718098; margin-top: 3px; }
     .ratio-badge { direction: ltr; color: #0f5bff; font-weight: 900; white-space: nowrap; }
+    .ranking-toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 10px; position: sticky; top: -14px; background: #fff; z-index: 2; padding: 0 0 10px; }
+    .ranking-toolbar button { border: 1px solid #dfe6ef; border-radius: 10px; background: #f6f9ff; color: #052a5a; padding: 8px 10px; font-weight: 800; }
+    .ranking-toolbar button.active { background: #0f5bff; border-color: #0f5bff; color: #fff; }
+    .result-row .rank-index { color: #718098; font-weight: 800; margin-inline-start: 8px; }
     .legend { display: grid; gap: 8px; }
     .legend-row { display: grid; grid-template-columns: 24px 1fr; gap: 8px; align-items: center; color: #46566d; }
     .legend-row i { width: 24px; height: 14px; border: 1px solid rgba(15, 23, 42, .18); border-radius: 999px; }
@@ -224,8 +228,15 @@
 
           <section class="bottom-tools">
             <article class="mini-panel">
-              <h3>תוצאות חיפוש</h3>
-              <button v-for="item in filteredSettlementList.slice(0,12)" :key="item.sid" class="result-row" @click="selectSettlement(item)"><span>{{ item.name }}<small>{{ item.sid }} · {{ targetYear }}: {{ formatInteger(item.dealsSelected) }}</small></span><b class="ratio-badge">{{ formatRatio(item.ratio) }}</b></button>
+              <h3>רשימת יישובים לפי אחוז מהממוצע</h3>
+              <div class="ranking-toolbar">
+                <button :class="{ active: listSortDirection === 'asc' }" @click="listSortDirection = 'asc'">נמוך → גבוה</button>
+                <button :class="{ active: listSortDirection === 'desc' }" @click="listSortDirection = 'desc'">גבוה → נמוך</button>
+              </div>
+              <button v-for="(item, index) in rankedSettlementList" :key="item.sid" class="result-row" @click="selectSettlement(item)">
+                <span><b class="rank-index">{{ index + 1 }}.</b>{{ item.name }}<small>{{ targetYear }}: {{ formatInteger(item.dealsSelected) }} עסקאות · ממוצע: {{ formatNumber(item.avgAnnualDeals) }}</small></span>
+                <b class="ratio-badge">{{ formatRatio(item.ratio) }}</b>
+              </button>
             </article>
             <article class="mini-panel">
               <h3>מקרא צביעה</h3>
@@ -301,6 +312,7 @@
         const rawRows = ref([]);
         const wktFeatures = ref([]);
         const searchText = ref('');
+        const listSortDirection = ref('asc');
         const selectedSettlement = ref(null);
         const drawnNames = ref([]);
         const ignoreZeroYears = ref(false);
@@ -447,6 +459,19 @@
             if (b.hasData) return 1;
             return a.name.localeCompare(b.name, 'he');
           }).slice(0, 80);
+        });
+        const rankedSettlementList = computed(() => {
+          const direction = listSortDirection.value === 'desc' ? -1 : 1;
+          return [...joinedSettlements.value].sort((a, b) => {
+            const av = Number(a.ratio);
+            const bv = Number(b.ratio);
+            const aOk = Number.isFinite(av);
+            const bOk = Number.isFinite(bv);
+            if (aOk && bOk) return (av - bv) * direction;
+            if (aOk) return -1;
+            if (bOk) return 1;
+            return String(a.name || '').localeCompare(String(b.name || ''), 'he');
+          });
         });
         const stats = computed(() => {
           const values = joinedSettlements.value.map((item) => item.ratio).filter(Number.isFinite);
@@ -963,7 +988,7 @@
         watch(selectedRows, () => nextTick(() => renderCharts({ animate: true })));
         watch(targetYear, () => refreshSelectedSettlementForCurrentYear());
         onMounted(() => { installMapSelectionBridge(); boot(); });
-        return { isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, selectedSettlement, ignoreZeroYears, targetYear, availableYears, filteredSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, activeRoomTab, roomTabs, formatNumber, formatInteger, formatRatio, formatCurrency, formatPercent, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartEntityName };
+        return { isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, availableYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, activeRoomTab, roomTabs, formatNumber, formatInteger, formatRatio, formatCurrency, formatPercent, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartEntityName };
       }
     }).mount('#app');
   </script>

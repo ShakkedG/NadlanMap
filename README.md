@@ -1,4 +1,4 @@
-# Market Map - no green list
+# Market Map - all settlements ranking
 
 Upload these files together to GitHub Pages:
 
