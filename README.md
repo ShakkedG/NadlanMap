@@ -1,6 +1,6 @@
-# Market Map - Yield Charts
+# מפת נדל״ן - צביעה לפי מחיר ותשואה
 
-Upload these files together to GitHub Pages:
+להעלאה ל-GitHub Pages צריך את הקבצים:
 
 - index.html
 - settlements_flat.json
@@ -8,8 +8,10 @@ Upload these files together to GitHub Pages:
 - 2026-04_citiesagg.csv
 - 2026-04_com_citiesagg.csv
 
-Yield formula:
-- Residential gross yield = monthly residential rent * 12 / (price per sqm * 85 sqm) * 100
-- Commercial estimated yield = monthly commercial rent per sqm * 12 / price per sqm * 100
+מה נוסף בגרסה הזאת:
 
-After uploading, hard-refresh the browser with Ctrl+F5.
+- צביעת מפה לפי מחיר למ״ר ביחס לממוצע מחיר למ״ר של שאר היישובים באותה שנה.
+- אפשרות צביעת מפה לפי תשואה גולמית למגורים.
+- אפשרות צביעת מפה לפי תשואה COM / מסחרית.
+- חישוב תשואת מגורים לפי מספר חדרים: כל החדרים, 3, 4, 5.
+- שטח משוער לחישוב תשואה: כל החדרים 85 מ״ר, 3 חדרים 70 מ״ר, 4 חדרים 90 מ״ר, 5 חדרים 110 מ״ר.
