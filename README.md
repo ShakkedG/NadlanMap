@@ -1,6 +1,6 @@
-# מפת נדל״ן - גרסת היצע מודעות
+# NadlanMap - annual and quarterly tabs
 
-להעלאה ל-GitHub Pages צריך להעלות את הקבצים:
+Upload these files to GitHub Pages root:
 
 - index.html
 - settlements_flat.json
@@ -8,5 +8,9 @@
 - 2026-04_citiesagg.csv
 - 2026-04_com_citiesagg.csv
 
-בגרסה הזו listing_amount מוצג כהיצע מודעות ולא רק כסימון אמינות.
-נוספו מצבי צביעת מפה לפי היצע מגורים והיצע מסחרי מול ממוצע שאר היישובים באותו רבעון.
+Changes:
+- Annual data controls are separated from quarterly data controls.
+- Annual coloring uses the year slider.
+- Quarterly coloring uses the quarterly slider.
+- Quarterly slider is capped at 2025 quarter 4.
+- Quarterly charts appear under the quarterly controls.
