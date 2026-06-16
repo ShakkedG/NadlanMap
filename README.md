@@ -1,6 +1,6 @@
-# NadlanMap - annual and quarterly tabs
+# מפת נדל״ן - גרסה מתוקנת
 
-Upload these files to GitHub Pages root:
+קבצים להעלאה ל-GitHub Pages:
 
 - index.html
 - settlements_flat.json
@@ -8,9 +8,13 @@ Upload these files to GitHub Pages root:
 - 2026-04_citiesagg.csv
 - 2026-04_com_citiesagg.csv
 
-Changes:
-- Annual data controls are separated from quarterly data controls.
-- Annual coloring uses the year slider.
-- Quarterly coloring uses the quarterly slider.
-- Quarterly slider is capped at 2025 quarter 4.
-- Quarterly charts appear under the quarterly controls.
+שינויים עיקריים:
+
+- הפרדה בין נתונים שנתיים לבין נתונים רבעוניים.
+- הסליידר הרבעוני נעצר ברבעון 4 2025.
+- הגרפים הרבעוניים מציגים תמיד את כל הרבעונים עד הרבעון הנבחר.
+- אין כפתורי "הצג הכל" / "רק הרבעון הנבחר".
+- בחירת מגורים/מסחרי אחת שולטת גם בצביעת המפה הרבעונית וגם בגרפים הרבעוניים.
+- רשימת היישובים לא מציגה יישובים שהתוצאה שלהם היא "לא ידוע".
+- תיבת "איך החישובים עובדים?" סגורה כברירת מחדל ומעודכנת.
+- אין הצגת שם קובץ או תווית שנה באמצע הסליידר.
