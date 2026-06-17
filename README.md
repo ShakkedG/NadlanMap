@@ -1,6 +1,6 @@
 # NadlanMap
 
-קבצים להעלאה ל-GitHub Pages:
+להעלאה ל-GitHub Pages צריך להעלות את הקבצים:
 
 - index.html
 - settlements_flat.json
@@ -8,4 +8,4 @@
 - 2026-04_citiesagg.csv
 - 2026-04_com_citiesagg.csv
 
-לאחר העלאה מומלץ לבצע רענון קשיח בדפדפן: Ctrl + F5.
+אחרי העלאה מומלץ לעשות בדפדפן Ctrl + F5.
