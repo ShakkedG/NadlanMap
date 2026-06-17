@@ -198,8 +198,8 @@
           <label class="toggle-line"><input type="checkbox" v-model="ignoreZeroYears" @change="handleAverageModeChanged" /> להתעלם משנים עם 0 עסקאות בחישוב הממוצע</label>
 
           <header class="report-title">
-            <h1>{{ selectedSettlement?.sid === '__national__' ? 'מגמות המחירים בכל הארץ' : 'מגמות המחירים ביישוב' }}</h1>
-            <p>{{ selectedSettlement ? selectedSettlement.name : 'בחר יישוב להצגת מדדים' }} · בהתייחס לשנת {{ targetYear }}</p>
+            <h1>{{ pageTitle }}</h1>
+            <p>בהתייחס לשנת {{ targetYear }}</p>
             <div class="status" :class="{error: errorMessage}">{{ errorMessage || statusMessage }}</div>
           </header>
 
@@ -216,7 +216,7 @@
               <div class="stat-text"><p class="stat-value">{{ formatYield(activeYieldValue) }}</p><div class="stat-label"><strong>{{ activeYieldTitle }}</strong><br>{{ activeYieldSubtitle }}</div></div>
               <div class="stat-icon">%</div>
             </article>
-            <article class="stat-card">
+            <article v-if="!isRentalColorMode()" class="stat-card">
               <div class="stat-text"><p class="stat-value">{{ formatColorMetric(selectedSettlement) }}</p><div class="stat-label"><strong>מדד הצביעה במפה</strong><br>{{ colorMetricLabel }}</div></div>
               <div class="stat-icon">🎨</div>
             </article>
@@ -276,7 +276,8 @@
                     <span>מספר חדרים לחישוב שכירות ותשואה:</span>
                     <button v-for="option in roomGroupOptions" :key="option.key" :class="{ active: selectedRoomGroup === option.key }" @click="selectedRoomGroup = option.key">{{ option.label }}</button>
                   </div>
-                  <p class="rental-filter-note" v-if="rentalDataType === 'regular'">הצביעה והגרפים מציגים תשואה ושכירות מגורים לפי {{ selectedRoomGroupLabel }} בלבד, ובהנחת שטח מייצג של {{ selectedRoomGroupSqm }} מ״ר.</p>
+                  <p class="rental-filter-note" v-if="rentalDataType === 'regular' && selectedRoomGroup !== 'all'">הצביעה והגרפים מציגים תשואה ושכירות מגורים לפי {{ selectedRoomGroupLabel }} בלבד, ובהנחת שטח מייצג של {{ selectedRoomGroupSqm }} מ״ר.</p>
+                  <p class="rental-filter-note" v-if="rentalDataType === 'regular' && selectedRoomGroup === 'all'">הצביעה והגרפים מציגים תוצאה משולבת לכל סוגי החדרים: 3, 4 ו־5 חדרים, לפי היצע המודעות בכל קבוצה.</p>
                   <p class="rental-filter-note" v-else>הצביעה והגרפים מציגים נתונים מסחריים. החישוב מבוסס על שכירות חודשית למ״ר.</p>
                   <details class="formula-details">
                     <summary>איך החישובים עובדים?</summary>
@@ -286,6 +287,7 @@
                       <p><b>מחיר למ״ר מול שאר היישובים:</b> <span class="formula-equation">מחיר למ״ר ביישוב בשנה הנבחרת ÷ ממוצע מחיר למ״ר בשאר היישובים באותה שנה × 100</span>.</p>
                       <p><b>נתונים רבעוניים:</b> סליידר הרבעון מציג בגרפים את כל הרבעונים מתחילת הנתונים ועד הרבעון הנבחר. הצביעה הרבעונית מחושבת לפי הרבעון הנבחר בלבד.</p>
                       <p><b>תשואה מגורים לפי מספר חדרים:</b> <span class="formula-equation">שכירות חודשית לרבעון × 12 ÷ (מחיר למ״ר באותה שנה × שטח מייצג לפי חדרים) × 100</span>. השטחים באתר: 3 חדרים = 70 מ״ר, 4 חדרים = 90 מ״ר, 5 חדרים = 110 מ״ר.</p>
+                      <p><b>תוצאה משולבת לכל סוגי החדרים:</b> מחשבים בנפרד תשואה ל־3, 4 ו־5 חדרים לפי השטח המייצג של כל קבוצה, ואז מחשבים ממוצע משוקלל לפי היצע המודעות בכל קבוצת חדרים. אין שימוש בהנחת 85 מ״ר.</p>
                       <p><b>תשואה מסחרית:</b> <span class="formula-equation">שכירות חודשית מסחרית למ״ר × 12 ÷ מחיר למ״ר באותה שנה × 100</span>.</p>
                       <p><b>היצע מודעות:</b> <span class="formula-equation">listing_amount</span> הוא מספר המודעות/התצפיות באותו יישוב, רבעון וסוג נתון. הוא מוצג כהיצע למשתמשים וגם כרמז לכמה הנתון מבוסס.</p>
                       <p><b>חשוב:</b> התשואה היא גולמית ומשוערת. היא לא מפחיתה מסים, תחזוקה, תקופות ריקות, תיווך, שיפוצים או מימון.</p>
@@ -322,7 +324,8 @@
                   <p>שכירות מגורים חציונית · {{ selectedRoomGroupLabel }} · {{ selectedRentalPeriodLabel }}: <b>{{ formatCurrency(selectedResidentialRentLatest?.rental_price) }}</b></p>
                   <p class="listing-metric"><span>היצע מודעות מגורים · {{ selectedRoomGroupLabel }} · {{ selectedRentalPeriodLabel }}</span><span><b>{{ formatInteger(selectedResidentialRentLatest?.listings_amount) }}</b> <i class="quality-badge" :class="listingQualityClass(selectedResidentialRentLatest?.listings_amount)">{{ listingQualityLabel(selectedResidentialRentLatest?.listings_amount) }}</i></span></p>
                   <p>תשואה גולמית למגורים · {{ selectedRoomGroupLabel }} · {{ selectedRentalPeriodLabel }}: <b>{{ formatYield(selectedResidentialYieldLatest?.yield) }}</b></p>
-                  <p class="note">תשואת מגורים מחושבת לפי {{ selectedRoomGroupLabel }} בלבד, ובהנחת שטח מייצג של {{ selectedRoomGroupSqm }} מ״ר.</p>
+                  <p v-if="selectedRoomGroup !== 'all'" class="note">תשואת מגורים מחושבת לפי {{ selectedRoomGroupLabel }} בלבד, ובהנחת שטח מייצג של {{ selectedRoomGroupSqm }} מ״ר.</p>
+                  <p v-else class="note">תשואת מגורים משולבת מחושבת ל־3, 4 ו־5 חדרים בנפרד, ואז משוקללת לפי היצע המודעות.</p>
                 </template>
                 <template v-else>
                   <p>שכירות מסחרית חציונית · {{ selectedRentalPeriodLabel }}: <b>{{ formatCurrency(selectedCommercialRentLatest?.rental_price) }}</b></p>
@@ -339,7 +342,7 @@
               <article class="info-box">
                 <h3>שנת עסקאות {{ targetYear }}</h3>
                 <p><span class="bullet"></span> מחיר חציוני שנתי: <b>{{ formatCurrency(selectedSettlement?.ppsqmSelected) }}</b></p>
-                <p><span class="bullet"></span> מדד צביעה נוכחי: <b>{{ formatColorMetric(selectedSettlement) }}</b></p>
+                <p v-if="!isRentalColorMode()"><span class="bullet"></span> מדד צביעה נוכחי: <b>{{ formatColorMetric(selectedSettlement) }}</b></p>
                 <p class="note">{{ colorModeNote }}</p>
               </article>
 
@@ -398,12 +401,12 @@
       { min: 1.50, max: Infinity, color: [22, 101, 52, 0.88], label: 'מעל 150% מהממוצע - ירוק כהה' }
     ];
     const YIELD_COLOR_SCALE = [
-      { min: -Infinity, max: 2.00, color: [153, 27, 27, 0.88], label: 'עד 2% תשואה - אדום כהה' },
-      { min: 2.00, max: 3.00, color: [239, 68, 68, 0.86], label: '2%–3% תשואה - אדום' },
-      { min: 3.00, max: 4.00, color: [249, 115, 22, 0.84], label: '3%–4% תשואה - כתום' },
-      { min: 4.00, max: 5.00, color: [234, 179, 8, 0.84], label: '4%–5% תשואה - צהוב' },
-      { min: 5.00, max: 7.00, color: [74, 222, 128, 0.84], label: '5%–7% תשואה - ירוק בהיר' },
-      { min: 7.00, max: Infinity, color: [22, 101, 52, 0.88], label: 'מעל 7% תשואה - ירוק כהה' }
+      { min: -Infinity, max: 1.00, color: [153, 27, 27, 0.88], label: 'עד 1% תשואה - אדום כהה' },
+      { min: 1.00, max: 2.00, color: [239, 68, 68, 0.86], label: '1%–2% תשואה - אדום' },
+      { min: 2.00, max: 3.00, color: [249, 115, 22, 0.84], label: '2%–3% תשואה - כתום' },
+      { min: 3.00, max: 4.00, color: [234, 179, 8, 0.84], label: '3%–4% תשואה - צהוב' },
+      { min: 4.00, max: 6.00, color: [74, 222, 128, 0.84], label: '4%–6% תשואה - ירוק בהיר' },
+      { min: 6.00, max: Infinity, color: [22, 101, 52, 0.88], label: 'מעל 6% תשואה - ירוק כהה' }
     ];
     const NO_DATA_COLOR = [148, 163, 184, 0.50];
     const OUTLINE_COLOR = [25, 25, 25, 0.86];
@@ -470,7 +473,11 @@
     function rgbaCss(color) { return `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${color[3]})`; }
     function colorForRatio(ratio) { if (!Number.isFinite(ratio)) return NO_DATA_COLOR; return COLOR_SCALE.find((b) => ratio >= b.min && ratio < b.max)?.color || COLOR_SCALE[COLOR_SCALE.length - 1].color; }
     function colorForYield(value) { if (!Number.isFinite(value)) return NO_DATA_COLOR; return YIELD_COLOR_SCALE.find((b) => value >= b.min && value < b.max)?.color || YIELD_COLOR_SCALE[YIELD_COLOR_SCALE.length - 1].color; }
-    function sqmForRoomGroup(roomGroup) { return ROOM_GROUP_SQM[String(roomGroup || '4')] || ESTIMATED_APARTMENT_SQM; }
+    function isCombinedRoomGroup(roomGroup) { return String(roomGroup ?? '').toLowerCase() === 'all'; }
+    function sqmForRoomGroup(roomGroup) {
+      if (isCombinedRoomGroup(roomGroup)) return null;
+      return ROOM_GROUP_SQM[String(roomGroup || '4')] || null;
+    }
     function ratioExplanation(ratio, yearLabel = 'השנה הנבחרת') { if (!Number.isFinite(ratio)) return 'אין מספיק נתונים לחישוב היחס.'; const percent = Math.round(ratio * 100); if (ratio > 1.05) return `בשנת ${yearLabel} היו כ-${percent}% מהממוצע השנתי, כלומר פעילות המכירות גבוהה מהממוצע.`; if (ratio < 0.95) return `בשנת ${yearLabel} היו כ-${percent}% מהממוצע השנתי, כלומר פעילות המכירות נמוכה מהממוצע.`; return `בשנת ${yearLabel} מספר העסקאות דומה לממוצע השנתי.`; }
 
     const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
@@ -498,14 +505,15 @@
         const showLayers = ref(false);
         const mapFullscreen = ref(false);
         const rentalDataType = ref('regular');
-        const selectedRoomGroup = ref('4');
+        const selectedRoomGroup = ref('all');
         const colorMode = ref('deals');
         const roomGroupOptions = [
+          { key: 'all', label: 'כל סוגי החדרים' },
           { key: '3', label: '3 חדרים' },
           { key: '4', label: '4 חדרים' },
           { key: '5', label: '5 חדרים' }
         ];
-        const selectedRoomGroupLabel = computed(() => roomGroupOptions.find((option) => option.key === selectedRoomGroup.value)?.label || '4 חדרים');
+        const selectedRoomGroupLabel = computed(() => roomGroupOptions.find((option) => option.key === selectedRoomGroup.value)?.label || 'כל סוגי החדרים');
         const selectedRoomGroupSqm = computed(() => sqmForRoomGroup(selectedRoomGroup.value));
         let priceChart = null;
         let salesChart = null;
@@ -557,11 +565,15 @@
         const rentalSliderMaxLabel = computed(() => availableRentalPeriods.value[availableRentalPeriods.value.length - 1]?.label || '');
         const rentalChartScopeLabel = computed(() => `עד ${selectedRentalPeriodLabel.value}`);
         function rowMatchesRoomGroup(row, roomGroup) {
-          if (!roomGroup) return true;
+          if (!roomGroup || isCombinedRoomGroup(roomGroup)) return true;
           return String(row.rooms_group || '').toLowerCase() === String(roomGroup).toLowerCase();
         }
         function latestRentFromIndex(index, sid, roomGroup = null) {
           const rows = index.get(String(sid)) || [];
+          if (isCombinedRoomGroup(roomGroup)) {
+            const aggregated = aggregateResidentialRowsByPeriod(rows.filter(isRentalRowAllowed));
+            return aggregated[aggregated.length - 1] || null;
+          }
           for (let i = rows.length - 1; i >= 0; i--) {
             if (!isRentalRowAllowed(rows[i])) continue;
             if (!rowMatchesRoomGroup(rows[i], roomGroup)) continue;
@@ -574,6 +586,10 @@
         function latestRentForYearFromIndex(index, sid, year, roomGroup = null) {
           const rows = index.get(String(sid)) || [];
           const target = Number(year);
+          if (isCombinedRoomGroup(roomGroup)) {
+            const aggregated = aggregateResidentialRowsByPeriod(rows.filter((row) => isRentalRowAllowed(row) && Number(row.year) === target));
+            return aggregated[aggregated.length - 1] || null;
+          }
           for (let i = rows.length - 1; i >= 0; i--) {
             if (!isRentalRowAllowed(rows[i])) continue;
             if (Number(rows[i].year) !== target) continue;
@@ -623,9 +639,55 @@
         function filterRowsByRentalDisplay(rows) {
           return (rows || []).filter(isRentalRowAllowed).filter(isRowUpToSelectedRentalPeriod);
         }
+        function aggregateResidentialRowsByPeriod(rows) {
+          const groups = new Map();
+          for (const row of rows || []) {
+            const price = normalizeNumber(row.rental_price);
+            if (!Number.isFinite(price) || price <= 0) continue;
+            const p = periodFromRow(row);
+            if (!p) continue;
+            if (!groups.has(p.key)) groups.set(p.key, { period: p, rows: [] });
+            groups.get(p.key).rows.push({
+              ...row,
+              rental_price: price,
+              listings_amount: normalizeNumber(row.listings_amount),
+              rooms_group: String(row.rooms_group || '').trim()
+            });
+          }
+          return [...groups.values()]
+            .sort((a, b) => (a.period.year - b.period.year) || (a.period.quarter - b.period.quarter))
+            .map((group) => {
+              const rows = group.rows;
+              const anyListings = rows.some((row) => Number.isFinite(row.listings_amount));
+              const sumListings = rows.reduce((sum, row) => sum + (Number.isFinite(row.listings_amount) && row.listings_amount > 0 ? row.listings_amount : 0), 0);
+              const useListingsWeights = sumListings > 0;
+              let weightedSum = 0;
+              let weightSum = 0;
+              for (const row of rows) {
+                const weight = useListingsWeights ? (Number.isFinite(row.listings_amount) && row.listings_amount > 0 ? row.listings_amount : 0) : 1;
+                if (weight <= 0) continue;
+                weightedSum += row.rental_price * weight;
+                weightSum += weight;
+              }
+              const rentalPrice = weightSum > 0 ? weightedSum / weightSum : null;
+              return {
+                ...rows[0],
+                year: group.period.year,
+                quarter_mapi: group.period.quarter,
+                rooms_group: 'all',
+                rental_price: rentalPrice,
+                listings_amount: anyListings ? sumListings : null,
+                _sourceRows: rows
+              };
+            })
+            .filter((row) => Number.isFinite(row.rental_price));
+        }
         function rentForPeriodFromIndex(index, sid, period, roomGroup = null) {
           const rows = index.get(String(sid)) || [];
           if (!period || !isRentalPeriodAllowed(period)) return null;
+          if (isCombinedRoomGroup(roomGroup)) {
+            return aggregateResidentialRowsByPeriod(rows.filter((row) => matchesRentalPeriod(row, period)))[0] || null;
+          }
           for (let i = rows.length - 1; i >= 0; i--) {
             if (!matchesRentalPeriod(rows[i], period)) continue;
             if (!rowMatchesRoomGroup(rows[i], roomGroup)) continue;
@@ -637,7 +699,9 @@
         }
         function rentalRowsForSelected(index, roomGroup = null) {
           const sid = selectedSettlement.value?.sid ? String(selectedSettlement.value.sid) : NATIONAL_SID;
-          return filterRowsByRentalDisplay(index.get(sid) || [])
+          const rows = filterRowsByRentalDisplay(index.get(sid) || []);
+          if (isCombinedRoomGroup(roomGroup)) return aggregateResidentialRowsByPeriod(rows);
+          return rows
             .filter((row) => rowMatchesRoomGroup(row, roomGroup))
             .map((row) => ({
               ...row,
@@ -664,7 +728,7 @@
           const priceByYear = selectedPriceByYear();
           return selectedResidentialRentRows.value.map((row) => {
             const ppsqm = priceByYear.get(Number(row.year));
-            return { ...row, ppsqm, yield: calcResidentialYield(row.rental_price, ppsqm, selectedRoomGroup.value) };
+            return { ...row, ppsqm, yield: calcResidentialYieldFromRentRow(row, ppsqm) };
           }).filter((row) => Number.isFinite(row.yield));
         });
         const selectedCommercialYieldRows = computed(() => {
@@ -683,7 +747,7 @@
           const period = selectedRentalPeriod.value;
           const rent = rentForPeriodFromIndex(residentialRentIndex.value, selectedSettlement.value?.sid || NATIONAL_SID, period, selectedRoomGroup.value);
           const ppsqm = period ? selectedPriceByYear().get(Number(period.year)) : null;
-          const value = calcResidentialYield(rent?.rental_price, ppsqm, selectedRoomGroup.value);
+          const value = calcResidentialYieldFromRentRow(rent, ppsqm);
           return Number.isFinite(value) ? { ...rent, ppsqm, yield: value } : null;
         });
         const selectedCommercialYieldLatest = computed(() => {
@@ -697,7 +761,11 @@
         const hasCommercialYieldData = computed(() => selectedCommercialYieldRows.value.length > 0);
         const activeYieldValue = computed(() => rentalDataType.value === 'commercial' ? selectedCommercialYieldLatest.value?.yield : selectedResidentialYieldLatest.value?.yield);
         const activeYieldTitle = computed(() => rentalDataType.value === 'commercial' ? 'תשואה מסחרית משוערת' : `תשואה גולמית משוערת · ${selectedRoomGroupLabel.value}`);
-        const activeYieldSubtitle = computed(() => rentalDataType.value === 'commercial' ? 'שכירות שנתית למ״ר / מחיר למ״ר' : `שכירות שנתית / שווי דירה מוערך לפי ${selectedRoomGroupSqm.value} מ״ר`);
+        const activeYieldSubtitle = computed(() => {
+          if (rentalDataType.value === 'commercial') return 'שכירות שנתית למ״ר / מחיר למ״ר';
+          if (selectedRoomGroup.value === 'all') return 'ממוצע משוקלל של 3, 4 ו־5 חדרים לפי היצע מודעות';
+          return `שכירות שנתית / שווי דירה מוערך לפי ${selectedRoomGroupSqm.value} מ״ר`;
+        });
 
         const nationalRows = computed(() => {
           const byYear = new Map();
@@ -757,7 +825,7 @@
           const ppsqmForYield = normalizeNumber(rowForYield?.ppsqm);
           const residentialRentSelected = rentForPeriodFromIndex(residentialRentIndex.value, NATIONAL_SID, rentPeriod, selectedRoomGroup.value);
           const commercialRentSelected = rentForPeriodFromIndex(commercialRentIndex.value, NATIONAL_SID, rentPeriod);
-          const residentialYieldSelected = calcResidentialYield(residentialRentSelected?.rental_price, ppsqmForYield, selectedRoomGroup.value);
+          const residentialYieldSelected = calcResidentialYieldFromRentRow(residentialRentSelected, ppsqmForYield);
           const commercialYieldSelected = calcCommercialYield(commercialRentSelected?.rental_price, ppsqmForYield);
           const residentialListingsSelected = normalizeNumber(residentialRentSelected?.listings_amount);
           const commercialListingsSelected = normalizeNumber(commercialRentSelected?.listings_amount);
@@ -887,7 +955,7 @@
             const ppsqmForYield = normalizeNumber(rowForYield?.ppsqm);
             const residentialRentSelected = rentForPeriodFromIndex(residentialRentIndex.value, sid, rentPeriod, selectedRoomGroup.value);
             const commercialRentSelected = rentForPeriodFromIndex(commercialRentIndex.value, sid, rentPeriod);
-            const residentialYieldSelected = calcResidentialYield(residentialRentSelected?.rental_price, ppsqmForYield, selectedRoomGroup.value);
+            const residentialYieldSelected = calcResidentialYieldFromRentRow(residentialRentSelected, ppsqmForYield);
             const commercialYieldSelected = calcCommercialYield(commercialRentSelected?.rental_price, ppsqmForYield);
             const residentialListingsSelected = normalizeNumber(residentialRentSelected?.listings_amount);
             const commercialListingsSelected = normalizeNumber(commercialRentSelected?.listings_amount);
@@ -912,6 +980,12 @@
           const name = selectedSettlement.value?.name;
           return name && String(name).trim() ? String(name).trim() : 'כל הארץ';
         });
+        const pageTitle = computed(() => {
+          const sid = selectedSettlement.value?.sid ? String(selectedSettlement.value.sid) : NATIONAL_SID;
+          const name = chartEntityName.value;
+          if (sid === NATIONAL_SID || name === 'כל הארץ') return 'מגמות מחירים בכל הארץ';
+          return `מגמות מחירים ב${name}`;
+        });
         const filteredSettlementList = computed(() => {
           const q = searchText.value.trim().toLowerCase();
           return joinedSettlements.value.filter((item) => !q || item.name.toLowerCase().includes(q) || item.sid.includes(q)).sort((a, b) => {
@@ -932,10 +1006,38 @@
         function isAnnualColorMode() { return colorMode.value === 'deals' || colorMode.value === 'price'; }
         function isRentalColorMode() { return isYieldColorMode(); }
         function colorForCurrentMetricValue(value) { return isYieldColorMode() ? colorForYield(value) : colorForRatio(value); }
+        function hasKnownRankingMetric(item) {
+          if (!item) return false;
+          const metric = normalizeNumber(colorMetricValue(item));
+          if (!Number.isFinite(metric)) return false;
+
+          if (colorMode.value === 'price') {
+            return Number.isFinite(normalizeNumber(item.ppsqmSelected))
+              && Number.isFinite(normalizeNumber(item.avgOtherPpsqm));
+          }
+
+          if (colorMode.value === 'residentialYield') {
+            return Number.isFinite(normalizeNumber(item.residentialYieldSelected))
+              && Number.isFinite(normalizeNumber(item.residentialRentSelected?.rental_price))
+              && Number.isFinite(normalizeNumber(item.residentialRentSelected?.listings_amount))
+              && Number.isFinite(normalizeNumber(item.ppsqmForYield));
+          }
+
+          if (colorMode.value === 'commercialYield') {
+            return Number.isFinite(normalizeNumber(item.commercialYieldSelected))
+              && Number.isFinite(normalizeNumber(item.commercialRentSelected?.rental_price))
+              && Number.isFinite(normalizeNumber(item.commercialRentSelected?.listings_amount))
+              && Number.isFinite(normalizeNumber(item.ppsqmForYield));
+          }
+
+          return Number.isFinite(normalizeNumber(item.dealsSelected))
+            && Number.isFinite(normalizeNumber(item.avgAnnualDeals));
+        }
+
         const rankedSettlementList = computed(() => {
           const direction = listSortDirection.value === 'desc' ? -1 : 1;
           return joinedSettlements.value
-            .filter((item) => Number.isFinite(Number(colorMetricValue(item))))
+            .filter((item) => hasKnownRankingMetric(item) && Number.isFinite(normalizeNumber(colorMetricValue(item))) && formatColorMetric(item) !== 'לא ידוע')
             .sort((a, b) => {
               const av = Number(colorMetricValue(a));
               const bv = Number(colorMetricValue(b));
@@ -1011,6 +1113,34 @@
           const pricePerSqm = normalizeNumber(ppsqm);
           if (!Number.isFinite(rent) || rent <= 0 || !Number.isFinite(pricePerSqm) || pricePerSqm <= 0) return null;
           return (rent * 12 / (pricePerSqm * sqmForRoomGroup(roomGroup))) * 100;
+        }
+        function calcResidentialYieldFromRentRow(rentRow, ppsqm) {
+          if (!rentRow) return null;
+          if (isCombinedRoomGroup(rentRow.rooms_group) && Array.isArray(rentRow._sourceRows)) {
+            return calcCombinedResidentialYield(rentRow._sourceRows, ppsqm);
+          }
+          return calcResidentialYield(rentRow.rental_price, ppsqm, rentRow.rooms_group || selectedRoomGroup.value);
+        }
+        function calcCombinedResidentialYield(rows, ppsqm) {
+          const pricePerSqm = normalizeNumber(ppsqm);
+          if (!Number.isFinite(pricePerSqm) || pricePerSqm <= 0) return null;
+          const valid = (rows || []).map((row) => {
+            const y = calcResidentialYield(row.rental_price, pricePerSqm, row.rooms_group);
+            const listings = normalizeNumber(row.listings_amount);
+            return { y, listings };
+          }).filter((row) => Number.isFinite(row.y));
+          if (!valid.length) return null;
+          const sumListings = valid.reduce((sum, row) => sum + (Number.isFinite(row.listings) && row.listings > 0 ? row.listings : 0), 0);
+          const useListingsWeights = sumListings > 0;
+          let weightedSum = 0;
+          let weightSum = 0;
+          for (const row of valid) {
+            const weight = useListingsWeights ? (Number.isFinite(row.listings) && row.listings > 0 ? row.listings : 0) : 1;
+            if (weight <= 0) continue;
+            weightedSum += row.y * weight;
+            weightSum += weight;
+          }
+          return weightSum > 0 ? weightedSum / weightSum : null;
         }
         function calcCommercialYield(monthlyRentPerSqm, ppsqm) {
           const rentPerSqm = normalizeNumber(monthlyRentPerSqm);
@@ -1756,7 +1886,7 @@
         watch(targetYear, () => refreshSelectedSettlementForCurrentYear());
         watch(rentalPeriodIndex, () => refreshSelectedSettlementForCurrentYear());
         onMounted(() => { installMapSelectionBridge(); boot(); });
-        return { ESTIMATED_APARTMENT_SQM, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, rentalShowAllQuarters, availableYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, colorMode, colorMetricLabel, colorModeNote, rankingTitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, rankingRowSubtitle, setColorMode, setQuarterlyDataType, formatNumber, formatInteger, formatRatio, formatCurrency, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, handleRentalPeriodInput, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartEntityName, selectedResidentialRentLatest, selectedCommercialRentLatest, selectedResidentialYieldLatest, selectedCommercialYieldLatest, activeYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData };
+        return { ESTIMATED_APARTMENT_SQM, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, rentalShowAllQuarters, availableYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, colorMode, colorMetricLabel, colorModeNote, rankingTitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, rankingRowSubtitle, setColorMode, setQuarterlyDataType, formatNumber, formatInteger, formatRatio, formatCurrency, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, handleRentalPeriodInput, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartEntityName, pageTitle, selectedResidentialRentLatest, selectedCommercialRentLatest, selectedResidentialYieldLatest, selectedCommercialYieldLatest, activeYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData };
       }
     }).mount('#app');
   </script>
