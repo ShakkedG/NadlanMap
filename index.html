@@ -300,10 +300,6 @@
                   <p class="rental-filter-note" v-if="rentalDataType === 'regular' && selectedRoomGroup !== 'all'">הצביעה והגרפים מציגים תשואה ושכירות מגורים לפי {{ selectedRoomGroupLabel }} בלבד, ובהנחת שטח מייצג של {{ selectedRoomGroupSqm }} מ״ר.</p>
                   <p class="rental-filter-note" v-else-if="rentalDataType === 'regular' && selectedRoomGroup === 'all'">הצביעה והגרפים מציגים תוצאה משולבת לכל סוגי החדרים: 3, 4 ו־5 חדרים, לפי היצע המודעות בכל קבוצה.</p>
                   <p class="rental-filter-note" v-else>הצביעה והגרפים מציגים נתונים מסחריים. החישוב מבוסס על שכירות חודשית למ״ר.</p>
-                  <div class="rental-filter-row">
-                    <span>סינון היצע מינימלי בדירוג ובצביעה רבעונית:</span>
-                    <button v-for="option in minListingsOptions" :key="option.value" class="filter-chip" :class="{ active: minListingsFilter === option.value }" @click="setMinListingsFilter(option.value)">{{ option.label }}</button>
-                  </div>
                   <details class="formula-details">
                     <summary>איך החישובים עובדים?</summary>
                     <div class="formula-list">
@@ -314,8 +310,14 @@
                       <p><b>תשואה מגורים לפי מספר חדרים:</b> <span class="formula-equation">שכירות חודשית לרבעון × 12 ÷ (מחיר למ״ר באותה שנה × שטח מייצג לפי חדרים) × 100</span>. השטחים באתר: 3 חדרים = 70 מ״ר, 4 חדרים = 90 מ״ר, 5 חדרים = 110 מ״ר.</p>
                       <p><b>תוצאה משולבת לכל סוגי החדרים:</b> מחשבים בנפרד תשואה ל־3, 4 ו־5 חדרים לפי השטח המייצג של כל קבוצה, ואז מחשבים ממוצע משוקלל לפי היצע המודעות בכל קבוצת חדרים. אין שימוש בהנחת 85 מ״ר.</p>
                       <p><b>תשואה מסחרית:</b> <span class="formula-equation">שכירות חודשית מסחרית למ״ר × 12 ÷ מחיר קנייה למ״ר באותה שנה × 100</span>. בקובץ המסחרי מחיר השכירות הוא למ״ר לחודש, לכן אין הכפלה בשטח נכס.</p>
-                      <p><b>ציון השקעה:</b> ציון 0–100 שמשלב תשואה, היצע מודעות, מחיר יחסי למ״ר ועליית מחיר מול השנה הקודמת. התשואה מקבלת את המשקל הגבוה ביותר, אבל יישוב עם מעט מודעות או מחיר גבוה מאוד יקבל ציון נמוך יותר.</p>
-                      <p><b>היצע מודעות:</b> <span class="formula-equation">listing_amount</span> הוא מספר המודעות/התצפיות באותו יישוב, רבעון וסוג נתון. אפשר לסנן דירוג וצביעה רבעונית לפי מינימום מודעות כדי להימנע מנתונים דלים מדי.</p>
+                      <p><b>ציון השקעה:</b> ציון 0–100 שמשלב ארבעה רכיבים: תשואה, היצע מודעות, מחיר יחסי למ״ר ושינוי מחיר שנתי.</p>
+                      <p><span class="formula-equation">ציון השקעה = ציון תשואה × 42% + ציון היצע × 20% + ציון מחיר × 23% + ציון שינוי מחיר × 15%</span></p>
+                      <p><b>ציון תשואה:</b> <span class="formula-equation">תשואה ÷ 6% × 100</span>. תשואה של 6% ומעלה מקבלת את מלוא הניקוד ברכיב הזה.</p>
+                      <p><b>ציון היצע:</b> <span class="formula-equation">יחס היצע ÷ 1.6 × 100</span>, כאשר יחס היצע הוא היצע המודעות ביישוב ביחס לממוצע ההיצע בשאר היישובים.</p>
+                      <p><b>ציון מחיר:</b> <span class="formula-equation">(1.45 - יחס מחיר למ״ר) ÷ 0.9 × 100</span>. מחיר נמוך מהממוצע מקבל ציון גבוה יותר, ומחיר גבוה מאוד מקבל ציון נמוך יותר.</p>
+                      <p><b>ציון שינוי מחיר:</b> <span class="formula-equation">(שינוי מחיר שנתי + 5) ÷ 20 × 100</span>. עליית מחיר חיובית משפרת את הציון.</p>
+                      <p><b>היצע מודעות:</b> <span class="formula-equation">listing_amount</span> הוא מספר המודעות/התצפיות באותו יישוב, רבעון וסוג נתון. הוא משמש גם להצגת היצע למשתמש וגם כרכיב בציון ההשקעה.</p>
+                      <p><b>הערה לציון השקעה:</b> כל אחד מהרכיבים מוגבל לטווח 0–100 כדי למנוע תוצאה קיצונית בגלל נתון חריג.</p>
                       <p><b>השוואות בגרפים:</b> הגרפים השנתיים מציגים את היישוב הנבחר, קו השוואה של כל הארץ, ואפשר להוסיף יישוב נוסף להשוואה.</p>
                       <p><b>חשוב:</b> התשואה היא גולמית ומשוערת. היא לא מפחיתה מסים, תחזוקה, תקופות ריקות, תיווך, שיפוצים או מימון.</p>
                     </div>
@@ -1078,7 +1080,7 @@
         function isRentalColorMode() { return isYieldColorMode() || isInvestmentColorMode(); }
         function requiresListingFilter() { return isYieldColorMode() || isInvestmentColorMode(); }
         function activeListingValue(item) { return rentalDataType.value === 'commercial' ? normalizeNumber(item?.commercialListingsSelected) : normalizeNumber(item?.residentialListingsSelected); }
-        function hasEnoughListings(item) { const min = normalizeNumber(minListingsFilter.value) || 0; if (min <= 0) return true; const listings = activeListingValue(item); return Number.isFinite(listings) && listings >= min; }
+        function hasEnoughListings(item) { return true; }
         function colorForScore(value) { if (!Number.isFinite(value)) return NO_DATA_COLOR; return colorForRatio(value / 50); }
         function colorForCurrentMetricValue(value) { return isYieldColorMode() ? colorForYield(value) : (isInvestmentColorMode() ? colorForScore(value) : colorForRatio(value)); }
         function hasKnownRankingMetric(item) {
