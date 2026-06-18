@@ -216,7 +216,11 @@
               <div class="stat-text"><p class="stat-value">{{ formatYield(activeYieldValue) }}</p><div class="stat-label"><strong>{{ activeYieldTitle }}</strong><br>{{ activeYieldSubtitle }}</div></div>
               <div class="stat-icon">%</div>
             </article>
-            <article v-if="!isRentalColorMode()" class="stat-card">
+            <article class="stat-card">
+              <div class="stat-text"><p class="stat-value">{{ formatInvestmentScore(selectedSettlement?.investmentScore) }}</p><div class="stat-label"><strong>ציון השקעה</strong><br>{{ investmentScoreSubtitle }}</div></div>
+              <div class="stat-icon">★</div>
+            </article>
+            <article v-if="!isRentalColorMode() && colorMode !== 'investment'" class="stat-card">
               <div class="stat-text"><p class="stat-value">{{ formatColorMetric(selectedSettlement) }}</p><div class="stat-label"><strong>מדד הצביעה במפה</strong><br>{{ colorMetricLabel }}</div></div>
               <div class="stat-icon">🎨</div>
             </article>
@@ -243,6 +247,7 @@
                     <span>צביעת מפה לפי נתונים שנתיים:</span>
                     <button :class="{ active: colorMode === 'deals' }" @click="setColorMode('deals')">עסקאות מול ממוצע</button>
                     <button :class="{ active: colorMode === 'price' }" @click="setColorMode('price')">מחיר למ״ר מול שאר היישובים</button>
+                    <button :class="{ active: colorMode === 'investment' }" @click="setColorMode('investment')">ציון השקעה</button>
                   </div>
                 </div>
 
@@ -289,7 +294,10 @@
                       <p><b>תוצאה משולבת לכל סוגי החדרים:</b> מחשבים בנפרד תשואה ל־3, 4 ו־5 חדרים לפי השטח המייצג של כל קבוצה, ואז מחשבים ממוצע משוקלל לפי היצע המודעות בכל קבוצת חדרים. אין שימוש בהנחת 85 מ״ר.</p>
                       <p><b>תשואה מסחרית:</b> <span class="formula-equation">שכירות חודשית מסחרית למ״ר × 12 ÷ מחיר קנייה למ״ר באותה שנה × 100</span>. בקובץ המסחרי מחיר השכירות הוא למ״ר לחודש, לכן אין הכפלה בשטח נכס.</p>
                       <p><b>היצע מודעות:</b> <span class="formula-equation">listing_amount</span> הוא מספר המודעות/התצפיות באותו יישוב, רבעון וסוג נתון. הוא מוצג כהיצע למשתמשים וגם כרמז לכמה הנתון מבוסס.</p>
-                      <p><b>חשוב:</b> התשואה היא גולמית ומשוערת. היא לא מפחיתה מסים, תחזוקה, תקופות ריקות, תיווך, שיפוצים או מימון.</p>
+                      <p><b>ציון השקעה:</b> ציון 0–100 שמשלב ארבעה רכיבים: <span class="formula-equation">42% תשואה + 20% היצע מודעות + 23% מחיר יחסי + 15% שינוי מחיר שנתי</span>.</p>
+                      <p><b>פירוט ציון ההשקעה:</b> תשואה גבוהה מעלה את הציון; היצע מודעות גבוה ביחס ליישובים אחרים מעלה את הציון; מחיר למ״ר נמוך יחסית מעלה את הציון; שינוי מחיר שנתי חיובי מעלה את הציון. כל רכיב מוגבל לטווח 0–100 כדי שלא יהיו קפיצות מוגזמות.</p>
+                      <p><b>נוסחת ציון ההשקעה:</b> <span class="formula-equation">(תשואה ÷ 6% × 100 × 0.42) + (יחס היצע ÷ 1.6 × 100 × 0.20) + ((1.45 − יחס מחיר) ÷ 0.9 × 100 × 0.23) + ((שינוי מחיר + 5) ÷ 20 × 100 × 0.15)</span>.</p>
+                      <p><b>חשוב:</b> התשואה היא גולמית ומשוערת. היא לא מפחיתה מסים, תחזוקה, תקופות ריקות, תיווך, שיפוצים או מימון. ציון ההשקעה הוא כלי השוואה בלבד ולא המלצת השקעה.</p>
                     </div>
                   </details>
                 </div>
@@ -333,6 +341,7 @@
                   <p class="note">תשואה מסחרית מחושבת לפי שכירות חודשית מסחרית למ״ר מול מחיר קנייה למ״ר.</p>
                 </template>
                 <p>מחיר למ״ר ביחס לשאר היישובים: <b>{{ formatRatio(selectedSettlement?.priceRatioVsOthers) }}</b></p>
+                <p>ציון השקעה: <b>{{ formatInvestmentScore(selectedSettlement?.investmentScore) }}</b></p>
                 <p>עסקאות ביחס לממוצע: <b>{{ formatRatio(selectedSettlement?.ratio) }}</b></p>
                 <p class="deals-focus">עסקאות {{ targetYear }}: <b>{{ formatInteger(selectedSettlement?.dealsSelected) }}</b></p>
                 <p>ממוצע להשוואה: <b>{{ formatNumber(selectedSettlement?.avgAnnualDeals) }}</b> <small>(כל השנים חוץ מ־{{ targetYear }})</small></p>
@@ -405,6 +414,14 @@
       { min: 4.00, max: 6.00, color: [74, 222, 128, 0.84], label: '4%–6% תשואה - ירוק בהיר' },
       { min: 6.00, max: Infinity, color: [22, 101, 52, 0.88], label: 'מעל 6% תשואה - ירוק כהה' }
     ];
+    const INVESTMENT_COLOR_SCALE = [
+      { min: -Infinity, max: 20, color: [153, 27, 27, 0.88], label: '0–20 ציון השקעה - נמוך מאוד' },
+      { min: 20, max: 40, color: [239, 68, 68, 0.86], label: '20–40 ציון השקעה - נמוך' },
+      { min: 40, max: 55, color: [249, 115, 22, 0.84], label: '40–55 ציון השקעה - בינוני נמוך' },
+      { min: 55, max: 70, color: [234, 179, 8, 0.84], label: '55–70 ציון השקעה - בינוני' },
+      { min: 70, max: 85, color: [74, 222, 128, 0.84], label: '70–85 ציון השקעה - גבוה' },
+      { min: 85, max: Infinity, color: [22, 101, 52, 0.88], label: 'מעל 85 ציון השקעה - גבוה מאוד' }
+    ];
     const NO_DATA_COLOR = [148, 163, 184, 0.50];
     const OUTLINE_COLOR = [25, 25, 25, 0.86];
 
@@ -430,6 +447,7 @@
     }
     function dataUrl(fileName) { return new URL(fileName, window.location.href).toString(); }
     function normalizeNumber(value) { if (value === null || value === undefined || value === '') return null; const n = Number(value); return Number.isFinite(n) ? n : null; }
+    function clampNumber(value, min = 0, max = 100) { const n = Number(value); if (!Number.isFinite(n)) return null; return Math.min(max, Math.max(min, n)); }
     function normalizeCsvValue(value) {
       const s = String(value ?? '').trim();
       if (!s || s.toLowerCase() === 'nan' || s.toLowerCase() === 'null') return '';
@@ -470,6 +488,7 @@
     function rgbaCss(color) { return `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${color[3]})`; }
     function colorForRatio(ratio) { if (!Number.isFinite(ratio)) return NO_DATA_COLOR; return COLOR_SCALE.find((b) => ratio >= b.min && ratio < b.max)?.color || COLOR_SCALE[COLOR_SCALE.length - 1].color; }
     function colorForYield(value) { if (!Number.isFinite(value)) return NO_DATA_COLOR; return YIELD_COLOR_SCALE.find((b) => value >= b.min && value < b.max)?.color || YIELD_COLOR_SCALE[YIELD_COLOR_SCALE.length - 1].color; }
+    function colorForInvestmentScore(value) { if (!Number.isFinite(value)) return NO_DATA_COLOR; return INVESTMENT_COLOR_SCALE.find((b) => value >= b.min && value < b.max)?.color || INVESTMENT_COLOR_SCALE[INVESTMENT_COLOR_SCALE.length - 1].color; }
     function isCombinedRoomGroup(roomGroup) { return String(roomGroup ?? '').toLowerCase() === 'all'; }
     function sqmForRoomGroup(roomGroup) {
       if (isCombinedRoomGroup(roomGroup)) return null;
@@ -755,6 +774,8 @@
         });
         const hasResidentialYieldData = computed(() => selectedResidentialYieldRows.value.length > 0);
         const hasCommercialYieldData = computed(() => selectedCommercialYieldRows.value.length > 0);
+        const investmentScoreTypeLabel = computed(() => rentalDataType.value === 'commercial' ? 'מסחרי' : `מגורים · ${selectedRoomGroupLabel.value}`);
+        const investmentScoreSubtitle = computed(() => `משולב לפי ${investmentScoreTypeLabel.value}: תשואה, היצע, מחיר ושינוי שנתי`);
         const activeYieldValue = computed(() => rentalDataType.value === 'commercial' ? selectedCommercialYieldLatest.value?.yield : selectedResidentialYieldLatest.value?.yield);
         const activeYieldTitle = computed(() => rentalDataType.value === 'commercial' ? 'תשואה מסחרית משוערת' : `תשואה גולמית משוערת · ${selectedRoomGroupLabel.value}`);
         const activeYieldSubtitle = computed(() => {
@@ -845,6 +866,8 @@
             avgOtherCommercialListings: null,
             residentialSupplyRatioVsOthers: null,
             commercialSupplyRatioVsOthers: null,
+            investmentScore: null,
+            investmentScoreParts: null,
             demandYoySelected: normalizeNumber(rowSelected?.demand_yoy),
             syoySelected: normalizeNumber(rowSelected?.syoy),
             rowSelected,
@@ -959,11 +982,20 @@
             const avgOtherCommercialListings = averageListingsOfOtherSettlements(commercialListingStats.value, sid);
             const residentialSupplyRatioVsOthers = Number.isFinite(residentialListingsSelected) && Number.isFinite(avgOtherResidentialListings) && avgOtherResidentialListings > 0 ? residentialListingsSelected / avgOtherResidentialListings : null;
             const commercialSupplyRatioVsOthers = Number.isFinite(commercialListingsSelected) && Number.isFinite(avgOtherCommercialListings) && avgOtherCommercialListings > 0 ? commercialListingsSelected / avgOtherCommercialListings : null;
+            const demandYoySelected = normalizeNumber(rowSelected?.demand_yoy);
+            const investmentScoreParts = calculateInvestmentScoreParts({
+              yieldValue: rentalDataType.value === 'commercial' ? commercialYieldSelected : residentialYieldSelected,
+              supplyRatio: rentalDataType.value === 'commercial' ? commercialSupplyRatioVsOthers : residentialSupplyRatioVsOthers,
+              priceRatio: priceRatioVsOthers,
+              priceChange: demandYoySelected
+            });
+            const investmentScore = Number.isFinite(investmentScoreParts?.score) ? investmentScoreParts.score : null;
             return {
               sid, name: feature.name, dealsSelected, avgAnnualDeals, ratio,
               ppsqmSelected, ppsqmForYield, avgOtherPpsqm, priceRatioVsOthers, residentialRentSelected, commercialRentSelected, residentialYieldSelected, commercialYieldSelected,
               residentialListingsSelected, commercialListingsSelected, avgOtherResidentialListings, avgOtherCommercialListings, residentialSupplyRatioVsOthers, commercialSupplyRatioVsOthers,
-              demandYoySelected: normalizeNumber(rowSelected?.demand_yoy), syoySelected: normalizeNumber(rowSelected?.syoy), rowSelected, rentLatest: latestRentFromIndex(residentialRentIndex.value, sid, selectedRoomGroup.value), commercialRentLatest: latestRentFromIndex(commercialRentIndex.value, sid), hasData: Number.isFinite(ratio)
+              investmentScore, investmentScoreParts,
+              demandYoySelected, syoySelected: normalizeNumber(rowSelected?.syoy), rowSelected, rentLatest: latestRentFromIndex(residentialRentIndex.value, sid, selectedRoomGroup.value), commercialRentLatest: latestRentFromIndex(commercialRentIndex.value, sid), hasData: Number.isFinite(ratio)
             };
           });
         });
@@ -996,12 +1028,14 @@
           if (colorMode.value === 'price') return normalizeNumber(item.priceRatioVsOthers);
           if (colorMode.value === 'residentialYield') return normalizeNumber(item.residentialYieldSelected);
           if (colorMode.value === 'commercialYield') return normalizeNumber(item.commercialYieldSelected);
+          if (colorMode.value === 'investment') return normalizeNumber(item.investmentScore);
           return normalizeNumber(item.ratio);
         }
         function isYieldColorMode() { return colorMode.value === 'residentialYield' || colorMode.value === 'commercialYield'; }
+        function isInvestmentColorMode() { return colorMode.value === 'investment'; }
         function isAnnualColorMode() { return colorMode.value === 'deals' || colorMode.value === 'price'; }
         function isRentalColorMode() { return isYieldColorMode(); }
-        function colorForCurrentMetricValue(value) { return isYieldColorMode() ? colorForYield(value) : colorForRatio(value); }
+        function colorForCurrentMetricValue(value) { return isInvestmentColorMode() ? colorForInvestmentScore(value) : (isYieldColorMode() ? colorForYield(value) : colorForRatio(value)); }
         function hasKnownRankingMetric(item) {
           if (!item) return false;
           const metric = normalizeNumber(colorMetricValue(item));
@@ -1026,6 +1060,10 @@
               && Number.isFinite(normalizeNumber(item.ppsqmForYield));
           }
 
+          if (colorMode.value === 'investment') {
+            return Number.isFinite(normalizeNumber(item.investmentScore));
+          }
+
           return Number.isFinite(normalizeNumber(item.dealsSelected))
             && Number.isFinite(normalizeNumber(item.avgAnnualDeals));
         }
@@ -1047,6 +1085,7 @@
         });
         const legendItems = computed(() => {
           if (isYieldColorMode()) return [...YIELD_COLOR_SCALE.map(({ label, color }) => ({ label, color })), { label: 'אין מספיק נתונים', color: NO_DATA_COLOR }];
+          if (isInvestmentColorMode()) return [...INVESTMENT_COLOR_SCALE.map(({ label, color }) => ({ label, color })), { label: 'אין מספיק נתונים', color: NO_DATA_COLOR }];
           const labels = colorMode.value === 'price'
             ? ['עד 50% מממוצע מחיר למ״ר של שאר היישובים - אדום כהה', '50%–80% מהממוצע - אדום', '80%–100% מהממוצע - כתום', '100%–120% מהממוצע - צהוב', '120%–150% מהממוצע - ירוק בהיר', 'מעל 150% מהממוצע - ירוק כהה']
             : COLOR_SCALE.map((b) => b.label);
@@ -1058,18 +1097,21 @@
           if (colorMode.value === 'price') return `מחיר למ״ר ביחס לממוצע שאר היישובים בשנת ${targetYear.value}`;
           if (colorMode.value === 'residentialYield') return `תשואת מגורים לפי ${selectedRoomGroupLabel.value} · ${selectedRentalPeriodLabel.value}`;
           if (colorMode.value === 'commercialYield') return `תשואה מסחרית · ${selectedRentalPeriodLabel.value}`;
+          if (colorMode.value === 'investment') return `ציון השקעה · ${investmentScoreTypeLabel.value} · ${targetYear.value} / ${selectedRentalPeriodLabel.value}`;
           return `עסקאות בשנת ${targetYear.value} ביחס לממוצע השנים האחרות`;
         });
         const colorModeNote = computed(() => {
           if (colorMode.value === 'price') return `הצבע מציג מחיר למ״ר ביישוב מול ממוצע שאר היישובים בשנת ${targetYear.value}. הנוסחה המלאה מופיעה בתיבת החישובים.`;
           if (colorMode.value === 'residentialYield') return `הצבע מציג תשואה גולמית משוערת למגורים לפי ${selectedRoomGroupLabel.value} ברבעון ${selectedRentalPeriodLabel.value}. הנוסחה המלאה מופיעה בתיבת החישובים.`;
           if (colorMode.value === 'commercialYield') return `הצבע מציג תשואה מסחרית משוערת ברבעון ${selectedRentalPeriodLabel.value}. הנוסחה המלאה מופיעה בתיבת החישובים.`;
+          if (colorMode.value === 'investment') return `הצבע מציג ציון השקעה משולב לפי תשואה, היצע מודעות, מחיר יחסי ושינוי מחיר שנתי. הנוסחה המלאה מופיעה בתיבת החישובים.`;
           return `הצבע מציג את מספר העסקאות בשנת ${targetYear.value} מול ממוצע השנים האחרות. הנוסחה המלאה מופיעה בתיבת החישובים.`;
         });
         const rankingTitle = computed(() => {
           if (colorMode.value === 'price') return 'רשימת יישובים לפי מחיר למ״ר מול שאר היישובים';
           if (colorMode.value === 'residentialYield') return `רשימת יישובים לפי תשואה מגורים · ${selectedRoomGroupLabel.value}`;
           if (colorMode.value === 'commercialYield') return 'רשימת יישובים לפי תשואה מסחרית';
+          if (colorMode.value === 'investment') return `רשימת יישובים לפי ציון השקעה · ${investmentScoreTypeLabel.value}`;
           return 'רשימת יישובים לפי אחוז עסקאות מהממוצע';
         });
 
@@ -1080,6 +1122,7 @@
         function formatCommercialRent(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return `${formatCurrency(value)} למ״ר לחודש`; }
         function formatPercent(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return `${value.toLocaleString('he-IL', { maximumFractionDigits: 1 })}%`; }
         function formatYield(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return `${value.toLocaleString('he-IL', { maximumFractionDigits: 2 })}%`; }
+        function formatInvestmentScore(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return `${value.toLocaleString('he-IL', { maximumFractionDigits: 0 })}/100`; }
         function listingQualityLabel(value) {
           const n = normalizeNumber(value);
           if (!Number.isFinite(n)) return 'אין נתון';
@@ -1096,6 +1139,7 @@
         }
         function formatColorMetric(item) {
           const value = typeof item === 'number' ? item : colorMetricValue(item);
+          if (isInvestmentColorMode()) return formatInvestmentScore(value);
           return isYieldColorMode() ? formatYield(value) : formatRatio(value);
         }
         function rankingRowSubtitle(item) {
@@ -1103,6 +1147,7 @@
           if (colorMode.value === 'price') return `${targetYear.value}: ${formatCurrency(item.ppsqmSelected)} למ״ר · ממוצע שאר היישובים: ${formatCurrency(item.avgOtherPpsqm)}`;
           if (colorMode.value === 'residentialYield') return `${selectedRentalPeriodLabel.value}: שכירות ${selectedRoomGroupLabel.value} ${formatCurrency(item.residentialRentSelected?.rental_price)} · היצע ${formatInteger(item.residentialRentSelected?.listings_amount)} מודעות · מחיר למ״ר ${formatCurrency(item.ppsqmForYield)}`;
           if (colorMode.value === 'commercialYield') return `${selectedRentalPeriodLabel.value}: שכירות מסחרית ${formatCommercialRent(item.commercialRentSelected?.rental_price)} · היצע ${formatInteger(item.commercialRentSelected?.listings_amount)} מודעות · מחיר למ״ר ${formatCurrency(item.ppsqmForYield)}`;
+          if (colorMode.value === 'investment') return `תשואה ${formatYield(currentYieldForInvestment(item))} · היצע ביחס לשאר ${formatRatio(currentSupplyRatioForInvestment(item))} · מחיר יחסי ${formatRatio(item.priceRatioVsOthers)} · שינוי שנתי ${formatPercent(item.demandYoySelected)}`;
           return `${targetYear.value}: ${formatInteger(item.dealsSelected)} עסקאות · ממוצע: ${formatNumber(item.avgAnnualDeals)}`;
         }
         function calcResidentialYield(monthlyRent, ppsqm, roomGroup = 'all') {
@@ -1144,6 +1189,45 @@
           const pricePerSqm = normalizeNumber(ppsqm);
           if (!Number.isFinite(rentPerSqm) || rentPerSqm <= 0 || !Number.isFinite(pricePerSqm) || pricePerSqm <= 0) return null;
           return (rentPerSqm * 12 / pricePerSqm) * 100;
+        }
+        function currentYieldForInvestment(item) {
+          return rentalDataType.value === 'commercial'
+            ? normalizeNumber(item?.commercialYieldSelected)
+            : normalizeNumber(item?.residentialYieldSelected);
+        }
+        function currentSupplyRatioForInvestment(item) {
+          return rentalDataType.value === 'commercial'
+            ? normalizeNumber(item?.commercialSupplyRatioVsOthers)
+            : normalizeNumber(item?.residentialSupplyRatioVsOthers);
+        }
+        function calculateInvestmentScoreParts({ yieldValue, supplyRatio, priceRatio, priceChange }) {
+          const y = normalizeNumber(yieldValue);
+          const supply = normalizeNumber(supplyRatio);
+          const price = normalizeNumber(priceRatio);
+          const change = normalizeNumber(priceChange);
+          if (![y, supply, price, change].every(Number.isFinite)) return null;
+          const yieldScore = clampNumber((y / 6) * 100);
+          const supplyScore = clampNumber((supply / 1.6) * 100);
+          const priceScore = clampNumber(((1.45 - price) / 0.9) * 100);
+          const momentumScore = clampNumber(((change + 5) / 20) * 100);
+          if (![yieldScore, supplyScore, priceScore, momentumScore].every(Number.isFinite)) return null;
+          return {
+            yieldScore,
+            supplyScore,
+            priceScore,
+            momentumScore,
+            score: (yieldScore * 0.42) + (supplyScore * 0.20) + (priceScore * 0.23) + (momentumScore * 0.15)
+          };
+        }
+        function calculateInvestmentScoreForSettlement(item) {
+          if (!item || String(item.sid) === NATIONAL_SID) return null;
+          const parts = calculateInvestmentScoreParts({
+            yieldValue: currentYieldForInvestment(item),
+            supplyRatio: currentSupplyRatioForInvestment(item),
+            priceRatio: item.priceRatioVsOthers,
+            priceChange: item.demandYoySelected
+          });
+          return Number.isFinite(parts?.score) ? parts.score : null;
         }
         function marketScoreLabel(ratio) { if (!Number.isFinite(ratio)) return 'נתון לא ידוע'; if (ratio >= 1.5) return 'חזק מאוד'; if (ratio >= 1.2) return 'חזק'; if (ratio >= 0.95) return 'מאוזן'; if (ratio >= 0.8) return 'חלש'; return 'חלש מאוד'; }
 
@@ -1547,8 +1631,9 @@
           if (mode === 'commercialYield') rentalDataType.value = 'commercial';
         }
         function setQuarterlyDataType(type) {
+          const keepInvestmentMode = colorMode.value === 'investment';
           rentalDataType.value = type === 'commercial' ? 'commercial' : 'regular';
-          colorMode.value = rentalDataType.value === 'commercial' ? 'commercialYield' : 'residentialYield';
+          colorMode.value = keepInvestmentMode ? 'investment' : (rentalDataType.value === 'commercial' ? 'commercialYield' : 'residentialYield');
         }
         async function focusSettlement(item) { if (!item || String(item.sid) === NATIONAL_SID) return; const shape = wktFeatures.value.find((feature) => String(feature.sid) === String(item.sid) && feature.bbox); if (!shape || !window.govmap) return; const [xmin, ymin, xmax, ymax] = shape.bbox; const x = (xmin + xmax) / 2, y = (ymin + ymax) / 2; try { if (typeof window.govmap.zoomToXY === 'function') window.govmap.zoomToXY({ x, y, level: 8 }); } catch (e) { console.warn(e); } }
         function quarterLabel(row) { return periodLabelFromParts(row.year, row.quarter_mapi); }
@@ -1847,7 +1932,7 @@
           refreshSelectedSettlementForCurrentYear();
           await nextTick();
           renderCharts({ animate: false });
-          if (isRentalColorMode()) await drawOverlay();
+          if (isRentalColorMode() || isInvestmentColorMode()) await drawOverlay();
           statusMessage.value = `נתוני השכירות והתשואה עודכנו לפי ${selectedRentalPeriodLabel.value}.`;
         }
         function handleRentalPeriodInput() {
@@ -1874,7 +1959,7 @@
           refreshSelectedSettlementForCurrentYear();
           await nextTick();
           renderCharts({ animate: false });
-          if (isRentalColorMode()) await drawOverlay();
+          if (isRentalColorMode() || isInvestmentColorMode()) await drawOverlay();
         });
         watch(colorMode, async () => {
           refreshSelectedSettlementForCurrentYear();
@@ -1883,7 +1968,7 @@
         watch(targetYear, () => refreshSelectedSettlementForCurrentYear());
         watch(rentalPeriodIndex, () => refreshSelectedSettlementForCurrentYear());
         onMounted(() => { installMapSelectionBridge(); boot(); });
-        return { ESTIMATED_APARTMENT_SQM, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, rentalShowAllQuarters, availableYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, colorMode, colorMetricLabel, colorModeNote, rankingTitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, rankingRowSubtitle, setColorMode, setQuarterlyDataType, formatNumber, formatInteger, formatRatio, formatCurrency, formatCommercialRent, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, handleRentalPeriodInput, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartEntityName, pageTitle, selectedResidentialRentLatest, selectedCommercialRentLatest, selectedResidentialYieldLatest, selectedCommercialYieldLatest, activeYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData };
+        return { ESTIMATED_APARTMENT_SQM, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, rentalShowAllQuarters, availableYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, colorMode, colorMetricLabel, colorModeNote, rankingTitle, investmentScoreTypeLabel, investmentScoreSubtitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, formatInvestmentScore, rankingRowSubtitle, setColorMode, setQuarterlyDataType, formatNumber, formatInteger, formatRatio, formatCurrency, formatCommercialRent, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, handleRentalPeriodInput, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartEntityName, pageTitle, selectedResidentialRentLatest, selectedCommercialRentLatest, selectedResidentialYieldLatest, selectedCommercialYieldLatest, activeYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData };
       }
     }).mount('#app');
   </script>
