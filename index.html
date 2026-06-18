@@ -68,6 +68,17 @@
     .stat-label { color: #718098; font-weight: 700; }
     .stat-icon { flex: 0 0 auto; width: 70px; height: 70px; border-radius: 14px; background: #f3f5f9; display: grid; place-items: center; font-size: 28px; }
 
+    .compare-panel { max-width: min(100%, 980px); margin: 0 auto 34px; border: 1px solid #dfe6ef; border-radius: 16px; background: #f8fbff; padding: 18px; box-shadow: 0 8px 22px rgba(6,34,74,.05); }
+    .compare-panel h3 { margin: 0 0 14px; color: #052a5a; text-align: center; font-size: 21px; font-weight: 900; }
+    .compare-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 10px; align-items: end; margin-bottom: 14px; }
+    .compare-table { border: 1px solid #dfe6ef; border-radius: 14px; overflow: hidden; background: #fff; }
+    .compare-row { display: grid; grid-template-columns: minmax(140px, .8fr) repeat(2, minmax(0, 1fr)); align-items: center; border-bottom: 1px solid #edf2f7; }
+    .compare-row:last-child { border-bottom: 0; }
+    .compare-row > div { padding: 11px 12px; min-width: 0; }
+    .compare-row .metric { color: #667085; font-weight: 800; background: #f8fbff; }
+    .compare-row .city-name { color: #052a5a; font-weight: 900; text-align: center; background: #eef5ff; }
+    .compare-row .metric-value { text-align: center; color: #052a5a; font-weight: 800; }
+
     .section-heading { text-align: center; margin: 0 auto 12px; }
     .section-heading h2 { margin: 0 0 8px; color: #052a5a; font-size: clamp(24px, 2.2vw, 33px); font-weight: 900; }
     .section-subtitle { margin: 0 0 14px; color: #718098; font-size: 15px; font-weight: 600; }
@@ -166,7 +177,9 @@
     }
     @media (max-width: 700px) {
       .map-pane { height: 50vh; }
-      .top-controls { grid-template-columns: 1fr; }
+      .top-controls, .compare-controls { grid-template-columns: 1fr; }
+      .compare-row { grid-template-columns: 1fr; }
+      .compare-row .metric, .compare-row .city-name, .compare-row .metric-value { text-align: right; }
       .layer-popover { width: calc(100% - 36px); }
       .layer-grid { grid-template-columns: repeat(2, 1fr); }
       .analysis-grid { gap: 12px; }
@@ -226,6 +239,38 @@
             </article>
           </section>
 
+          <section class="compare-panel">
+            <h3>השוואה בין שתי ערים</h3>
+            <div class="compare-controls">
+              <label class="field"><span>עיר ראשונה</span>
+                <select v-model="compareSidA">
+                  <option value="">בחר עיר</option>
+                  <option v-for="item in settlementOptions" :key="'a-' + item.sid" :value="item.sid">{{ item.name }}</option>
+                </select>
+              </label>
+              <label class="field"><span>עיר שנייה</span>
+                <select v-model="compareSidB">
+                  <option value="">בחר עיר</option>
+                  <option v-for="item in settlementOptions" :key="'b-' + item.sid" :value="item.sid">{{ item.name }}</option>
+                </select>
+              </label>
+              <button class="secondary-btn" @click="setCompareAFromSelected" :disabled="!selectedSettlement || selectedSettlement.sid === '__national__'">השתמש ביישוב הנבחר</button>
+            </div>
+            <div v-if="compareSettlementA && compareSettlementB" class="compare-table">
+              <div class="compare-row">
+                <div class="metric">מדד</div>
+                <div class="city-name">{{ compareSettlementA.name }}</div>
+                <div class="city-name">{{ compareSettlementB.name }}</div>
+              </div>
+              <div v-for="row in comparisonRows" :key="row.label" class="compare-row">
+                <div class="metric">{{ row.label }}</div>
+                <div class="metric-value">{{ row.a }}</div>
+                <div class="metric-value">{{ row.b }}</div>
+              </div>
+            </div>
+            <p v-else class="note">בחר שתי ערים כדי לראות השוואה של מחיר, עסקאות, שכירות, תשואה וציון השקעה.</p>
+          </section>
+
           <section class="section-heading">
             <h2>גרפים שנתיים לפי יישוב</h2>
             <p class="section-subtitle">הגרפים מתעדכנים אוטומטית לפי היישוב שנבחר במפה או בחיפוש.</p>
@@ -281,8 +326,7 @@
                     <button v-for="option in roomGroupOptions" :key="option.key" :class="{ active: selectedRoomGroup === option.key }" @click="selectedRoomGroup = option.key">{{ option.label }}</button>
                   </div>
                   <p class="rental-filter-note" v-if="rentalDataType === 'regular' && selectedRoomGroup !== 'all'">הצביעה והגרפים מציגים תשואה ושכירות מגורים לפי {{ selectedRoomGroupLabel }} בלבד, ובהנחת שטח מייצג של {{ selectedRoomGroupSqm }} מ״ר.</p>
-                  <p class="rental-filter-note" v-else-if="rentalDataType === 'regular' && selectedRoomGroup === 'all'">הצביעה והגרפים מציגים תוצאה משולבת לכל סוגי החדרים: 3, 4 ו־5 חדרים, לפי היצע המודעות בכל קבוצה.</p>
-                  <p class="rental-filter-note" v-else>הצביעה והגרפים מציגים נתונים מסחריים. החישוב מבוסס על שכירות חודשית למ״ר.</p>
+                  <p class="rental-filter-note" v-if="rentalDataType === 'commercial'">הצביעה והגרפים מציגים נתונים מסחריים. החישוב מבוסס על שכירות חודשית למ״ר.</p>
                   <details class="formula-details">
                     <summary>איך החישובים עובדים?</summary>
                     <div class="formula-list">
@@ -332,7 +376,6 @@
                   <p class="listing-metric"><span>היצע מודעות מגורים · {{ selectedRoomGroupLabel }} · {{ selectedRentalPeriodLabel }}</span><span><b>{{ formatInteger(selectedResidentialRentLatest?.listings_amount) }}</b> <i class="quality-badge" :class="listingQualityClass(selectedResidentialRentLatest?.listings_amount)">{{ listingQualityLabel(selectedResidentialRentLatest?.listings_amount) }}</i></span></p>
                   <p>תשואה גולמית למגורים · {{ selectedRoomGroupLabel }} · {{ selectedRentalPeriodLabel }}: <b>{{ formatYield(selectedResidentialYieldLatest?.yield) }}</b></p>
                   <p v-if="selectedRoomGroup !== 'all'" class="note">תשואת מגורים מחושבת לפי {{ selectedRoomGroupLabel }} בלבד, ובהנחת שטח מייצג של {{ selectedRoomGroupSqm }} מ״ר.</p>
-                  <p v-else class="note">תשואת מגורים משולבת מחושבת ל־3, 4 ו־5 חדרים בנפרד, ואז משוקללת לפי היצע המודעות.</p>
                 </template>
                 <template v-else>
                   <p>שכירות מסחרית חציונית · {{ selectedRentalPeriodLabel }}: <b>{{ formatCommercialRent(selectedCommercialRentLatest?.rental_price) }}</b></p>
@@ -523,6 +566,8 @@
         const rentalDataType = ref('regular');
         const selectedRoomGroup = ref('all');
         const colorMode = ref('deals');
+        const compareSidA = ref('');
+        const compareSidB = ref('');
         const roomGroupOptions = [
           { key: 'all', label: 'כל סוגי החדרים' },
           { key: '3', label: '3 חדרים' },
@@ -999,6 +1044,54 @@
             };
           });
         });
+        const settlementOptions = computed(() => joinedSettlements.value
+          .slice()
+          .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'he')));
+        function settlementForCompare(sid) {
+          const key = String(sid || '');
+          if (!key) return null;
+          return joinedSettlements.value.find((item) => String(item.sid) === key) || null;
+        }
+        const compareSettlementA = computed(() => settlementForCompare(compareSidA.value));
+        const compareSettlementB = computed(() => settlementForCompare(compareSidB.value));
+        function setCompareAFromSelected() {
+          const sid = selectedSettlement.value?.sid ? String(selectedSettlement.value.sid) : '';
+          if (sid && sid !== NATIONAL_SID) compareSidA.value = sid;
+        }
+        function currentYieldForDisplay(item) {
+          if (!item) return null;
+          return rentalDataType.value === 'commercial' ? normalizeNumber(item.commercialYieldSelected) : normalizeNumber(item.residentialYieldSelected);
+        }
+        function currentRentForDisplay(item) {
+          if (!item) return null;
+          return rentalDataType.value === 'commercial' ? item.commercialRentSelected?.rental_price : item.residentialRentSelected?.rental_price;
+        }
+        function currentListingsForDisplay(item) {
+          if (!item) return null;
+          return rentalDataType.value === 'commercial' ? item.commercialRentSelected?.listings_amount : item.residentialRentSelected?.listings_amount;
+        }
+        const comparisonRows = computed(() => {
+          const a = compareSettlementA.value;
+          const b = compareSettlementB.value;
+          if (!a || !b) return [];
+          const rentLabel = rentalDataType.value === 'commercial' ? `שכירות מסחרית למ״ר · ${selectedRentalPeriodLabel.value}` : `שכירות מגורים · ${selectedRoomGroupLabel.value} · ${selectedRentalPeriodLabel.value}`;
+          const yieldLabel = rentalDataType.value === 'commercial' ? `תשואה מסחרית · ${selectedRentalPeriodLabel.value}` : `תשואה מגורים · ${selectedRoomGroupLabel.value} · ${selectedRentalPeriodLabel.value}`;
+          return [
+            { label: `מחיר למ״ר ${targetYear.value}`, a: formatCurrency(a.ppsqmSelected), b: formatCurrency(b.ppsqmSelected) },
+            { label: `עסקאות ${targetYear.value}`, a: formatInteger(a.dealsSelected), b: formatInteger(b.dealsSelected) },
+            { label: 'שינוי מחיר מול השנה הקודמת', a: formatPercent(a.demandYoySelected), b: formatPercent(b.demandYoySelected) },
+            { label: 'מחיר למ״ר מול שאר היישובים', a: formatRatio(a.priceRatioVsOthers), b: formatRatio(b.priceRatioVsOthers) },
+            { label: rentLabel, a: rentalDataType.value === 'commercial' ? formatCommercialRent(currentRentForDisplay(a)) : formatCurrency(currentRentForDisplay(a)), b: rentalDataType.value === 'commercial' ? formatCommercialRent(currentRentForDisplay(b)) : formatCurrency(currentRentForDisplay(b)) },
+            { label: `היצע מודעות · ${selectedRentalPeriodLabel.value}`, a: formatInteger(currentListingsForDisplay(a)), b: formatInteger(currentListingsForDisplay(b)) },
+            { label: yieldLabel, a: formatYield(currentYieldForDisplay(a)), b: formatYield(currentYieldForDisplay(b)) },
+            { label: 'ציון השקעה', a: formatInvestmentScore(a.investmentScore), b: formatInvestmentScore(b.investmentScore) }
+          ];
+        });
+        watch(selectedSettlement, (next) => {
+          const sid = next?.sid ? String(next.sid) : '';
+          if (sid && sid !== NATIONAL_SID && !compareSidA.value) compareSidA.value = sid;
+        });
+
         const selectedRows = computed(() => {
           if (!selectedSettlement.value) return [];
           if (String(selectedSettlement.value.sid) === NATIONAL_SID) return nationalRows.value;
@@ -1968,7 +2061,7 @@
         watch(targetYear, () => refreshSelectedSettlementForCurrentYear());
         watch(rentalPeriodIndex, () => refreshSelectedSettlementForCurrentYear());
         onMounted(() => { installMapSelectionBridge(); boot(); });
-        return { ESTIMATED_APARTMENT_SQM, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, rentalShowAllQuarters, availableYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, colorMode, colorMetricLabel, colorModeNote, rankingTitle, investmentScoreTypeLabel, investmentScoreSubtitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, formatInvestmentScore, rankingRowSubtitle, setColorMode, setQuarterlyDataType, formatNumber, formatInteger, formatRatio, formatCurrency, formatCommercialRent, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, handleRentalPeriodInput, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartEntityName, pageTitle, selectedResidentialRentLatest, selectedCommercialRentLatest, selectedResidentialYieldLatest, selectedCommercialYieldLatest, activeYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData };
+        return { ESTIMATED_APARTMENT_SQM, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, rentalShowAllQuarters, availableYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, colorMode, colorMetricLabel, colorModeNote, rankingTitle, investmentScoreTypeLabel, investmentScoreSubtitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, formatInvestmentScore, rankingRowSubtitle, setColorMode, setQuarterlyDataType, formatNumber, formatInteger, formatRatio, formatCurrency, formatCommercialRent, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, handleRentalPeriodInput, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartEntityName, pageTitle, selectedResidentialRentLatest, selectedCommercialRentLatest, selectedResidentialYieldLatest, selectedCommercialYieldLatest, activeYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData, compareSidA, compareSidB, settlementOptions, compareSettlementA, compareSettlementB, comparisonRows, setCompareAFromSelected };
       }
     }).mount('#app');
   </script>
