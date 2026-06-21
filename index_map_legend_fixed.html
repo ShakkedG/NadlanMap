@@ -1,0 +1,2194 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>מפת מגמות נדל״ן ותשואה</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800;900&display=swap');
+    * { box-sizing: border-box; }
+    html, body, #app { width: 100%; max-width: 100vw; height: 100%; margin: 0; overflow-x: hidden; }
+    body { font-family: "Assistant", "Heebo", "Noto Sans Hebrew", Arial, sans-serif; font-size: 16px; font-weight: 400; letter-spacing: -.01em; background: #eef3fb; color: #06224a; overflow: hidden; }
+    button, input, select, a { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    a { color: inherit; text-decoration: none; }
+
+    .nadlan-layout { width: 100%; max-width: 100vw; height: 100vh; display: grid; grid-template-columns: minmax(0, 40.2%) minmax(0, 59.8%); direction: ltr; background: #eaf0f8; overflow-x: hidden; }
+    .map-pane { position: relative; height: 100vh; overflow: hidden; background: #cfe1ef; border-inline-end: 1px solid #d5deea; min-width: 0; }
+    .map-pane.fullscreen { position: fixed; inset: 0; z-index: 9999; }
+    .govmap-box {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+    .map-loader { position: absolute; top: 18px; right: 78px; z-index: 18; direction: rtl; background: rgba(255,255,255,.95); border: 1px solid #d8e1ee; box-shadow: 0 12px 28px rgba(5,25,55,.14); border-radius: 16px; padding: 12px 14px; font-weight: 800; color: #06224a; }
+    .map-left-controls { position: absolute; top: 28px; left: 12px; z-index: 16; display: flex; flex-direction: column; gap: 10px; direction: rtl; }
+    .map-right-tools { position: absolute; top: 28px; right: 18px; z-index: 16; display: flex; gap: 10px; direction: rtl; }
+    .square-btn { width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid #cbd5e1; border-radius: 10px; background: rgba(255,255,255,.96); color: #0b2a55; box-shadow: 0 7px 20px rgba(5,25,55,.12); font-size: 22px; line-height: 1; }
+    .square-btn.small { width: 36px; height: 36px; font-size: 18px; }
+    .zoom-buttons { position: absolute; top: 92px; right: 18px; z-index: 16; display: grid; overflow: hidden; border: 1px solid #cbd5e1; border-radius: 12px; background: rgba(255,255,255,.96); box-shadow: 0 7px 20px rgba(5,25,55,.12); }
+    .zoom-buttons button { width: 42px; height: 38px; border: 0; border-bottom: 1px solid #e2e8f0; background: transparent; color: #0b2a55; font-size: 20px; }
+    .zoom-buttons button:last-child { border-bottom: 0; }
+
+    .layer-popover { position: absolute; left: 18px; bottom: 34px; width: 330px; max-width: calc(100% - 36px); z-index: 17; direction: rtl; border-radius: 4px; background: #ffffff; box-shadow: 0 18px 42px rgba(5,25,55,.24); border: 1px solid #d7deea; overflow: hidden; }
+    .layer-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 18px 8px; color: #1f2d44; }
+    .layer-head b { font-size: 18px; font-weight: 500; }
+    .layer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 11px; padding: 12px 14px 18px; }
+    .layer-tile { min-height: 82px; border: 1px solid #dce3ee; border-radius: 6px; background: #fff; display: grid; grid-template-rows: 48px 1fr; overflow: hidden; color: #334155; font-size: 12px; }
+    .layer-tile.active { border-color: #2b66f6; box-shadow: 0 0 0 2px rgba(43,102,246,.15); color: #08285a; font-weight: 800; }
+    .tile-img { display: grid; place-items: center; background: linear-gradient(135deg,#e7efe1,#b9d6a4); color: #153c1f; font-size: 20px; }
+    .tile-img.aerial { background: linear-gradient(135deg,#a7b68e,#edf0df); }
+    .tile-img.streets { background: linear-gradient(135deg,#e7efff,#fffbe9); }
+    .tile-img.topo { background: repeating-linear-gradient(135deg,#f8f0d7,#f8f0d7 7px,#ddc48c 8px,#ddc48c 10px); }
+    .tile-img.none { background: #f6f7f9; color: #98a2b3; }
+    .layer-tile span { padding: 7px 4px; text-align: center; }
+
+    .report-pane { direction: rtl; height: 100vh; overflow-y: auto; overflow-x: hidden; padding: 16px 16px 28px 12px; min-width: 0; max-width: 100%; }
+    .report-card { min-height: calc(100vh - 32px); background: #ffffff; border: 1px solid #dfe6ef; border-radius: 18px; box-shadow: 0 10px 30px rgba(17, 34, 64, .08); position: relative; padding: 36px 18px 28px; overflow: hidden; max-width: 100%; }
+    .blue-tab { position: absolute; top: -16px; left: 40%; right: 40%; height: 3px; background: #1f5bff; border-radius: 99px; }
+    .top-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: end; margin: 0 auto 14px; max-width: min(100%, 860px); }
+    .field { display: grid; gap: 5px; font-size: 12px; font-weight: 800; color: #667085; }
+    input, select { width: 100%; border: 1px solid #dfe6ef; border-radius: 12px; background: #fff; padding: 10px 12px; color: #08285a; outline: none; }
+    input:focus, select:focus { border-color: #2364f6; box-shadow: 0 0 0 3px rgba(35,100,246,.12); }
+    .primary-btn, .secondary-btn, .link-btn { border: 0; border-radius: 12px; padding: 10px 14px; min-height: 41px; display: inline-flex; justify-content: center; align-items: center; gap: 6px; background: #eef2f7; color: #0b2a55; font-weight: 800; }
+    .primary-btn { background: #0f5bff; color: #fff; }
+    .green-btn { background: #06a56b; color: #fff; }
+    .toggle-line { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 2px auto 18px; color: #667085; font-size: 12px; }
+    .toggle-line input { width: auto; }
+
+    .report-title { text-align: center; margin: 14px 0 30px; }
+    .report-title h1 { margin: 0; font-size: clamp(30px, 3vw, 44px); line-height: 1.1; color: #052a5a; font-weight: 900; letter-spacing: -.6px; }
+    .report-title p { margin: 8px 0 0; color: #77849a; font-size: 16px; }
+    .status { display: inline-flex; margin-top: 12px; gap: 8px; border-radius: 999px; padding: 6px 12px; background: #e8fff2; border: 1px solid #bce9cf; color: #08714d; font-size: 12px; font-weight: 800; }
+    .status.error { background: #fff1f2; border-color: #fecdd3; color: #9f1239; }
+
+    .stat-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; max-width: min(100%, 840px); margin: 0 auto 42px; }
+    .stat-card { border: 1px solid #dde5ef; border-radius: 14px; min-height: 126px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 22px 24px; background: #fff; }
+    .stat-text { text-align: right; min-width: 0; }
+    .stat-value { margin: 0 0 8px; font-size: clamp(22px, 1.6vw, 28px); font-weight: 700; color: #052a5a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sales-kpi .stat-value { font-size: clamp(34px, 3.8vw, 56px); font-weight: 900; letter-spacing: -.04em; color: #0f5bff; line-height: .95; }
+    .sales-kpi .stat-label strong { color: #052a5a; font-size: 16px; }
+    .stat-label { color: #718098; font-weight: 700; }
+    .stat-icon { flex: 0 0 auto; width: 70px; height: 70px; border-radius: 14px; background: #f3f5f9; display: grid; place-items: center; font-size: 28px; }
+
+    .compare-panel { max-width: min(100%, 980px); margin: 0 auto 34px; border: 1px solid #dfe6ef; border-radius: 16px; background: #f8fbff; padding: 18px; box-shadow: 0 8px 22px rgba(6,34,74,.05); }
+    .compare-panel h3 { margin: 0 0 14px; color: #052a5a; text-align: center; font-size: 21px; font-weight: 900; }
+    .compare-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 10px; align-items: end; margin-bottom: 14px; }
+    .compare-table { border: 1px solid #dfe6ef; border-radius: 14px; overflow: hidden; background: #fff; }
+    .compare-row { display: grid; grid-template-columns: minmax(140px, .8fr) repeat(2, minmax(0, 1fr)); align-items: center; border-bottom: 1px solid #edf2f7; }
+    .compare-row:last-child { border-bottom: 0; }
+    .compare-row > div { padding: 11px 12px; min-width: 0; }
+    .compare-row .metric { color: #667085; font-weight: 800; background: #f8fbff; }
+    .compare-row .city-name { color: #052a5a; font-weight: 900; text-align: center; background: #eef5ff; }
+    .compare-row .metric-value { text-align: center; color: #052a5a; font-weight: 800; }
+
+    .section-heading { text-align: center; margin: 0 auto 12px; }
+    .section-heading h2 { margin: 0 0 8px; color: #052a5a; font-size: clamp(24px, 2.2vw, 33px); font-weight: 900; }
+    .section-subtitle { margin: 0 0 14px; color: #718098; font-size: 15px; font-weight: 600; }
+    .room-tabs { display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 24px; border-bottom: 1px solid transparent; color: #052a5a; font-weight: 900; }
+    .room-tabs button { border: 0; background: transparent; padding: 0 0 8px; color: #052a5a; font-weight: 900; position: relative; }
+    .room-tabs button.active { color: #0f5bff; }
+    .room-tabs button.active::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; border-radius: 999px; background: #0f5bff; }
+
+    .analysis-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 340px); gap: 22px; max-width: min(100%, 1130px); margin: 0 auto; align-items: start; direction: ltr; }
+    .chart-area { direction: rtl; min-height: 390px; position: relative; min-width: 0; }
+    .chart-stack { display: grid; gap: 22px; min-width: 0; }
+    .chart-panel { border: 1px solid #edf1f6; border-radius: 16px; background: #fff; padding: 8px 6px 4px; min-width: 0; }
+    .chart-panel h3 { margin: 6px 12px 8px; color: #052a5a; font-size: 18px; font-weight: 800; text-align: center; }
+    .chart-wrap { height: 340px; width: 100%; max-width: 100%; direction: ltr; }
+    .chart-wrap canvas { direction: ltr; }
+    .sales-chart-wrap { height: 300px; }
+    .chart-empty { height: 380px; display: grid; place-items: center; color: #667085; border: 1px dashed #cbd5e1; border-radius: 14px; background: #fbfdff; }
+    .info-column { direction: rtl; display: grid; gap: 24px; min-width: 0; }
+    .info-box { border: 1px solid #dfe6ef; border-radius: 14px; min-height: 118px; padding: 20px 22px; background: #fff; color: #052a5a; min-width: 0; }
+    .info-box h3 { margin: 0 0 10px; font-size: 18px; font-weight: 500; color: #57677f; display: flex; align-items: center; gap: 8px; }
+    .info-box p { margin: 6px 0; font-size: 16px; }
+    .info-box b { color: #052a5a; }
+    .bullet { display: inline-block; width: 10px; height: 10px; background: #111; margin-inline-start: 6px; }
+    .note { color: #667085; font-size: 13px !important; line-height: 1.55; margin-top: 12px !important; }
+    .tiny-chart { margin-top: 10px; height: 145px; }
+    .year-slider-card { border: 1px solid #dfe6ef; border-radius: 16px; background: #f8fbff; padding: 16px 18px; box-shadow: 0 8px 20px rgba(6,34,74,.05); }
+    .year-slider-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: #052a5a; font-weight: 900; margin-bottom: 10px; }
+    .year-slider-title small { color: #718098; font-weight: 700; }
+    .year-slider { width: 100%; accent-color: #0f5bff; cursor: pointer; padding: 0; border: 0; direction: ltr; writing-mode: horizontal-tb; transform: none; }
+    .year-slider-labels { display: flex; justify-content: space-between; color: #667085; font-size: 13px; font-weight: 800; margin-top: 6px; direction: ltr; }
+    .year-slider-note { margin: 8px 0 0; color: #718098; font-size: 13px; text-align: center; }
+    .quarter-slider-card { background: #fff; margin-top: 14px; }
+    .year-slider:disabled { opacity: .45; cursor: not-allowed; }
+    .compact-row { margin-top: 12px; }
+
+    .data-set-panel { max-width: 100%; }
+    .annual-data-panel { background: #f8fbff; border-color: #d7e6ff; }
+    .quarterly-data-panel { background: #fff; border-color: #dfe6ef; margin-top: 6px; }
+    .embedded-slider-card { margin-bottom: 10px; box-shadow: none; background: #fff; }
+    .quarterly-chart-panel { scroll-margin-top: 16px; }
+    .nadlan-layout, .report-pane, .report-card, .analysis-grid, .chart-stack, .chart-panel, .bottom-tools { max-width: 100%; }
+    canvas { max-width: 100% !important; }
+
+    .rental-filter-panel { border: 1px solid #dfe6ef; border-radius: 16px; background: #fff; padding: 16px 18px; box-shadow: 0 8px 20px rgba(6,34,74,.05); }
+    .rental-filter-title { margin: 0 0 12px; color: #052a5a; font-size: 18px; font-weight: 900; text-align: center; }
+    .rental-filter-row { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .rental-filter-row span { color: #667085; font-weight: 800; margin-inline-end: 4px; }
+    .rental-filter-row button { border: 1px solid #dfe6ef; border-radius: 999px; background: #f6f9ff; color: #052a5a; padding: 8px 13px; font-weight: 900; }
+    .rental-filter-row button.active { background: #0f5bff; border-color: #0f5bff; color: #fff; }
+    .rental-filter-note { margin: 12px 0 0; color: #718098; font-size: 13px; text-align: center; line-height: 1.45; }
+    .chart-note { margin: 0 12px 10px; color: #718098; font-size: 13px; text-align: center; font-weight: 800; }
+    .listing-metric { margin: 8px 0; padding: 10px 12px; border-radius: 12px; background: #f7fbff; border: 1px solid #d7e6ff; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .listing-metric b { color: #0f5bff; font-size: 20px; font-weight: 900; }
+    .quality-badge { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 4px 9px; font-size: 12px; font-weight: 900; white-space: nowrap; }
+    .quality-good { background: #e8fff2; color: #08714d; border: 1px solid #bce9cf; }
+    .quality-medium { background: #fff7ed; color: #9a3412; border: 1px solid #fed7aa; }
+    .quality-low { background: #fff1f2; color: #9f1239; border: 1px solid #fecdd3; }
+    .quality-unknown { background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+    .formula-details { margin: 14px auto 0; max-width: 760px; border: 1px solid #d7e6ff; border-radius: 14px; background: #f7fbff; color: #052a5a; overflow: hidden; }
+    .formula-details summary { cursor: pointer; padding: 12px 16px; font-weight: 900; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .formula-details summary::-webkit-details-marker { display: none; }
+    .formula-details summary::after { content: '⌄'; font-size: 18px; color: #0f5bff; }
+    .formula-details[open] summary::after { content: '⌃'; }
+    .formula-list { border-top: 1px solid #d7e6ff; padding: 12px 16px 14px; display: grid; gap: 8px; }
+    .formula-list p { margin: 0; color: #40516a; font-size: 14px; line-height: 1.55; }
+    .formula-list b { color: #052a5a; }
+    .formula-equation { direction: rtl; display: inline-block; color: #0f5bff; font-weight: 900; }
+    .deals-focus { margin: 10px 0 0; padding: 12px 14px; border-radius: 12px; background: #eef5ff; border: 1px solid #d7e6ff; }
+    .deals-focus b { font-size: 24px; color: #0f5bff; font-weight: 900; }
+    .map-select-hint { margin: 0; padding: 12px 14px; border-radius: 12px; background: #f7faff; border: 1px solid #dfe8f7; color: #52627a; font-size: 14px; line-height: 1.45; }
+
+    .bottom-tools { max-width: min(100%, 1130px); margin: 32px auto 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+    .mini-panel { border: 1px solid #dfe6ef; border-radius: 14px; padding: 14px; background: #fff; max-height: 310px; overflow: auto; min-width: 0; }
+    .mini-panel h3 { margin: 0 0 10px; color: #052a5a; }
+    .result-row { width: 100%; border: 0; border-bottom: 1px solid #edf2f7; background: #fff; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 4px; color: #052a5a; text-align: right; }
+    .result-row:hover { background: #f7faff; }
+    .result-row small { display: block; color: #718098; margin-top: 3px; }
+    .ratio-badge { direction: ltr; color: #0f5bff; font-weight: 900; white-space: nowrap; }
+    .ranking-toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 10px; position: sticky; top: -14px; background: #fff; z-index: 2; padding: 0 0 10px; }
+    .ranking-toolbar button { border: 1px solid #dfe6ef; border-radius: 10px; background: #f6f9ff; color: #052a5a; padding: 8px 10px; font-weight: 800; }
+    .ranking-toolbar button.active { background: #0f5bff; border-color: #0f5bff; color: #fff; }
+    .result-row .rank-index { color: #718098; font-weight: 800; margin-inline-start: 8px; }
+    .legend { display: grid; gap: 8px; }
+    .legend-row { display: grid; grid-template-columns: 24px 1fr; gap: 8px; align-items: center; color: #46566d; }
+    .legend-row i { width: 24px; height: 14px; border: 1px solid rgba(15, 23, 42, .18); border-radius: 999px; }
+
+    @media (max-width: 1180px) {
+      body { overflow-y: auto; overflow-x: hidden; }
+      .nadlan-layout { height: auto; min-height: 100vh; grid-template-columns: 1fr; }
+      .map-pane { height: 55vh; }
+      .report-pane { height: auto; overflow: visible; padding: 10px; }
+      .report-card { min-height: 0; }
+      .analysis-grid, .bottom-tools { grid-template-columns: 1fr; }
+      .stat-cards { grid-template-columns: 1fr; margin-bottom: 30px; }
+      .top-controls { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 700px) {
+      .map-pane { height: 50vh; }
+      .top-controls, .compare-controls { grid-template-columns: 1fr; }
+      .compare-row { grid-template-columns: 1fr; }
+      .compare-row .metric, .compare-row .city-name, .compare-row .metric-value { text-align: right; }
+      .layer-popover { width: calc(100% - 36px); }
+      .layer-grid { grid-template-columns: repeat(2, 1fr); }
+      .analysis-grid { gap: 12px; }
+      .chart-wrap, .sales-chart-wrap, .chart-empty { height: 320px; }
+      .stat-card { padding: 16px; }
+      .stat-icon { width: 54px; height: 54px; }
+      .room-tabs { gap: 12px; font-size: 14px; }
+    }
+  
+        .map-legend {
+          position: fixed !important;
+          top: 96px;
+          left: 18px;
+          right: auto;
+          bottom: auto;
+          z-index: 2147483647 !important;
+          background: rgba(255,255,255,.97);
+          border: 1px solid rgba(15,23,42,.14);
+          border-radius: 14px;
+          box-shadow: 0 10px 25px rgba(15,23,42,.22);
+          padding: 12px 14px;
+          min-width: 270px;
+          max-width: 360px;
+          direction: rtl;
+          font-size: 13px;
+          color: #0f172a;
+          backdrop-filter: blur(8px);
+          pointer-events: auto;
+        }
+        .map-legend h4 {
+          margin: 0 0 9px;
+          font-size: 14px;
+          font-weight: 900;
+        }
+        .map-legend-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin: 6px 0;
+          font-weight: 700;
+        }
+        .map-legend-color {
+          width: 18px;
+          height: 18px;
+          border-radius: 5px;
+          border: 1px solid rgba(15,23,42,.22);
+          flex: 0 0 auto;
+        }
+        .map-legend-note {
+          margin-top: 8px;
+          padding-top: 8px;
+          border-top: 1px solid rgba(15,23,42,.10);
+          font-size: 11.5px;
+          color: #475569;
+          line-height: 1.35;
+          font-weight: 700;
+        }
+        @media (max-width: 760px) {
+          .map-legend {
+            top: 88px;
+            left: 10px;
+            min-width: 220px;
+            max-width: calc(100vw - 20px);
+            padding: 10px 11px;
+            font-size: 12px;
+          }
+        }
+
+      </style>
+</head>
+<body>
+
+  <div id="app">
+    <main class="nadlan-layout">
+      <section class="map-pane" :class="{ fullscreen: mapFullscreen }">
+        <div v-if="isBooting || isDrawing" class="map-loader">{{ isBooting ? 'טוען מפה...' : 'צובע יישובים...' }}</div>
+        <div id="govmap-map" class="govmap-box"></div>
+
+        <div id="mapLegend" class="map-legend" aria-label="מקרא מפה">
+          <h4>מקרא · {{ colorMetricLabel }}</h4>
+          <div v-for="item in legendItems" :key="'map-' + item.label" class="map-legend-row">
+            <span class="map-legend-color" :style="{ background: rgbaCss(item.color) }"></span>
+            <span>{{ item.label }}</span>
+          </div>
+          <div class="map-legend-note">
+            המקרא משתנה לפי המדד שהמפה מודדת עכשיו.
+          </div>
+        </div>
+
+
+      </section>
+
+      <section class="report-pane">
+        <div class="report-card">
+          <div class="blue-tab"></div>
+
+          <div class="top-controls">
+            <label class="field"><span>חיפוש יישוב</span><input v-model="searchText" @keyup.enter="selectFirstSearchResult" placeholder="לדוגמה: מודיעין / 1200" /></label>
+            <button class="primary-btn" @click="selectFirstSearchResult" :disabled="filteredSettlementList.length===0">בחר</button>
+            <button class="secondary-btn" @click="selectNational" :disabled="selectedSettlement?.sid === '__national__'">כל הארץ</button>
+          </div>
+
+          <header class="report-title">
+            <h1>{{ pageTitle }}</h1>
+            <p>בהתייחס לשנת {{ targetYear }}</p>
+            <div v-if="errorMessage" class="status error">{{ errorMessage }}</div>
+          </header>
+
+          <section class="stat-cards">
+            <article class="stat-card sales-kpi">
+              <div class="stat-text"><p class="stat-value">{{ formatInteger(selectedSettlement?.dealsSelected) }}</p><div class="stat-label"><strong>עסקאות בשנת {{ targetYear }}</strong><br>מספר המכירות בשנה שלפיה המפה נצבעת</div></div>
+              <div class="stat-icon">🏘️</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-text"><p class="stat-value">עליית מחירים - {{ formatPercent(selectedSettlement?.demandYoySelected) }}</p><div class="stat-label">שינוי מחיר למ״ר לעומת השנה הקודמת</div></div>
+              <div class="stat-icon">📊</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-text"><p class="stat-value">{{ formatYield(activeYieldValue) }}</p><div class="stat-label"><strong>{{ activeYieldTitle }}</strong><br>{{ activeYieldSubtitle }}</div></div>
+              <div class="stat-icon">%</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-text"><p class="stat-value">{{ formatInvestmentScore(selectedSettlement?.investmentScore) }}</p><div class="stat-label"><strong>ציון השקעה</strong><br>{{ investmentScoreSubtitle }}</div></div>
+              <div class="stat-icon">★</div>
+            </article>
+            <article v-if="!isRentalColorMode() && colorMode !== 'investment'" class="stat-card">
+              <div class="stat-text"><p class="stat-value">{{ formatColorMetric(selectedSettlement) }}</p><div class="stat-label"><strong>מדד הצביעה במפה</strong><br>{{ colorMetricLabel }}</div></div>
+              <div class="stat-icon">🎨</div>
+            </article>
+          </section>
+
+          <section class="compare-panel">
+            <h3>השוואה בין שתי ערים</h3>
+            <div class="compare-controls">
+              <label class="field"><span>עיר ראשונה</span>
+                <select v-model="compareSidA">
+                  <option value="">בחר עיר</option>
+                  <option v-for="item in settlementOptions" :key="'a-' + item.sid" :value="item.sid">{{ item.name }}</option>
+                </select>
+              </label>
+              <label class="field"><span>עיר שנייה</span>
+                <select v-model="compareSidB">
+                  <option value="">בחר עיר</option>
+                  <option v-for="item in settlementOptions" :key="'b-' + item.sid" :value="item.sid">{{ item.name }}</option>
+                </select>
+              </label>
+              <button class="secondary-btn" @click="setCompareAFromSelected" :disabled="!selectedSettlement || selectedSettlement.sid === '__national__'">השתמש ביישוב הנבחר</button>
+            </div>
+            <div v-if="compareSettlementA && compareSettlementB" class="compare-table">
+              <div class="compare-row">
+                <div class="metric">מדד</div>
+                <div class="city-name">{{ compareSettlementA.name }}</div>
+                <div class="city-name">{{ compareSettlementB.name }}</div>
+              </div>
+              <div v-for="row in comparisonRows" :key="row.label" class="compare-row">
+                <div class="metric">{{ row.label }}</div>
+                <div class="metric-value">{{ row.a }}</div>
+                <div class="metric-value">{{ row.b }}</div>
+              </div>
+            </div>
+            <p v-else class="note">בחר שתי ערים כדי לראות השוואה של מחיר, עסקאות, שכירות, תשואה וציון השקעה.</p>
+          </section>
+
+          <section class="section-heading">
+            <h2>גרפים שנתיים לפי יישוב</h2>
+            <p class="section-subtitle">הגרפים מתעדכנים אוטומטית לפי היישוב שנבחר במפה או בחיפוש.</p>
+          </section>
+
+          <section class="analysis-grid">
+            <div class="chart-area">
+              <div v-if="selectedSettlement" class="chart-stack">
+                <div class="rental-filter-panel data-set-panel annual-data-panel">
+                  <h3 class="rental-filter-title">נתונים שנתיים: עסקאות ומחיר למ״ר</h3>
+                  <div class="year-slider-card embedded-slider-card">
+                    <div class="year-slider-title">
+                      <span>שנת נתוני עסקאות ומחיר: {{ targetYear }}</span>
+                    </div>
+                    <input class="year-slider" dir="ltr" type="range" :min="yearSliderMin" :max="yearSliderMax" step="1" v-model.number="targetYear" @input="handleYearSliderInput" @change="handleYearChanged" />
+                    <div class="year-slider-labels"><span>{{ yearSliderMin }}</span><span>{{ yearSliderMax }}</span></div>
+                  </div>
+                  <div class="rental-filter-row">
+                    <span>צביעת מפה לפי נתונים שנתיים:</span>
+                    <button :class="{ active: colorMode === 'deals' }" @click="setColorMode('deals')">עסקאות מול ממוצע</button>
+                    <button :class="{ active: colorMode === 'price' }" @click="setColorMode('price')">מחיר למ״ר מול שאר היישובים</button>
+                    <button :class="{ active: colorMode === 'investment' }" @click="setColorMode('investment')">ציון השקעה</button>
+                  </div>
+                </div>
+
+                <article class="chart-panel">
+                  <h3>מחיר למ״ר לאורך השנים - {{ chartEntityName }}</h3>
+                  <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+                </article>
+                <article class="chart-panel">
+                  <h3>מספר מכירות לאורך השנים - {{ chartEntityName }}</h3>
+                  <div class="chart-wrap sales-chart-wrap"><canvas id="salesChart"></canvas></div>
+                </article>
+
+                <div class="rental-filter-panel data-set-panel quarterly-data-panel">
+                  <h3 class="rental-filter-title">נתונים רבעוניים: שכירות ותשואה</h3>
+                  <div class="year-slider-card quarter-slider-card">
+                    <div class="year-slider-title">
+                      <span>רבעון נתוני שכירות ותשואה: {{ selectedRentalPeriodLabel }}</span>
+                      <small>נתוני שכירות מגורים ומסחרי · עד רבעון 4 2025</small>
+                    </div>
+                    <input class="year-slider" dir="ltr" type="range" min="0" :max="rentalSliderMax" step="1" v-model.number="rentalPeriodIndex" @input="handleRentalPeriodInput" @change="handleRentalPeriodChanged" />
+                    <div class="year-slider-labels"><span>{{ rentalSliderMinLabel }}</span><span>{{ rentalSliderMaxLabel }}</span></div>
+                  </div>
+                  <div class="rental-filter-row">
+                    <span>סוג נתונים רבעוניים:</span>
+                    <button :class="{ active: rentalDataType === 'regular' }" @click="setQuarterlyDataType('regular')">מגורים</button>
+                    <button :class="{ active: rentalDataType === 'commercial' }" @click="setQuarterlyDataType('commercial')">מסחרי</button>
+                  </div>
+                  <p class="rental-filter-note">בחירה זו קובעת גם את צביעת המפה וגם את הגרפים הרבעוניים.</p>
+                  <div v-if="rentalDataType === 'regular'" class="rental-filter-row">
+                    <span>מספר חדרים לחישוב שכירות ותשואה:</span>
+                    <button v-for="option in roomGroupOptions" :key="option.key" :class="{ active: selectedRoomGroup === option.key }" @click="selectedRoomGroup = option.key">{{ option.label }}</button>
+                  </div>
+                  <p class="rental-filter-note" v-if="rentalDataType === 'regular' && selectedRoomGroup !== 'all'">הצביעה והגרפים מציגים תשואה ושכירות מגורים לפי {{ selectedRoomGroupLabel }} בלבד, ובהנחת שטח מייצג של {{ selectedRoomGroupSqm }} מ״ר.</p>
+                  <p class="rental-filter-note" v-if="rentalDataType === 'commercial'">הצביעה והגרפים מציגים נתונים מסחריים. החישוב מבוסס על שכירות חודשית למ״ר.</p>
+                  <details class="formula-details">
+                    <summary>איך החישובים עובדים?</summary>
+                    <div class="formula-list">
+                      <p><b>נתונים שנתיים:</b> סליידר השנה משפיע על עסקאות ומחיר למ״ר, ועל כפתורי הצביעה שבאזור הנתונים השנתיים.</p>
+                      <p><b>עסקאות מול ממוצע:</b> <span class="formula-equation">עסקאות בשנה הנבחרת ÷ ממוצע עסקאות בכל השנים האחרות × 100</span>.</p>
+                      <p><b>מחיר למ״ר מול שאר היישובים:</b> <span class="formula-equation">מחיר למ״ר ביישוב בשנה הנבחרת ÷ ממוצע מחיר למ״ר בשאר היישובים באותה שנה × 100</span>.</p>
+                      <p><b>נתונים רבעוניים:</b> סליידר הרבעון מציג בגרפים את כל הרבעונים מתחילת הנתונים ועד הרבעון הנבחר. הצביעה הרבעונית מחושבת לפי הרבעון הנבחר בלבד.</p>
+                      <p><b>תשואה מגורים לפי מספר חדרים:</b> <span class="formula-equation">שכירות חודשית לרבעון × 12 ÷ (מחיר למ״ר באותה שנה × שטח מייצג לפי חדרים) × 100</span>. השטחים באתר: 3 חדרים = 70 מ״ר, 4 חדרים = 90 מ״ר, 5 חדרים = 110 מ״ר.</p>
+                      <p><b>תוצאה משולבת לכל סוגי החדרים:</b> מחשבים בנפרד תשואה ל־3, 4 ו־5 חדרים לפי השטח המייצג של כל קבוצה, ואז מחשבים ממוצע משוקלל לפי היצע המודעות בכל קבוצת חדרים. אין שימוש בהנחת 85 מ״ר.</p>
+                      <p><b>תשואה מסחרית:</b> <span class="formula-equation">שכירות חודשית מסחרית למ״ר × 12 ÷ מחיר קנייה למ״ר באותה שנה × 100</span>. בקובץ המסחרי מחיר השכירות הוא למ״ר לחודש, לכן אין הכפלה בשטח נכס.</p>
+                      <p><b>היצע מודעות:</b> <span class="formula-equation">listing_amount</span> הוא מספר המודעות/התצפיות באותו יישוב, רבעון וסוג נתון. הוא מוצג כהיצע למשתמשים וגם כרמז לכמה הנתון מבוסס.</p>
+                      <p><b>ציון השקעה:</b> ציון 0–100 שמשלב ארבעה רכיבים: <span class="formula-equation">42% תשואה + 20% היצע מודעות + 23% מחיר יחסי + 15% שינוי מחיר שנתי</span>.</p>
+                      <p><b>פירוט ציון ההשקעה:</b> תשואה גבוהה מעלה את הציון; היצע מודעות גבוה ביחס ליישובים אחרים מעלה את הציון; מחיר למ״ר נמוך יחסית מעלה את הציון; שינוי מחיר שנתי חיובי מעלה את הציון. כל רכיב מוגבל לטווח 0–100 כדי שלא יהיו קפיצות מוגזמות.</p>
+                      <p><b>נוסחת ציון ההשקעה:</b> <span class="formula-equation">(תשואה ÷ 6% × 100 × 0.42) + (יחס היצע ÷ 1.6 × 100 × 0.20) + ((1.45 − יחס מחיר) ÷ 0.9 × 100 × 0.23) + ((שינוי מחיר + 5) ÷ 20 × 100 × 0.15)</span>.</p>
+                      <p><b>חשוב:</b> התשואה היא גולמית ומשוערת. היא לא מפחיתה מסים, תחזוקה, תקופות ריקות, תיווך, שיפוצים או מימון. ציון ההשקעה הוא כלי השוואה בלבד ולא המלצת השקעה.</p>
+                    </div>
+                  </details>
+                </div>
+
+                <article v-if="rentalDataType === 'regular' && hasResidentialRentData" class="chart-panel quarterly-chart-panel">
+                  <h3>שכירות חציונית למגורים · {{ selectedRoomGroupLabel }} · {{ rentalChartScopeLabel }} - {{ chartEntityName }}</h3>
+                  <p class="chart-note">הקו מציג שכירות. העמודות מציגות היצע מודעות מאותו רבעון.</p>
+                  <div class="chart-wrap sales-chart-wrap"><canvas id="rentChart"></canvas></div>
+                </article>
+                <article v-if="rentalDataType === 'commercial' && hasCommercialRentData" class="chart-panel quarterly-chart-panel">
+                  <h3>שכירות מסחרית חציונית למ״ר לחודש · {{ rentalChartScopeLabel }} - {{ chartEntityName }}</h3>
+                  <p class="chart-note">הקו מציג שכירות מסחרית למ״ר לחודש. העמודות מציגות היצע מודעות מאותו רבעון.</p>
+                  <div class="chart-wrap sales-chart-wrap"><canvas id="commercialRentChart"></canvas></div>
+                </article>
+                <article v-if="rentalDataType === 'regular' && hasResidentialYieldData" class="chart-panel quarterly-chart-panel">
+                  <h3>תשואה גולמית משוערת למגורים · {{ selectedRoomGroupLabel }} · {{ rentalChartScopeLabel }} - {{ chartEntityName }}</h3>
+                  <div class="chart-wrap sales-chart-wrap"><canvas id="residentialYieldChart"></canvas></div>
+                </article>
+                <article v-if="rentalDataType === 'commercial' && hasCommercialYieldData" class="chart-panel quarterly-chart-panel">
+                  <h3>תשואה מסחרית משוערת · {{ rentalChartScopeLabel }} - {{ chartEntityName }}</h3>
+                  <div class="chart-wrap sales-chart-wrap"><canvas id="commercialYieldChart"></canvas></div>
+                </article>
+              </div>
+              <div v-else class="chart-empty">בחר יישוב כדי להציג גרפים שנתיים</div>
+            </div>
+
+            <aside class="info-column">
+              <article class="info-box">
+                <h3>⌂ מחירי עסקאות ממוצעים</h3>
+                <template v-if="rentalDataType === 'regular'">
+                  <p>שכירות מגורים חציונית · {{ selectedRoomGroupLabel }} · {{ selectedRentalPeriodLabel }}: <b>{{ formatCurrency(selectedResidentialRentLatest?.rental_price) }}</b></p>
+                  <p class="listing-metric"><span>היצע מודעות מגורים · {{ selectedRoomGroupLabel }} · {{ selectedRentalPeriodLabel }}</span><span><b>{{ formatInteger(selectedResidentialRentLatest?.listings_amount) }}</b> <i class="quality-badge" :class="listingQualityClass(selectedResidentialRentLatest?.listings_amount)">{{ listingQualityLabel(selectedResidentialRentLatest?.listings_amount) }}</i></span></p>
+                  <p>תשואה גולמית למגורים · {{ selectedRoomGroupLabel }} · {{ selectedRentalPeriodLabel }}: <b>{{ formatYield(selectedResidentialYieldLatest?.yield) }}</b></p>
+                  <p v-if="selectedRoomGroup !== 'all'" class="note">תשואת מגורים מחושבת לפי {{ selectedRoomGroupLabel }} בלבד, ובהנחת שטח מייצג של {{ selectedRoomGroupSqm }} מ״ר.</p>
+                </template>
+                <template v-else>
+                  <p>שכירות מסחרית חציונית · {{ selectedRentalPeriodLabel }}: <b>{{ formatCommercialRent(selectedCommercialRentLatest?.rental_price) }}</b></p>
+                  <p class="listing-metric"><span>היצע מודעות מסחריות · {{ selectedRentalPeriodLabel }}</span><span><b>{{ formatInteger(selectedCommercialRentLatest?.listings_amount) }}</b> <i class="quality-badge" :class="listingQualityClass(selectedCommercialRentLatest?.listings_amount)">{{ listingQualityLabel(selectedCommercialRentLatest?.listings_amount) }}</i></span></p>
+                  <p>תשואה מסחרית משוערת · {{ selectedRentalPeriodLabel }}: <b>{{ formatYield(selectedCommercialYieldLatest?.yield) }}</b></p>
+                  <p class="note">תשואה מסחרית מחושבת לפי שכירות חודשית מסחרית למ״ר מול מחיר קנייה למ״ר.</p>
+                </template>
+                <p>מחיר למ״ר ביחס לשאר היישובים: <b>{{ formatRatio(selectedSettlement?.priceRatioVsOthers) }}</b></p>
+                <p>ציון השקעה: <b>{{ formatInvestmentScore(selectedSettlement?.investmentScore) }}</b></p>
+                <p>עסקאות ביחס לממוצע: <b>{{ formatRatio(selectedSettlement?.ratio) }}</b></p>
+                <p class="deals-focus">עסקאות {{ targetYear }}: <b>{{ formatInteger(selectedSettlement?.dealsSelected) }}</b></p>
+                <p>ממוצע להשוואה: <b>{{ formatNumber(selectedSettlement?.avgAnnualDeals) }}</b> <small>(כל השנים חוץ מ־{{ targetYear }})</small></p>
+              </article>
+
+              <article class="info-box">
+                <h3>שנת עסקאות {{ targetYear }}</h3>
+                <p><span class="bullet"></span> מחיר חציוני שנתי: <b>{{ formatCurrency(selectedSettlement?.ppsqmSelected) }}</b></p>
+                <p v-if="!isRentalColorMode()"><span class="bullet"></span> מדד צביעה נוכחי: <b>{{ formatColorMetric(selectedSettlement) }}</b></p>
+              </article>
+
+            </aside>
+          </section>
+
+          <section class="bottom-tools">
+            <article class="mini-panel">
+              <h3>{{ rankingTitle }}</h3>
+              <div class="ranking-toolbar">
+                <button :class="{ active: listSortDirection === 'asc' }" @click="listSortDirection = 'asc'">נמוך → גבוה</button>
+                <button :class="{ active: listSortDirection === 'desc' }" @click="listSortDirection = 'desc'">גבוה → נמוך</button>
+              </div>
+              <div v-if="rankedSettlementList.length === 0" class="chart-empty" style="height:120px">אין יישובים עם נתון זמין למדד הנבחר.</div>
+              <button v-for="(item, index) in rankedSettlementList" :key="item.sid" class="result-row" @click="selectSettlement(item)">
+                <span><b class="rank-index">{{ index + 1 }}.</b>{{ item.name }}<small>{{ rankingRowSubtitle(item) }}</small></span>
+                <b class="ratio-badge">{{ formatColorMetric(item) }}</b>
+              </button>
+            </article>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js">
+        function updateMapLegendText(metricLabel) {
+          const note = document.querySelector('#mapLegend .map-legend-note');
+          if (!note) return;
+          note.textContent = metricLabel
+            ? `הצבע נקבע לפי ${metricLabel}.`
+            : 'הצבע נקבע לפי המדד/ציון ההשקעה שנבחר במפה.';
+        }
+
+      </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  <script>
+    const GOVMAP_SCRIPT_ID = 'govmap-api-script';
+    const GOVMAP_SCRIPT_URL = 'https://www.govmap.gov.il/govmap/api/govmap.api.js';
+    const MAP_DIV_ID = 'govmap-map';
+    const DRAWING_NAME_PREFIX = 'market-ratio-';
+    const GOVMAP_TOKEN = 'ede9a5fd-7c23-432f-8ffb-d85feffa3f3c';
+    const GOVMAP_LAYER = '235146';
+    const DEFAULT_TARGET_YEAR = 2025;
+    const RENTAL_MAX_YEAR = 2025;
+    const RENTAL_MAX_QUARTER_MAPI = 12;
+    const NATIONAL_SID = '__national__';
+    const AVERAGE_START_YEAR = 1999;
+    const FIXED_AVERAGE_END_YEAR = 2024;
+    // אין לנו גודל דירה אמיתי בקובצי העסקאות/השכירות, לכן מחשבים תשואה לפי שטח מייצג לכל קבוצת חדרים.
+    const ESTIMATED_APARTMENT_SQM = 90;
+    const ROOM_GROUP_SQM = { '3': 70, '4': 90, '5': 110 };
+
+    const COLOR_SCALE = [
+      { min: -Infinity, max: 0.50, color: [153, 27, 27, 0.88], label: 'עד 50% מהממוצע - אדום כהה' },
+      { min: 0.50, max: 0.80, color: [239, 68, 68, 0.86], label: '50%–80% מהממוצע - אדום' },
+      { min: 0.80, max: 1.00, color: [249, 115, 22, 0.84], label: '80%–100% מהממוצע - כתום' },
+      { min: 1.00, max: 1.20, color: [234, 179, 8, 0.84], label: '100%–120% מהממוצע - צהוב' },
+      { min: 1.20, max: 1.50, color: [74, 222, 128, 0.84], label: '120%–150% מהממוצע - ירוק בהיר' },
+      { min: 1.50, max: Infinity, color: [22, 101, 52, 0.88], label: 'מעל 150% מהממוצע - ירוק כהה' }
+    ];
+    const YIELD_COLOR_SCALE = [
+      { min: -Infinity, max: 1.00, color: [153, 27, 27, 0.88], label: 'עד 1% תשואה - אדום כהה' },
+      { min: 1.00, max: 2.00, color: [239, 68, 68, 0.86], label: '1%–2% תשואה - אדום' },
+      { min: 2.00, max: 3.00, color: [249, 115, 22, 0.84], label: '2%–3% תשואה - כתום' },
+      { min: 3.00, max: 4.00, color: [234, 179, 8, 0.84], label: '3%–4% תשואה - צהוב' },
+      { min: 4.00, max: 6.00, color: [74, 222, 128, 0.84], label: '4%–6% תשואה - ירוק בהיר' },
+      { min: 6.00, max: Infinity, color: [22, 101, 52, 0.88], label: 'מעל 6% תשואה - ירוק כהה' }
+    ];
+    const INVESTMENT_COLOR_SCALE = [
+      { min: -Infinity, max: 20, color: [153, 27, 27, 0.88], label: '0–20 ציון השקעה - נמוך מאוד' },
+      { min: 20, max: 40, color: [239, 68, 68, 0.86], label: '20–40 ציון השקעה - נמוך' },
+      { min: 40, max: 55, color: [249, 115, 22, 0.84], label: '40–55 ציון השקעה - בינוני נמוך' },
+      { min: 55, max: 70, color: [234, 179, 8, 0.84], label: '55–70 ציון השקעה - בינוני' },
+      { min: 70, max: 85, color: [74, 222, 128, 0.84], label: '70–85 ציון השקעה - גבוה' },
+      { min: 85, max: Infinity, color: [22, 101, 52, 0.88], label: 'מעל 85 ציון השקעה - גבוה מאוד' }
+    ];
+    const NO_DATA_COLOR = [148, 163, 184, 0.50];
+    const OUTLINE_COLOR = [25, 25, 25, 0.86];
+
+    function loadScript(id, src) {
+      return new Promise((resolve, reject) => {
+        const existing = document.getElementById(id);
+        if (existing) {
+          if (window.govmap) resolve();
+          else {
+            existing.addEventListener('load', resolve, { once: true });
+            existing.addEventListener('error', reject, { once: true });
+          }
+          return;
+        }
+        const script = document.createElement('script');
+        script.id = id;
+        script.src = src;
+        script.async = true;
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('לא הצלחתי לטעון את GovMap'));
+        document.head.appendChild(script);
+      });
+    }
+    function dataUrl(fileName) { return new URL(fileName, window.location.href).toString(); }
+    function normalizeNumber(value) { if (value === null || value === undefined || value === '') return null; const n = Number(value); return Number.isFinite(n) ? n : null; }
+    function clampNumber(value, min = 0, max = 100) { const n = Number(value); if (!Number.isFinite(n)) return null; return Math.min(max, Math.max(min, n)); }
+    function normalizeCsvValue(value) {
+      const s = String(value ?? '').trim();
+      if (!s || s.toLowerCase() === 'nan' || s.toLowerCase() === 'null') return '';
+      if (s === 'True') return true;
+      if (s === 'False') return false;
+      const n = Number(s);
+      return Number.isFinite(n) && /^-?\d+(\.\d+)?$/.test(s) ? n : s;
+    }
+    function parseCsv(text) {
+      const rows = [];
+      let cur = '', row = [], inQuotes = false;
+      const pushCell = () => { row.push(cur); cur = ''; };
+      const pushRow = () => { pushCell(); rows.push(row); row = []; };
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (ch === '"') {
+          if (inQuotes && text[i + 1] === '"') { cur += '"'; i++; }
+          else inQuotes = !inQuotes;
+        } else if (ch === ',' && !inQuotes) pushCell();
+        else if ((ch === '\n' || ch === '\r') && !inQuotes) {
+          if (ch === '\r' && text[i + 1] === '\n') i++;
+          if (cur !== '' || row.length) pushRow();
+        } else cur += ch;
+      }
+      if (cur !== '' || row.length) pushRow();
+      const headers = (rows.shift() || []).map((h) => String(h).replace(/^\uFEFF/, '').trim());
+      return rows.filter((r) => r.some((v) => String(v).trim() !== '')).map((r) => {
+        const obj = {};
+        headers.forEach((h, i) => { obj[h] = normalizeCsvValue(r[i]); });
+        return obj;
+      });
+    }
+    function normalizeRentalSid(value) {
+      const raw = String(value ?? '').trim();
+      if (!raw || raw.toLowerCase() === 'nan') return NATIONAL_SID;
+      return raw.replace(/^s_/i, '');
+    }
+    function rgbaCss(color) { return `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${color[3]})`; }
+    function colorForRatio(ratio) { if (!Number.isFinite(ratio)) return NO_DATA_COLOR; return COLOR_SCALE.find((b) => ratio >= b.min && ratio < b.max)?.color || COLOR_SCALE[COLOR_SCALE.length - 1].color; }
+    function colorForYield(value) { if (!Number.isFinite(value)) return NO_DATA_COLOR; return YIELD_COLOR_SCALE.find((b) => value >= b.min && value < b.max)?.color || YIELD_COLOR_SCALE[YIELD_COLOR_SCALE.length - 1].color; }
+    function colorForInvestmentScore(value) { if (!Number.isFinite(value)) return NO_DATA_COLOR; return INVESTMENT_COLOR_SCALE.find((b) => value >= b.min && value < b.max)?.color || INVESTMENT_COLOR_SCALE[INVESTMENT_COLOR_SCALE.length - 1].color; }
+    function isCombinedRoomGroup(roomGroup) { return String(roomGroup ?? '').toLowerCase() === 'all'; }
+    function sqmForRoomGroup(roomGroup) {
+      if (isCombinedRoomGroup(roomGroup)) return null;
+      return ROOM_GROUP_SQM[String(roomGroup || '4')] || null;
+    }
+    function ratioExplanation(ratio, yearLabel = 'השנה הנבחרת') { if (!Number.isFinite(ratio)) return 'אין מספיק נתונים לחישוב היחס.'; const percent = Math.round(ratio * 100); if (ratio > 1.05) return `בשנת ${yearLabel} היו כ-${percent}% מהממוצע השנתי, כלומר פעילות המכירות גבוהה מהממוצע.`; if (ratio < 0.95) return `בשנת ${yearLabel} היו כ-${percent}% מהממוצע השנתי, כלומר פעילות המכירות נמוכה מהממוצע.`; return `בשנת ${yearLabel} מספר העסקאות דומה לממוצע השנתי.`; }
+
+    const { createApp, ref, computed, onMounted, watch, nextTick } = Vue;
+    createApp({
+      setup() {
+        const isBooting = ref(true);
+        const isDrawing = ref(false);
+        const statusMessage = ref('טוען את GovMap...');
+        const errorMessage = ref('');
+        const baseLayerVisible = ref(false);
+        const overlayVisible = ref(true);
+        const mapReady = ref(false);
+        const rawRows = ref([]);
+        const residentialRentRows = ref([]);
+        const commercialRentRows = ref([]);
+        const wktFeatures = ref([]);
+        const searchText = ref('');
+        const listSortDirection = ref('asc');
+        const selectedSettlement = ref(null);
+        const drawnNames = ref([]);
+        const ignoreZeroYears = ref(false);
+        const targetYear = ref(DEFAULT_TARGET_YEAR);
+        const rentalPeriodIndex = ref(0);
+        const rentalShowAllQuarters = ref(true);
+        const showLayers = ref(false);
+        const mapFullscreen = ref(false);
+        const rentalDataType = ref('regular');
+        const selectedRoomGroup = ref('all');
+        const colorMode = ref('deals');
+        const compareSidA = ref('');
+        const compareSidB = ref('');
+        const roomGroupOptions = [
+          { key: 'all', label: 'כל סוגי החדרים' },
+          { key: '3', label: '3 חדרים' },
+          { key: '4', label: '4 חדרים' },
+          { key: '5', label: '5 חדרים' }
+        ];
+        const selectedRoomGroupLabel = computed(() => roomGroupOptions.find((option) => option.key === selectedRoomGroup.value)?.label || 'כל סוגי החדרים');
+        const selectedRoomGroupSqm = computed(() => sqmForRoomGroup(selectedRoomGroup.value));
+        let priceChart = null;
+        let salesChart = null;
+        let rentChart = null;
+        let commercialRentChart = null;
+        let residentialYieldChart = null;
+        let commercialYieldChart = null;
+
+        const rowGroups = computed(() => {
+          const groups = new Map();
+          for (const row of rawRows.value) {
+            const sid = String(row.sid);
+            if (!groups.has(sid)) groups.set(sid, []);
+            groups.get(sid).push(row);
+          }
+          for (const rows of groups.values()) rows.sort((a, b) => Number(a.year) - Number(b.year));
+          return groups;
+        });
+        function buildRentalIndex(rows) {
+          const groups = new Map();
+          for (const row of rows || []) {
+            const sid = normalizeRentalSid(row.geomid_s);
+            if (!groups.has(sid)) groups.set(sid, []);
+            groups.get(sid).push(row);
+          }
+          for (const list of groups.values()) list.sort((a, b) => (Number(a.year) - Number(b.year)) || (Number(a.quarter_mapi) - Number(b.quarter_mapi)));
+          return groups;
+        }
+        const residentialRentIndex = computed(() => buildRentalIndex(residentialRentRows.value));
+        const commercialRentIndex = computed(() => buildRentalIndex(commercialRentRows.value));
+        const availableRentalPeriods = computed(() => {
+          const map = new Map();
+          for (const row of [...residentialRentRows.value, ...commercialRentRows.value]) {
+            if (!Number.isFinite(normalizeNumber(row.rental_price))) continue;
+            const p = periodFromRow(row);
+            if (p && isRentalPeriodAllowed(p) && !map.has(p.key)) map.set(p.key, p);
+          }
+          return [...map.values()].sort((a, b) => (a.year - b.year) || (a.quarter - b.quarter));
+        });
+        const rentalSliderMax = computed(() => Math.max(0, availableRentalPeriods.value.length - 1));
+        const selectedRentalPeriod = computed(() => {
+          const periods = availableRentalPeriods.value;
+          if (!periods.length) return null;
+          const idx = Math.min(Math.max(0, Number(rentalPeriodIndex.value) || 0), periods.length - 1);
+          return periods[idx];
+        });
+        const selectedRentalPeriodLabel = computed(() => selectedRentalPeriod.value?.label || 'אין נתוני רבעון');
+        const rentalSliderMinLabel = computed(() => availableRentalPeriods.value[0]?.label || '');
+        const rentalSliderMaxLabel = computed(() => availableRentalPeriods.value[availableRentalPeriods.value.length - 1]?.label || '');
+        const rentalChartScopeLabel = computed(() => `עד ${selectedRentalPeriodLabel.value}`);
+        function rowMatchesRoomGroup(row, roomGroup) {
+          if (!roomGroup || isCombinedRoomGroup(roomGroup)) return true;
+          return String(row.rooms_group || '').toLowerCase() === String(roomGroup).toLowerCase();
+        }
+        function latestRentFromIndex(index, sid, roomGroup = null) {
+          const rows = index.get(String(sid)) || [];
+          if (isCombinedRoomGroup(roomGroup)) {
+            const aggregated = aggregateResidentialRowsByPeriod(rows.filter(isRentalRowAllowed));
+            return aggregated[aggregated.length - 1] || null;
+          }
+          for (let i = rows.length - 1; i >= 0; i--) {
+            if (!isRentalRowAllowed(rows[i])) continue;
+            if (!rowMatchesRoomGroup(rows[i], roomGroup)) continue;
+            const price = normalizeNumber(rows[i].rental_price);
+            const listings = normalizeNumber(rows[i].listings_amount);
+            if (Number.isFinite(price)) return { ...rows[i], rental_price: price, listings_amount: listings };
+          }
+          return null;
+        }
+        function latestRentForYearFromIndex(index, sid, year, roomGroup = null) {
+          const rows = index.get(String(sid)) || [];
+          const target = Number(year);
+          if (isCombinedRoomGroup(roomGroup)) {
+            const aggregated = aggregateResidentialRowsByPeriod(rows.filter((row) => isRentalRowAllowed(row) && Number(row.year) === target));
+            return aggregated[aggregated.length - 1] || null;
+          }
+          for (let i = rows.length - 1; i >= 0; i--) {
+            if (!isRentalRowAllowed(rows[i])) continue;
+            if (Number(rows[i].year) !== target) continue;
+            if (!rowMatchesRoomGroup(rows[i], roomGroup)) continue;
+            const price = normalizeNumber(rows[i].rental_price);
+            const listings = normalizeNumber(rows[i].listings_amount);
+            if (Number.isFinite(price)) return { ...rows[i], rental_price: price, listings_amount: listings };
+          }
+          return null;
+        }
+        function periodFromRow(row) {
+          const year = Number(row?.year);
+          const quarter = Number(row?.quarter_mapi);
+          if (!Number.isFinite(year) || !Number.isFinite(quarter)) return null;
+          return { year, quarter, key: `${year}-${quarter}`, label: periodLabelFromParts(year, quarter) };
+        }
+        function quarterNumberFromMap(quarter) {
+          const q = Number(quarter) / 3;
+          return Number.isFinite(q) && q > 0 ? q : Number(quarter);
+        }
+        function periodLabelFromParts(year, quarter) {
+          return `${year} רבעון ${quarterNumberFromMap(quarter)}`;
+        }
+        function isRentalPeriodAllowed(period) {
+          if (!period) return false;
+          const year = Number(period.year);
+          const quarter = Number(period.quarter);
+          if (!Number.isFinite(year) || !Number.isFinite(quarter)) return false;
+          if (year < RENTAL_MAX_YEAR) return true;
+          return year === RENTAL_MAX_YEAR && quarter <= RENTAL_MAX_QUARTER_MAPI;
+        }
+        function isRentalRowAllowed(row) {
+          return isRentalPeriodAllowed(periodFromRow(row));
+        }
+        function matchesRentalPeriod(row, period) {
+          if (!period) return true;
+          return Number(row?.year) === Number(period.year) && Number(row?.quarter_mapi) === Number(period.quarter);
+        }
+        function isRowUpToSelectedRentalPeriod(row) {
+          const period = selectedRentalPeriod.value;
+          if (!period) return true;
+          const rowPeriod = periodFromRow(row);
+          if (!rowPeriod) return false;
+          if (rowPeriod.year < period.year) return true;
+          return rowPeriod.year === period.year && rowPeriod.quarter <= period.quarter;
+        }
+        function filterRowsByRentalDisplay(rows) {
+          return (rows || []).filter(isRentalRowAllowed).filter(isRowUpToSelectedRentalPeriod);
+        }
+        function aggregateResidentialRowsByPeriod(rows) {
+          const groups = new Map();
+          for (const row of rows || []) {
+            const price = normalizeNumber(row.rental_price);
+            if (!Number.isFinite(price) || price <= 0) continue;
+            const p = periodFromRow(row);
+            if (!p) continue;
+            if (!groups.has(p.key)) groups.set(p.key, { period: p, rows: [] });
+            groups.get(p.key).rows.push({
+              ...row,
+              rental_price: price,
+              listings_amount: normalizeNumber(row.listings_amount),
+              rooms_group: String(row.rooms_group || '').trim()
+            });
+          }
+          return [...groups.values()]
+            .sort((a, b) => (a.period.year - b.period.year) || (a.period.quarter - b.period.quarter))
+            .map((group) => {
+              const rows = group.rows;
+              const sumListings = rows.reduce((sum, row) => sum + (Number.isFinite(row.listings_amount) && row.listings_amount > 0 ? row.listings_amount : 0), 0);
+              const useListingsWeights = sumListings > 0;
+              let weightedSum = 0;
+              let weightSum = 0;
+              for (const row of rows) {
+                const weight = useListingsWeights ? (Number.isFinite(row.listings_amount) && row.listings_amount > 0 ? row.listings_amount : 0) : 1;
+                if (weight <= 0) continue;
+                weightedSum += row.rental_price * weight;
+                weightSum += weight;
+              }
+              const rentalPrice = weightSum > 0 ? weightedSum / weightSum : null;
+              return {
+                ...rows[0],
+                year: group.period.year,
+                quarter_mapi: group.period.quarter,
+                rooms_group: 'all',
+                rental_price: rentalPrice,
+                listings_amount: Number.isFinite(sumListings) ? sumListings : null,
+                _sourceRows: rows
+              };
+            })
+            .filter((row) => Number.isFinite(row.rental_price));
+        }
+        function rentForPeriodFromIndex(index, sid, period, roomGroup = null) {
+          const rows = index.get(String(sid)) || [];
+          if (!period || !isRentalPeriodAllowed(period)) return null;
+          if (isCombinedRoomGroup(roomGroup)) {
+            return aggregateResidentialRowsByPeriod(rows.filter((row) => matchesRentalPeriod(row, period)))[0] || null;
+          }
+          for (let i = rows.length - 1; i >= 0; i--) {
+            if (!matchesRentalPeriod(rows[i], period)) continue;
+            if (!rowMatchesRoomGroup(rows[i], roomGroup)) continue;
+            const price = normalizeNumber(rows[i].rental_price);
+            const listings = normalizeNumber(rows[i].listings_amount);
+            if (Number.isFinite(price)) return { ...rows[i], rental_price: price, listings_amount: listings };
+          }
+          return null;
+        }
+        function rentalRowsForSelected(index, roomGroup = null) {
+          const sid = selectedSettlement.value?.sid ? String(selectedSettlement.value.sid) : NATIONAL_SID;
+          const rows = filterRowsByRentalDisplay(index.get(sid) || []);
+          if (isCombinedRoomGroup(roomGroup)) return aggregateResidentialRowsByPeriod(rows);
+          return rows
+            .filter((row) => rowMatchesRoomGroup(row, roomGroup))
+            .map((row) => ({
+              ...row,
+              rental_price: normalizeNumber(row.rental_price),
+              listings_amount: normalizeNumber(row.listings_amount)
+            }));
+        }
+        const selectedResidentialRentRows = computed(() => rentalRowsForSelected(residentialRentIndex.value, selectedRoomGroup.value));
+        const selectedCommercialRentRows = computed(() => rentalRowsForSelected(commercialRentIndex.value));
+        const selectedResidentialRentLatest = computed(() => rentForPeriodFromIndex(residentialRentIndex.value, selectedSettlement.value?.sid || NATIONAL_SID, selectedRentalPeriod.value, selectedRoomGroup.value));
+        const selectedCommercialRentLatest = computed(() => rentForPeriodFromIndex(commercialRentIndex.value, selectedSettlement.value?.sid || NATIONAL_SID, selectedRentalPeriod.value));
+        const hasResidentialRentData = computed(() => selectedResidentialRentRows.value.some((row) => Number.isFinite(row.rental_price)));
+        const hasCommercialRentData = computed(() => selectedCommercialRentRows.value.some((row) => Number.isFinite(row.rental_price)));
+        function selectedPriceByYear() {
+          const priceByYear = new Map();
+          for (const row of selectedRows.value || []) {
+            const year = Number(row.year);
+            const ppsqm = normalizeNumber(row.ppsqm);
+            if (Number.isFinite(year) && Number.isFinite(ppsqm) && ppsqm > 0) priceByYear.set(year, ppsqm);
+          }
+          return priceByYear;
+        }
+        const selectedResidentialYieldRows = computed(() => {
+          const priceByYear = selectedPriceByYear();
+          return selectedResidentialRentRows.value.map((row) => {
+            const ppsqm = priceByYear.get(Number(row.year));
+            return { ...row, ppsqm, yield: calcResidentialYieldFromRentRow(row, ppsqm) };
+          }).filter((row) => Number.isFinite(row.yield));
+        });
+        const selectedCommercialYieldRows = computed(() => {
+          const priceByYear = selectedPriceByYear();
+          return selectedCommercialRentRows.value.map((row) => {
+            const ppsqm = priceByYear.get(Number(row.year));
+            return { ...row, ppsqm, yield: calcCommercialYield(row.rental_price, ppsqm) };
+          }).filter((row) => Number.isFinite(row.yield));
+        });
+        function latestYieldFromRows(rows) {
+          const list = rows || [];
+          for (let i = list.length - 1; i >= 0; i--) if (Number.isFinite(list[i]?.yield)) return list[i];
+          return null;
+        }
+        const selectedResidentialYieldLatest = computed(() => {
+          const period = selectedRentalPeriod.value;
+          const rent = rentForPeriodFromIndex(residentialRentIndex.value, selectedSettlement.value?.sid || NATIONAL_SID, period, selectedRoomGroup.value);
+          const ppsqm = period ? selectedPriceByYear().get(Number(period.year)) : null;
+          const value = calcResidentialYieldFromRentRow(rent, ppsqm);
+          return Number.isFinite(value) ? { ...rent, ppsqm, yield: value } : null;
+        });
+        const selectedCommercialYieldLatest = computed(() => {
+          const period = selectedRentalPeriod.value;
+          const rent = rentForPeriodFromIndex(commercialRentIndex.value, selectedSettlement.value?.sid || NATIONAL_SID, period);
+          const ppsqm = period ? selectedPriceByYear().get(Number(period.year)) : null;
+          const value = calcCommercialYield(rent?.rental_price, ppsqm);
+          return Number.isFinite(value) ? { ...rent, ppsqm, yield: value } : null;
+        });
+        const hasResidentialYieldData = computed(() => selectedResidentialYieldRows.value.length > 0);
+        const hasCommercialYieldData = computed(() => selectedCommercialYieldRows.value.length > 0);
+        const investmentScoreTypeLabel = computed(() => rentalDataType.value === 'commercial' ? 'מסחרי' : `מגורים · ${selectedRoomGroupLabel.value}`);
+        const investmentScoreSubtitle = computed(() => `משולב לפי ${investmentScoreTypeLabel.value}: תשואה, היצע, מחיר, שינוי שנתי ויחס עסקאות`);
+        const activeYieldValue = computed(() => rentalDataType.value === 'commercial' ? selectedCommercialYieldLatest.value?.yield : selectedResidentialYieldLatest.value?.yield);
+        const activeYieldTitle = computed(() => rentalDataType.value === 'commercial' ? 'תשואה מסחרית משוערת' : `תשואה גולמית משוערת · ${selectedRoomGroupLabel.value}`);
+        const activeYieldSubtitle = computed(() => {
+          if (rentalDataType.value === 'commercial') return 'שכירות שנתית למ״ר / מחיר למ״ר';
+          if (selectedRoomGroup.value === 'all') return 'ממוצע משוקלל של 3, 4 ו־5 חדרים לפי היצע מודעות';
+          return `שכירות שנתית / שווי דירה מוערך לפי ${selectedRoomGroupSqm.value} מ״ר`;
+        });
+
+        const nationalRows = computed(() => {
+          const byYear = new Map();
+          for (const row of rawRows.value) {
+            const year = Number(row.year);
+            if (!Number.isFinite(year)) continue;
+            if (!byYear.has(year)) byYear.set(year, { year, deals: 0, ppsqmWeightedSum: 0, ppsqmWeight: 0, ppsqmSimpleSum: 0, ppsqmSimpleCount: 0 });
+            const acc = byYear.get(year);
+            const deals = normalizeNumber(row.deals) ?? 0;
+            acc.deals += deals;
+            const ppsqm = normalizeNumber(row.ppsqm);
+            if (Number.isFinite(ppsqm)) {
+              if (deals > 0) {
+                acc.ppsqmWeightedSum += ppsqm * deals;
+                acc.ppsqmWeight += deals;
+              }
+              acc.ppsqmSimpleSum += ppsqm;
+              acc.ppsqmSimpleCount += 1;
+            }
+          }
+          const rows = [...byYear.values()].sort((a, b) => a.year - b.year).map((acc) => {
+            const weightedPrice = acc.ppsqmWeight > 0 ? acc.ppsqmWeightedSum / acc.ppsqmWeight : null;
+            const simplePrice = acc.ppsqmSimpleCount > 0 ? acc.ppsqmSimpleSum / acc.ppsqmSimpleCount : null;
+            return {
+              sid: NATIONAL_SID,
+              name: 'כל הארץ',
+              year: acc.year,
+              deals: acc.deals,
+              ppsqm: Number.isFinite(weightedPrice) ? weightedPrice : simplePrice,
+              smooth: null,
+              syoy: null,
+              demand_yoy: null
+            };
+          });
+          for (let i = 0; i < rows.length; i++) {
+            const prev = rows[i - 1];
+            const cur = rows[i];
+            const prevDeals = normalizeNumber(prev?.deals);
+            const curDeals = normalizeNumber(cur?.deals);
+            const prevPrice = normalizeNumber(prev?.ppsqm);
+            const curPrice = normalizeNumber(cur?.ppsqm);
+            cur.syoy = Number.isFinite(prevDeals) && prevDeals > 0 && Number.isFinite(curDeals) ? ((curDeals - prevDeals) / prevDeals) * 100 : null;
+            cur.demand_yoy = Number.isFinite(prevPrice) && prevPrice > 0 && Number.isFinite(curPrice) ? ((curPrice - prevPrice) / prevPrice) * 100 : null;
+          }
+          return rows;
+        });
+        const nationalSettlement = computed(() => {
+          const selectedYear = Number(targetYear.value);
+          const rows = nationalRows.value;
+          const rowSelected = rows.find((row) => Number(row.year) === selectedYear) || null;
+          const dealsSelected = normalizeNumber(rowSelected?.deals);
+          const avgAnnualDeals = averageDeals(rows, selectedYear);
+          const ratio = Number.isFinite(dealsSelected) && Number.isFinite(avgAnnualDeals) && avgAnnualDeals > 0 ? dealsSelected / avgAnnualDeals : null;
+          const ppsqmSelected = normalizeNumber(rowSelected?.ppsqm);
+          const rentPeriod = selectedRentalPeriod.value;
+          const rowForYield = rentPeriod ? rows.find((row) => Number(row.year) === Number(rentPeriod.year)) : rowSelected;
+          const ppsqmForYield = normalizeNumber(rowForYield?.ppsqm);
+          const residentialRentSelected = rentForPeriodFromIndex(residentialRentIndex.value, NATIONAL_SID, rentPeriod, selectedRoomGroup.value);
+          const commercialRentSelected = rentForPeriodFromIndex(commercialRentIndex.value, NATIONAL_SID, rentPeriod);
+          const residentialYieldSelected = calcResidentialYieldFromRentRow(residentialRentSelected, ppsqmForYield);
+          const commercialYieldSelected = calcCommercialYield(commercialRentSelected?.rental_price, ppsqmForYield);
+          const residentialListingsSelected = normalizeNumber(residentialRentSelected?.listings_amount);
+          const commercialListingsSelected = normalizeNumber(commercialRentSelected?.listings_amount);
+          return {
+            sid: NATIONAL_SID,
+            name: 'כל הארץ',
+            dealsSelected,
+            avgAnnualDeals,
+            ratio,
+            ppsqmSelected,
+            ppsqmForYield,
+            avgOtherPpsqm: null,
+            priceRatioVsOthers: null,
+            residentialRentSelected,
+            commercialRentSelected,
+            residentialYieldSelected,
+            commercialYieldSelected,
+            residentialListingsSelected,
+            commercialListingsSelected,
+            avgOtherResidentialListings: null,
+            avgOtherCommercialListings: null,
+            residentialSupplyRatioVsOthers: null,
+            commercialSupplyRatioVsOthers: null,
+            investmentScore: null,
+            investmentScoreParts: null,
+            demandYoySelected: normalizeNumber(rowSelected?.demand_yoy),
+            syoySelected: normalizeNumber(rowSelected?.syoy),
+            rowSelected,
+            rentLatest: latestRentFromIndex(residentialRentIndex.value, NATIONAL_SID, selectedRoomGroup.value),
+            commercialRentLatest: latestRentFromIndex(commercialRentIndex.value, NATIONAL_SID),
+            hasData: Number.isFinite(ratio)
+          };
+        });
+        const availableYears = computed(() => [...new Set(rawRows.value.map((row) => Number(row.year)).filter(Number.isFinite))].sort((a, b) => a - b));
+        const yearSliderMin = computed(() => availableYears.value.length ? availableYears.value[0] : AVERAGE_START_YEAR);
+        const yearSliderMax = computed(() => availableYears.value.length ? availableYears.value[availableYears.value.length - 1] : DEFAULT_TARGET_YEAR);
+        const reversedYearSliderValue = computed({
+          get() {
+            return Number(yearSliderMin.value) + Number(yearSliderMax.value) - Number(targetYear.value);
+          },
+          set(value) {
+            const min = Number(yearSliderMin.value);
+            const max = Number(yearSliderMax.value);
+            const raw = Number(value);
+            if (!Number.isFinite(min) || !Number.isFinite(max) || !Number.isFinite(raw)) return;
+            targetYear.value = min + max - raw;
+          }
+        });
+        const uniqueGeometrySettlements = computed(() => {
+          const unique = new Map();
+          for (const feature of wktFeatures.value) if (!unique.has(String(feature.sid))) unique.set(String(feature.sid), feature);
+          return [...unique.values()];
+        });
+        const priceStatsByYear = computed(() => {
+          const stats = new Map();
+          for (const row of rawRows.value) {
+            const year = Number(row.year);
+            const sid = String(row.sid);
+            const ppsqm = normalizeNumber(row.ppsqm);
+            if (!Number.isFinite(year) || !sid || !Number.isFinite(ppsqm) || ppsqm <= 0) continue;
+            if (!stats.has(year)) stats.set(year, { sum: 0, count: 0, bySid: new Map() });
+            const acc = stats.get(year);
+            if (!acc.bySid.has(sid)) {
+              acc.bySid.set(sid, ppsqm);
+              acc.sum += ppsqm;
+              acc.count += 1;
+            }
+          }
+          return stats;
+        });
+        function buildListingStats(index, roomGroup = null) {
+          const stats = { sum: 0, count: 0, bySid: new Map() };
+          const period = selectedRentalPeriod.value;
+          if (!period) return stats;
+          for (const feature of uniqueGeometrySettlements.value) {
+            const sid = String(feature.sid);
+            const rent = rentForPeriodFromIndex(index, sid, period, roomGroup);
+            const listings = normalizeNumber(rent?.listings_amount);
+            if (Number.isFinite(listings) && listings >= 0) {
+              stats.bySid.set(sid, listings);
+              stats.sum += listings;
+              stats.count += 1;
+            }
+          }
+          return stats;
+        }
+        const residentialListingStats = computed(() => buildListingStats(residentialRentIndex.value, selectedRoomGroup.value));
+        const commercialListingStats = computed(() => buildListingStats(commercialRentIndex.value));
+        function averageListingsOfOtherSettlements(stats, sid) {
+          const own = stats?.bySid?.get(String(sid));
+          if (!Number.isFinite(own)) return null;
+          const count = Number(stats.count) - 1;
+          if (count <= 0) return null;
+          return (Number(stats.sum) - own) / count;
+        }
+
+        function averagePpsqmOfOtherSettlements(sid, year) {
+          const stats = priceStatsByYear.value.get(Number(year));
+          if (!stats) return null;
+          const own = stats.bySid.get(String(sid));
+          if (!Number.isFinite(own)) return null;
+          const count = stats.count - 1;
+          if (count <= 0) return null;
+          return (stats.sum - own) / count;
+        }
+        function averageDeals(rows, chosenYear) {
+          const yearToCompare = Number(chosenYear);
+          let values = rows.filter((row) => {
+            const year = Number(row.year);
+            return Number.isFinite(year) && year !== yearToCompare;
+          }).map((row) => normalizeNumber(row.deals)).filter(Number.isFinite);
+          if (ignoreZeroYears.value) values = values.filter((value) => value > 0);
+          return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
+        }
+        const joinedSettlements = computed(() => {
+          const selectedYear = Number(targetYear.value);
+          return uniqueGeometrySettlements.value.map((feature) => {
+            const rows = rowGroups.value.get(String(feature.sid)) || [];
+            const rowSelected = rows.find((row) => Number(row.year) === selectedYear) || null;
+            const dealsSelected = normalizeNumber(rowSelected?.deals);
+            const avgAnnualDeals = averageDeals(rows, selectedYear);
+            const ratio = Number.isFinite(dealsSelected) && Number.isFinite(avgAnnualDeals) && avgAnnualDeals > 0 ? dealsSelected / avgAnnualDeals : null;
+            const sid = String(feature.sid);
+            const ppsqmSelected = normalizeNumber(rowSelected?.ppsqm);
+            const avgOtherPpsqm = averagePpsqmOfOtherSettlements(sid, selectedYear);
+            const priceRatioVsOthers = Number.isFinite(ppsqmSelected) && Number.isFinite(avgOtherPpsqm) && avgOtherPpsqm > 0 ? ppsqmSelected / avgOtherPpsqm : null;
+            const rentPeriod = selectedRentalPeriod.value;
+            const rowForYield = rentPeriod ? rows.find((row) => Number(row.year) === Number(rentPeriod.year)) : rowSelected;
+            const ppsqmForYield = normalizeNumber(rowForYield?.ppsqm);
+            const residentialRentSelected = rentForPeriodFromIndex(residentialRentIndex.value, sid, rentPeriod, selectedRoomGroup.value);
+            const commercialRentSelected = rentForPeriodFromIndex(commercialRentIndex.value, sid, rentPeriod);
+            const residentialYieldSelected = calcResidentialYieldFromRentRow(residentialRentSelected, ppsqmForYield);
+            const commercialYieldSelected = calcCommercialYield(commercialRentSelected?.rental_price, ppsqmForYield);
+            const residentialListingsSelected = normalizeNumber(residentialRentSelected?.listings_amount);
+            const commercialListingsSelected = normalizeNumber(commercialRentSelected?.listings_amount);
+            const avgOtherResidentialListings = averageListingsOfOtherSettlements(residentialListingStats.value, sid);
+            const avgOtherCommercialListings = averageListingsOfOtherSettlements(commercialListingStats.value, sid);
+            const residentialSupplyRatioVsOthers = Number.isFinite(residentialListingsSelected) && Number.isFinite(avgOtherResidentialListings) && avgOtherResidentialListings > 0 ? residentialListingsSelected / avgOtherResidentialListings : null;
+            const commercialSupplyRatioVsOthers = Number.isFinite(commercialListingsSelected) && Number.isFinite(avgOtherCommercialListings) && avgOtherCommercialListings > 0 ? commercialListingsSelected / avgOtherCommercialListings : null;
+            const demandYoySelected = normalizeNumber(rowSelected?.demand_yoy);
+            const investmentScoreParts = calculateInvestmentScoreParts({
+              yieldValue: rentalDataType.value === 'commercial' ? commercialYieldSelected : residentialYieldSelected,
+              supplyRatio: rentalDataType.value === 'commercial' ? commercialSupplyRatioVsOthers : residentialSupplyRatioVsOthers,
+              priceRatio: priceRatioVsOthers,
+              priceChange: demandYoySelected,
+              dealsRatio: ratio
+            });
+            const investmentScore = Number.isFinite(investmentScoreParts?.score) ? investmentScoreParts.score : null;
+            return {
+              sid, name: feature.name, dealsSelected, avgAnnualDeals, ratio,
+              ppsqmSelected, ppsqmForYield, avgOtherPpsqm, priceRatioVsOthers, residentialRentSelected, commercialRentSelected, residentialYieldSelected, commercialYieldSelected,
+              residentialListingsSelected, commercialListingsSelected, avgOtherResidentialListings, avgOtherCommercialListings, residentialSupplyRatioVsOthers, commercialSupplyRatioVsOthers,
+              investmentScore, investmentScoreParts,
+              demandYoySelected, syoySelected: normalizeNumber(rowSelected?.syoy), rowSelected, rentLatest: latestRentFromIndex(residentialRentIndex.value, sid, selectedRoomGroup.value), commercialRentLatest: latestRentFromIndex(commercialRentIndex.value, sid), hasData: Number.isFinite(ratio)
+            };
+          });
+        });
+        const settlementOptions = computed(() => joinedSettlements.value
+          .slice()
+          .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'he')));
+        function settlementForCompare(sid) {
+          const key = String(sid || '');
+          if (!key) return null;
+          return joinedSettlements.value.find((item) => String(item.sid) === key) || null;
+        }
+        const compareSettlementA = computed(() => settlementForCompare(compareSidA.value));
+        const compareSettlementB = computed(() => settlementForCompare(compareSidB.value));
+        function setCompareAFromSelected() {
+          const sid = selectedSettlement.value?.sid ? String(selectedSettlement.value.sid) : '';
+          if (sid && sid !== NATIONAL_SID) compareSidA.value = sid;
+        }
+        function currentYieldForDisplay(item) {
+          if (!item) return null;
+          return rentalDataType.value === 'commercial' ? normalizeNumber(item.commercialYieldSelected) : normalizeNumber(item.residentialYieldSelected);
+        }
+        function currentRentForDisplay(item) {
+          if (!item) return null;
+          return rentalDataType.value === 'commercial' ? item.commercialRentSelected?.rental_price : item.residentialRentSelected?.rental_price;
+        }
+        function currentListingsForDisplay(item) {
+          if (!item) return null;
+          return rentalDataType.value === 'commercial' ? item.commercialRentSelected?.listings_amount : item.residentialRentSelected?.listings_amount;
+        }
+        const comparisonRows = computed(() => {
+          const a = compareSettlementA.value;
+          const b = compareSettlementB.value;
+          if (!a || !b) return [];
+          const rentLabel = rentalDataType.value === 'commercial' ? `שכירות מסחרית למ״ר · ${selectedRentalPeriodLabel.value}` : `שכירות מגורים · ${selectedRoomGroupLabel.value} · ${selectedRentalPeriodLabel.value}`;
+          const yieldLabel = rentalDataType.value === 'commercial' ? `תשואה מסחרית · ${selectedRentalPeriodLabel.value}` : `תשואה מגורים · ${selectedRoomGroupLabel.value} · ${selectedRentalPeriodLabel.value}`;
+          return [
+            { label: `מחיר למ״ר ${targetYear.value}`, a: formatCurrency(a.ppsqmSelected), b: formatCurrency(b.ppsqmSelected) },
+            { label: `עסקאות ${targetYear.value}`, a: formatInteger(a.dealsSelected), b: formatInteger(b.dealsSelected) },
+            { label: 'שינוי מחיר מול השנה הקודמת', a: formatPercent(a.demandYoySelected), b: formatPercent(b.demandYoySelected) },
+            { label: 'מחיר למ״ר מול שאר היישובים', a: formatRatio(a.priceRatioVsOthers), b: formatRatio(b.priceRatioVsOthers) },
+            { label: rentLabel, a: rentalDataType.value === 'commercial' ? formatCommercialRent(currentRentForDisplay(a)) : formatCurrency(currentRentForDisplay(a)), b: rentalDataType.value === 'commercial' ? formatCommercialRent(currentRentForDisplay(b)) : formatCurrency(currentRentForDisplay(b)) },
+            { label: `היצע מודעות · ${selectedRentalPeriodLabel.value}`, a: formatInteger(currentListingsForDisplay(a)), b: formatInteger(currentListingsForDisplay(b)) },
+            { label: yieldLabel, a: formatYield(currentYieldForDisplay(a)), b: formatYield(currentYieldForDisplay(b)) },
+            { label: 'ציון השקעה', a: formatInvestmentScore(a.investmentScore), b: formatInvestmentScore(b.investmentScore) }
+          ];
+        });
+        watch(selectedSettlement, (next) => {
+          const sid = next?.sid ? String(next.sid) : '';
+          if (sid && sid !== NATIONAL_SID && !compareSidA.value) compareSidA.value = sid;
+        });
+
+        const selectedRows = computed(() => {
+          if (!selectedSettlement.value) return [];
+          if (String(selectedSettlement.value.sid) === NATIONAL_SID) return nationalRows.value;
+          return rowGroups.value.get(String(selectedSettlement.value.sid)) || [];
+        });
+        const chartEntityName = computed(() => {
+          const name = selectedSettlement.value?.name;
+          return name && String(name).trim() ? String(name).trim() : 'כל הארץ';
+        });
+        const pageTitle = computed(() => {
+          const sid = selectedSettlement.value?.sid ? String(selectedSettlement.value.sid) : NATIONAL_SID;
+          const name = chartEntityName.value;
+          if (sid === NATIONAL_SID || name === 'כל הארץ') return 'מגמות מחירים בכל הארץ';
+          return `מגמות מחירים ב${name}`;
+        });
+        const filteredSettlementList = computed(() => {
+          const q = searchText.value.trim().toLowerCase();
+          return joinedSettlements.value.filter((item) => !q || item.name.toLowerCase().includes(q) || item.sid.includes(q)).sort((a, b) => {
+            if (a.hasData && b.hasData) return b.ratio - a.ratio;
+            if (a.hasData) return -1;
+            if (b.hasData) return 1;
+            return a.name.localeCompare(b.name, 'he');
+          }).slice(0, 80);
+        });
+        function colorMetricValue(item) {
+          if (!item) return null;
+          if (colorMode.value === 'price') return normalizeNumber(item.priceRatioVsOthers);
+          if (colorMode.value === 'residentialYield') return normalizeNumber(item.residentialYieldSelected);
+          if (colorMode.value === 'commercialYield') return normalizeNumber(item.commercialYieldSelected);
+          if (colorMode.value === 'investment') return normalizeNumber(item.investmentScore);
+          return normalizeNumber(item.ratio);
+        }
+        function isYieldColorMode() { return colorMode.value === 'residentialYield' || colorMode.value === 'commercialYield'; }
+        function isInvestmentColorMode() { return colorMode.value === 'investment'; }
+        function isAnnualColorMode() { return colorMode.value === 'deals' || colorMode.value === 'price'; }
+        function isRentalColorMode() { return isYieldColorMode(); }
+        function colorForCurrentMetricValue(value) { return isInvestmentColorMode() ? colorForInvestmentScore(value) : (isYieldColorMode() ? colorForYield(value) : colorForRatio(value)); }
+        function hasKnownRankingMetric(item) {
+          if (!item) return false;
+          const metric = normalizeNumber(colorMetricValue(item));
+          if (!Number.isFinite(metric)) return false;
+
+          if (colorMode.value === 'price') {
+            return Number.isFinite(normalizeNumber(item.ppsqmSelected))
+              && Number.isFinite(normalizeNumber(item.avgOtherPpsqm));
+          }
+
+          if (colorMode.value === 'residentialYield') {
+            return Number.isFinite(normalizeNumber(item.residentialYieldSelected))
+              && Number.isFinite(normalizeNumber(item.residentialRentSelected?.rental_price))
+              && Number.isFinite(normalizeNumber(item.residentialRentSelected?.listings_amount))
+              && Number.isFinite(normalizeNumber(item.ppsqmForYield));
+          }
+
+          if (colorMode.value === 'commercialYield') {
+            return Number.isFinite(normalizeNumber(item.commercialYieldSelected))
+              && Number.isFinite(normalizeNumber(item.commercialRentSelected?.rental_price))
+              && Number.isFinite(normalizeNumber(item.commercialRentSelected?.listings_amount))
+              && Number.isFinite(normalizeNumber(item.ppsqmForYield));
+          }
+
+          if (colorMode.value === 'investment') {
+            return Number.isFinite(normalizeNumber(item.investmentScore));
+          }
+
+          return Number.isFinite(normalizeNumber(item.dealsSelected))
+            && Number.isFinite(normalizeNumber(item.avgAnnualDeals));
+        }
+
+        const rankedSettlementList = computed(() => {
+          const direction = listSortDirection.value === 'desc' ? -1 : 1;
+          return joinedSettlements.value
+            .filter((item) => hasKnownRankingMetric(item) && Number.isFinite(normalizeNumber(colorMetricValue(item))) && formatColorMetric(item) !== 'לא ידוע')
+            .sort((a, b) => {
+              const av = Number(colorMetricValue(a));
+              const bv = Number(colorMetricValue(b));
+              if (av !== bv) return (av - bv) * direction;
+              return String(a.name || '').localeCompare(String(b.name || ''), 'he');
+            });
+        });
+        const stats = computed(() => {
+          const values = joinedSettlements.value.map((item) => item.ratio).filter(Number.isFinite);
+          return { joined: values.length, aboveAverage: values.filter((v) => v >= 1).length, belowAverage: values.filter((v) => v < 1).length, avgRatio: values.length ? values.reduce((a, b) => a + b, 0) / values.length : null };
+        });
+        const LEGEND_COLOR_NAMES = ['אדום כהה', 'אדום', 'כתום', 'צהוב', 'ירוק בהיר', 'ירוק כהה'];
+        function formatLegendRange(min, max, formatter, suffix = '') {
+          const suffixText = suffix ? ` ${suffix}` : '';
+          if (min === -Infinity) return `עד ${formatter(max)}${suffixText}`;
+          if (max === Infinity) return `מעל ${formatter(min)}${suffixText}`;
+          return `${formatter(min)}–${formatter(max)}${suffixText}`;
+        }
+        function buildObjectiveLegendItems(scale, formatter, suffix = '') {
+          return [
+            ...scale.map((bucket, i) => ({
+              color: bucket.color,
+              label: `${LEGEND_COLOR_NAMES[i] || 'צבע'}: ${formatLegendRange(bucket.min, bucket.max, formatter, suffix)}`
+            })),
+            { label: 'אפור: אין מספיק נתונים', color: NO_DATA_COLOR }
+          ];
+        }
+        const legendItems = computed(() => {
+          if (isInvestmentColorMode()) {
+            return buildObjectiveLegendItems(
+              INVESTMENT_COLOR_SCALE,
+              (v) => Number(v).toLocaleString('he-IL', { maximumFractionDigits: 0 }),
+              'נקודות'
+            );
+          }
+
+          if (isYieldColorMode()) {
+            return buildObjectiveLegendItems(
+              YIELD_COLOR_SCALE,
+              (v) => `${Number(v).toLocaleString('he-IL', { maximumFractionDigits: 1 })}%`,
+              'תשואה'
+            );
+          }
+
+          if (colorMode.value === 'price') {
+            return buildObjectiveLegendItems(
+              COLOR_SCALE,
+              (v) => `${Math.round(Number(v) * 100).toLocaleString('he-IL')}%`,
+              'מממוצע מחיר למ״ר'
+            );
+          }
+
+          return buildObjectiveLegendItems(
+            COLOR_SCALE,
+            (v) => `${Math.round(Number(v) * 100).toLocaleString('he-IL')}%`,
+            'מממוצע העסקאות'
+          );
+        });
+        const topSettlements = computed(() => joinedSettlements.value.filter((item) => item.hasData).sort((a, b) => b.ratio - a.ratio));
+        const bottomSettlements = computed(() => joinedSettlements.value.filter((item) => item.hasData).sort((a, b) => a.ratio - b.ratio));
+        const colorMetricLabel = computed(() => {
+          if (colorMode.value === 'price') return `מחיר למ״ר ביחס לממוצע שאר היישובים בשנת ${targetYear.value}`;
+          if (colorMode.value === 'residentialYield') return `תשואת מגורים לפי ${selectedRoomGroupLabel.value} · ${selectedRentalPeriodLabel.value}`;
+          if (colorMode.value === 'commercialYield') return `תשואה מסחרית · ${selectedRentalPeriodLabel.value}`;
+          if (colorMode.value === 'investment') return `ציון השקעה · ${investmentScoreTypeLabel.value} · ${targetYear.value} / ${selectedRentalPeriodLabel.value}`;
+          return `עסקאות בשנת ${targetYear.value} ביחס לממוצע השנים האחרות`;
+        });
+        const colorModeNote = computed(() => {
+          if (colorMode.value === 'price') return `הצבע מציג מחיר למ״ר ביישוב מול ממוצע שאר היישובים בשנת ${targetYear.value}. הנוסחה המלאה מופיעה בתיבת החישובים.`;
+          if (colorMode.value === 'residentialYield') return `הצבע מציג תשואה גולמית משוערת למגורים לפי ${selectedRoomGroupLabel.value} ברבעון ${selectedRentalPeriodLabel.value}. הנוסחה המלאה מופיעה בתיבת החישובים.`;
+          if (colorMode.value === 'commercialYield') return `הצבע מציג תשואה מסחרית משוערת ברבעון ${selectedRentalPeriodLabel.value}. הנוסחה המלאה מופיעה בתיבת החישובים.`;
+          if (colorMode.value === 'investment') return `הצבע מציג ציון השקעה משולב לפי תשואה, היצע מודעות, מחיר יחסי, שינוי מחיר שנתי ויחס עסקאות. הנוסחה המלאה מופיעה בתיבת החישובים.`;
+          return `הצבע מציג את מספר העסקאות בשנת ${targetYear.value} מול ממוצע השנים האחרות. הנוסחה המלאה מופיעה בתיבת החישובים.`;
+        });
+        const rankingTitle = computed(() => {
+          if (colorMode.value === 'price') return 'רשימת יישובים לפי מחיר למ״ר מול שאר היישובים';
+          if (colorMode.value === 'residentialYield') return `רשימת יישובים לפי תשואה מגורים · ${selectedRoomGroupLabel.value}`;
+          if (colorMode.value === 'commercialYield') return 'רשימת יישובים לפי תשואה מסחרית';
+          if (colorMode.value === 'investment') return `רשימת יישובים לפי ציון השקעה · ${investmentScoreTypeLabel.value}`;
+          return 'רשימת יישובים לפי אחוז עסקאות מהממוצע';
+        });
+
+        function formatNumber(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return value.toLocaleString('he-IL', { maximumFractionDigits: value >= 100 ? 0 : 1 }); }
+        function formatInteger(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return value.toLocaleString('he-IL', { maximumFractionDigits: 0 }); }
+        function formatRatio(value) { if (!Number.isFinite(value)) return 'לא ידוע'; const percent = value * 100; return `${percent.toLocaleString('he-IL', { maximumFractionDigits: 0 })}%`; }
+        function formatCurrency(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return `₪${value.toLocaleString('he-IL', { maximumFractionDigits: 0 })}`; }
+        function formatCommercialRent(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return `${formatCurrency(value)} למ״ר לחודש`; }
+        function formatPercent(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return `${value.toLocaleString('he-IL', { maximumFractionDigits: 1 })}%`; }
+        function formatYield(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return `${value.toLocaleString('he-IL', { maximumFractionDigits: 2 })}%`; }
+        function formatInvestmentScore(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return `${value.toLocaleString('he-IL', { maximumFractionDigits: 0 })}/100`; }
+        function listingQualityLabel(value) {
+          const n = normalizeNumber(value);
+          if (!Number.isFinite(n)) return 'אין נתון';
+          if (n >= 30) return 'היצע גבוה';
+          if (n >= 10) return 'היצע בינוני';
+          return 'היצע נמוך';
+        }
+        function listingQualityClass(value) {
+          const n = normalizeNumber(value);
+          if (!Number.isFinite(n)) return 'quality-unknown';
+          if (n >= 30) return 'quality-good';
+          if (n >= 10) return 'quality-medium';
+          return 'quality-low';
+        }
+        function formatColorMetric(item) {
+          const value = typeof item === 'number' ? item : colorMetricValue(item);
+          if (isInvestmentColorMode()) return formatInvestmentScore(value);
+          return isYieldColorMode() ? formatYield(value) : formatRatio(value);
+        }
+        function rankingRowSubtitle(item) {
+          if (!item) return '';
+          if (colorMode.value === 'price') return `${targetYear.value}: ${formatCurrency(item.ppsqmSelected)} למ״ר · ממוצע שאר היישובים: ${formatCurrency(item.avgOtherPpsqm)}`;
+          if (colorMode.value === 'residentialYield') return `${selectedRentalPeriodLabel.value}: שכירות ${selectedRoomGroupLabel.value} ${formatCurrency(item.residentialRentSelected?.rental_price)} · היצע ${formatInteger(item.residentialRentSelected?.listings_amount)} מודעות · מחיר למ״ר ${formatCurrency(item.ppsqmForYield)}`;
+          if (colorMode.value === 'commercialYield') return `${selectedRentalPeriodLabel.value}: שכירות מסחרית ${formatCommercialRent(item.commercialRentSelected?.rental_price)} · היצע ${formatInteger(item.commercialRentSelected?.listings_amount)} מודעות · מחיר למ״ר ${formatCurrency(item.ppsqmForYield)}`;
+          if (colorMode.value === 'investment') return `תשואה ${formatYield(currentYieldForInvestment(item))} · היצע ביחס לשאר ${formatRatio(currentSupplyRatioForInvestment(item))} · מחיר יחסי ${formatRatio(item.priceRatioVsOthers)} · שינוי שנתי ${formatPercent(item.demandYoySelected)}`;
+          return `${targetYear.value}: ${formatInteger(item.dealsSelected)} עסקאות · ממוצע: ${formatNumber(item.avgAnnualDeals)}`;
+        }
+        function calcResidentialYield(monthlyRent, ppsqm, roomGroup = 'all') {
+          const rent = normalizeNumber(monthlyRent);
+          const pricePerSqm = normalizeNumber(ppsqm);
+          if (!Number.isFinite(rent) || rent <= 0 || !Number.isFinite(pricePerSqm) || pricePerSqm <= 0) return null;
+          return (rent * 12 / (pricePerSqm * sqmForRoomGroup(roomGroup))) * 100;
+        }
+        function calcResidentialYieldFromRentRow(rentRow, ppsqm) {
+          if (!rentRow) return null;
+          if (isCombinedRoomGroup(rentRow.rooms_group) && Array.isArray(rentRow._sourceRows)) {
+            return calcCombinedResidentialYield(rentRow._sourceRows, ppsqm);
+          }
+          return calcResidentialYield(rentRow.rental_price, ppsqm, rentRow.rooms_group || selectedRoomGroup.value);
+        }
+        function calcCombinedResidentialYield(rows, ppsqm) {
+          const pricePerSqm = normalizeNumber(ppsqm);
+          if (!Number.isFinite(pricePerSqm) || pricePerSqm <= 0) return null;
+          const valid = (rows || []).map((row) => {
+            const y = calcResidentialYield(row.rental_price, pricePerSqm, row.rooms_group);
+            const listings = normalizeNumber(row.listings_amount);
+            return { y, listings };
+          }).filter((row) => Number.isFinite(row.y));
+          if (!valid.length) return null;
+          const sumListings = valid.reduce((sum, row) => sum + (Number.isFinite(row.listings) && row.listings > 0 ? row.listings : 0), 0);
+          const useListingsWeights = sumListings > 0;
+          let weightedSum = 0;
+          let weightSum = 0;
+          for (const row of valid) {
+            const weight = useListingsWeights ? (Number.isFinite(row.listings) && row.listings > 0 ? row.listings : 0) : 1;
+            if (weight <= 0) continue;
+            weightedSum += row.y * weight;
+            weightSum += weight;
+          }
+          return weightSum > 0 ? weightedSum / weightSum : null;
+        }
+        function calcCommercialYield(monthlyRentPerSqm, ppsqm) {
+          const rentPerSqm = normalizeNumber(monthlyRentPerSqm);
+          const pricePerSqm = normalizeNumber(ppsqm);
+          if (!Number.isFinite(rentPerSqm) || rentPerSqm <= 0 || !Number.isFinite(pricePerSqm) || pricePerSqm <= 0) return null;
+          return (rentPerSqm * 12 / pricePerSqm) * 100;
+        }
+        function currentYieldForInvestment(item) {
+          return rentalDataType.value === 'commercial'
+            ? normalizeNumber(item?.commercialYieldSelected)
+            : normalizeNumber(item?.residentialYieldSelected);
+        }
+        function currentSupplyRatioForInvestment(item) {
+          return rentalDataType.value === 'commercial'
+            ? normalizeNumber(item?.commercialSupplyRatioVsOthers)
+            : normalizeNumber(item?.residentialSupplyRatioVsOthers);
+        }
+        function calculateInvestmentScoreParts({ yieldValue, supplyRatio, priceRatio, priceChange, dealsRatio=1 }) {
+          const y = normalizeNumber(yieldValue);
+          const supply = normalizeNumber(supplyRatio);
+          const price = normalizeNumber(priceRatio);
+          const change = normalizeNumber(priceChange);
+          const deals = normalizeNumber(dealsRatio);
+          if (![y, supply, price, change, deals].every(Number.isFinite)) return null;
+          const yieldScore = clampNumber((y / 6) * 100);
+          const supplyScore = clampNumber((supply / 1.6) * 100);
+          const priceScore = clampNumber(((1.45 - price) / 0.9) * 100);
+          const momentumScore = clampNumber(((change + 5) / 20) * 100);
+          const dealsScore = clampNumber((deals / 2) * 100);
+          return {
+            yieldScore,
+            supplyScore,
+            priceScore,
+            momentumScore,
+            dealsScore,
+            score: (yieldScore * 0.30) + (supplyScore * 0.15) + (priceScore * 0.15) + (momentumScore * 0.20) + (dealsScore * 0.20)
+          };
+        }
+        function calculateInvestmentScoreForSettlement(item) {
+          if (!item || String(item.sid) === NATIONAL_SID) return null;
+          const parts = calculateInvestmentScoreParts({
+            yieldValue: currentYieldForInvestment(item),
+            supplyRatio: currentSupplyRatioForInvestment(item),
+            priceRatio: item.priceRatioVsOthers,
+            priceChange: item.demandYoySelected
+          });
+          return Number.isFinite(parts?.score) ? parts.score : null;
+        }
+        function marketScoreLabel(ratio) { if (!Number.isFinite(ratio)) return 'נתון לא ידוע'; if (ratio >= 1.5) return 'חזק מאוד'; if (ratio >= 1.2) return 'חזק'; if (ratio >= 0.95) return 'מאוזן'; if (ratio >= 0.8) return 'חלש'; return 'חלש מאוד'; }
+
+        async function fetchJson(fileName) { const response = await fetch(dataUrl(fileName), { cache: 'no-store' }); if (!response.ok) throw new Error(`לא הצלחתי לטעון ${fileName}: ${response.status}`); return response.json(); }
+        async function fetchText(fileName) { const response = await fetch(dataUrl(fileName), { cache: 'no-store' }); if (!response.ok) throw new Error(`לא הצלחתי לטעון ${fileName}: ${response.status}`); return response.text(); }
+        async function loadLocalFiles() {
+          statusMessage.value = 'טוען קבצי נתונים...';
+          const [rows, geometry, residentialCsv, commercialCsv] = await Promise.all([
+            fetchJson('settlements_flat.json'),
+            fetchJson('settlements_wkt_2039.json'),
+            fetchText('2026-04_citiesagg.csv'),
+            fetchText('2026-04_com_citiesagg.csv')
+          ]);
+          rawRows.value = rows;
+          wktFeatures.value = geometry.features || [];
+          residentialRentRows.value = parseCsv(residentialCsv);
+          commercialRentRows.value = parseCsv(commercialCsv);
+        }
+        async function initGovMap() {
+          statusMessage.value = 'טוען את ספריית GovMap...'; await loadScript(GOVMAP_SCRIPT_ID, GOVMAP_SCRIPT_URL); if (!window.govmap) throw new Error('ספריית GovMap לא זמינה.');
+          statusMessage.value = 'יוצר מפה...';
+          await new Promise((resolve) => {
+            let resolved = false;
+            const done = () => {
+              if (!resolved) {
+                resolved = true;
+                mapReady.value = true;
+                try { window.govmap.setBackground && window.govmap.setBackground(0); } catch (_) {}
+                resolve();
+              }
+            };
+            window.govmap.createMap(MAP_DIV_ID, {
+              token: GOVMAP_TOKEN,
+              layers: [],
+              visibleLayers: [],
+              showXY: true,
+              identifyOnClick: false,
+              identifyOnlyBubble: true,
+              isEmbeddedToggle: false,
+              background: 0,
+              layersMode: 4,
+              zoomButtons: true,
+              center: { x: 219529, y: 626907 },
+              level: 7,
+              // הכי חשוב: משתמשים ב-onClick של createMap עצמו כדי שלחיצה על המפה
+              // תעדכן את היישוב והגרפים גם כשיש שכבת פוליגונים מצוירת מעל GovMap.
+              onClick: handleMapClick,
+              onLoad: done,
+              onError: () => { errorMessage.value = 'GovMap החזיר שגיאה. בדוק שהטוקן מתאים לדומיין.'; }
+            });
+            setTimeout(done, 2600);
+          });
+          try { window.govmap.setVisibleLayers([], [GOVMAP_LAYER]); baseLayerVisible.value = false; } catch (e) { console.warn(e); }
+          installGovMapClickSelection();
+        }
+
+        const parsedGeometryCache = new Map();
+        function parsePolygonWkt(wkt) {
+          if (!wkt || typeof wkt !== 'string') return [];
+          if (parsedGeometryCache.has(wkt)) return parsedGeometryCache.get(wkt);
+          const cleaned = wkt.trim().replace(/^POLYGON\s*\(\(/i, '').replace(/\)\)\s*$/i, '');
+          const rings = cleaned.split(/\)\s*,\s*\(/).map((ringText) =>
+            ringText.replace(/[()]/g, '').split(',').map((pair) => {
+              const [x, y] = pair.trim().split(/\s+/).map(Number);
+              return Number.isFinite(x) && Number.isFinite(y) ? [x, y] : null;
+            }).filter(Boolean)
+          ).filter((ring) => ring.length >= 3);
+          parsedGeometryCache.set(wkt, rings);
+          return rings;
+        }
+        function pointInRing(x, y, ring) {
+          let inside = false;
+          for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            const xi = ring[i][0], yi = ring[i][1];
+            const xj = ring[j][0], yj = ring[j][1];
+            const intersects = ((yi > y) !== (yj > y)) && (x < ((xj - xi) * (y - yi)) / ((yj - yi) || 1e-12) + xi);
+            if (intersects) inside = !inside;
+          }
+          return inside;
+        }
+        function pointInFeature(feature, x, y) {
+          if (!feature?.bbox) return false;
+          const [xmin, ymin, xmax, ymax] = feature.bbox;
+          if (x < xmin || x > xmax || y < ymin || y > ymax) return false;
+          const rings = parsePolygonWkt(feature.wkt);
+          if (!rings.length || !pointInRing(x, y, rings[0])) return false;
+          for (let i = 1; i < rings.length; i++) if (pointInRing(x, y, rings[i])) return false;
+          return true;
+        }
+        function settlementAtPoint(x, y) {
+          const candidates = wktFeatures.value.filter((feature) => {
+            if (!feature?.bbox) return false;
+            const [xmin, ymin, xmax, ymax] = feature.bbox;
+            return x >= xmin && x <= xmax && y >= ymin && y <= ymax;
+          });
+          return candidates.find((feature) => pointInFeature(feature, x, y)) || null;
+        }
+        let lastHandledClick = '';
+
+        function normalizeMapPoint(input) {
+          const mp = input?.mapPoint ?? input?.Point ?? input?.point ?? input?.data?.mapPoint ?? input?.data?.point ?? input ?? null;
+          if (!mp) return null;
+          const x = mp.x ?? mp.X ?? mp.lon ?? mp.Lon ?? mp.centerX ?? mp.CenterX;
+          const y = mp.y ?? mp.Y ?? mp.lat ?? mp.Lat ?? mp.centerY ?? mp.CenterY;
+          const nx = Number(x);
+          const ny = Number(y);
+          if (!Number.isFinite(nx) || !Number.isFinite(ny)) return null;
+          if (nx < 10000 || ny < 10000) return null;
+          return { x: nx, y: ny };
+        }
+        function extractMapPoint(event) { return normalizeMapPoint(event); }
+
+        function fieldsToObject(fields) {
+          if (!Array.isArray(fields)) return fields;
+          const obj = {};
+          for (const f of fields) {
+            const key = f?.FieldName ?? f?.fieldName ?? f?.name;
+            const value = f?.Value ?? f?.value;
+            if (key != null && value !== undefined) obj[key] = value;
+          }
+          return obj;
+        }
+        function normalizeFieldName(name) {
+          return String(name ?? '')
+            .trim()
+            .replace(/\s+/g, ' ')
+            .replace(/[׳״"'`]/g, '')
+            .replace(/[:;.,()\[\]{}<>!@#$%^&*+=?~\|\/\-־‐-―]/g, '')
+            .toLowerCase();
+        }
+        function getFieldFromAttrs(attrsRaw, candidates) {
+          const wanted = (candidates || []).map(normalizeFieldName);
+          if (Array.isArray(attrsRaw)) {
+            for (const f of attrsRaw) {
+              const fn = normalizeFieldName(f?.FieldName ?? f?.fieldName ?? f?.name);
+              if (!fn) continue;
+              if (wanted.includes(fn)) return f?.Value ?? f?.value;
+              for (const w of wanted) if (fn.includes(w)) return f?.Value ?? f?.value;
+            }
+          }
+          const attrsObj = fieldsToObject(attrsRaw) || attrsRaw;
+          if (!attrsObj || typeof attrsObj !== 'object') return null;
+          for (const c of candidates || []) if (attrsObj[c] != null && String(attrsObj[c]).trim() !== '') return attrsObj[c];
+          const normMap = {};
+          for (const k in attrsObj) normMap[normalizeFieldName(k)] = attrsObj[k];
+          for (const w of wanted) if (normMap[w] != null && String(normMap[w]).trim() !== '') return normMap[w];
+          return null;
+        }
+        function normalizeSettlementNameForClick(name) {
+          return String(name ?? '')
+            .trim()
+            .replace(/^עיריית\s+/g, '')
+            .replace(/^עיריה\s+/g, '')
+            .replace(/^מועצה\s+מקומית\s+/g, '')
+            .replace(/[׳״"']/g, '')
+            .replace(/[()\[\],.:]/g, '')
+            .replace(/[\s\-־‐-―]/g, '')
+            .toLowerCase();
+        }
+        function detectSettlementSid(attrsRaw) {
+          const value = getFieldFromAttrs(attrsRaw, [
+            'sid', 'SID', 'סמל ישוב', 'סמל_ישוב', 'סמל יישוב', 'סמל_יישוב',
+            'SEMEL_YISHUV', 'SEMELYESHUV', 'YISHUV_STAT11', 'SETL_CODE', 'CODE', 'code'
+          ]);
+          if (value == null) return null;
+          const sid = String(value).trim();
+          return sid || null;
+        }
+        function detectSettlementName(attrsRaw) {
+          const value = getFieldFromAttrs(attrsRaw, [
+            'name', 'Name', 'NAME', 'שם', 'שם ישוב', 'שם יישוב', 'שם_ישוב', 'שם_יישוב',
+            'SHEM_YISHUV', 'SHEMYESHUV', 'שם רשות', 'שם רשות מקומית'
+          ]);
+          if (value == null) return null;
+          const name = String(value).trim();
+          return name || null;
+        }
+        function selectSettlementFromGeometryName(geometryName) {
+          const s = String(geometryName || '');
+          if (!s.startsWith(DRAWING_NAME_PREFIX)) return false;
+          const rest = s.slice(DRAWING_NAME_PREFIX.length);
+          const sid = rest.split('-')[0];
+          if (!sid) return false;
+          return selectSettlementBySid(sid, false);
+        }
+        function selectSettlementByNameFromClick(name) {
+          const wanted = normalizeSettlementNameForClick(name);
+          if (!wanted) return false;
+          const item = joinedSettlements.value.find((settlement) => normalizeSettlementNameForClick(settlement.name) === wanted);
+          if (!item) return false;
+          selectSettlement(item, false);
+          statusMessage.value = `הגרפים עודכנו לפי ${item.name}.`;
+          return true;
+        }
+
+        function findDrawnGeometryNameDeep(value, depth = 0, seen = new Set()) {
+          if (value == null || depth > 8) return null;
+          if (typeof value === 'string') {
+            return value.startsWith(DRAWING_NAME_PREFIX) ? value : null;
+          }
+          if (typeof value !== 'object') return null;
+          if (seen.has(value)) return null;
+          seen.add(value);
+
+          const direct = value.name ?? value.Name ?? value.id ?? value.Id ?? value.objectId ?? value.ObjectId;
+          if (typeof direct === 'string' && direct.startsWith(DRAWING_NAME_PREFIX)) return direct;
+
+          if (Array.isArray(value)) {
+            for (const item of value) {
+              const found = findDrawnGeometryNameDeep(item, depth + 1, seen);
+              if (found) return found;
+            }
+            return null;
+          }
+
+          // GovMap displayGeometries usually returns the clicked geometry through e.data.name
+          // or e.data[0].name. We scan common containers first, then the whole object.
+          for (const key of ['data', 'Data', 'graphic', 'graphics', 'feature', 'features', 'attributes', 'Attributes']) {
+            if (value[key] != null) {
+              const found = findDrawnGeometryNameDeep(value[key], depth + 1, seen);
+              if (found) return found;
+            }
+          }
+          for (const key of Object.keys(value)) {
+            const found = findDrawnGeometryNameDeep(value[key], depth + 1, seen);
+            if (found) return found;
+          }
+          return null;
+        }
+
+        function extractLayerItems(resp) {
+          if (!resp) return [];
+          if (Array.isArray(resp)) return resp;
+          if (Array.isArray(resp.data)) return resp.data;
+          if (Array.isArray(resp.Data)) return resp.Data;
+          if (Array.isArray(resp.result)) return resp.result;
+          if (Array.isArray(resp.Result)) return resp.Result;
+          if (Array.isArray(resp.features)) return resp.features;
+          return [];
+        }
+        function selectSettlementFromLayerAttrs(attrsRaw) {
+          const attrs = fieldsToObject(attrsRaw) || attrsRaw || {};
+          const sid = detectSettlementSid(attrs);
+          if (sid && selectSettlementBySid(sid, false)) return true;
+          const name = detectSettlementName(attrs);
+          if (name && selectSettlementByNameFromClick(name)) return true;
+          return false;
+        }
+        async function handleMapClick(event) {
+          // 1) First priority: clicks on our drawn GovMap geometries.
+          // This is the same idea as the CrimesMap implementation: displayGeometries().progress(...)
+          // returns the clicked geometry name, and we encode the settlement sid inside that name.
+          const geometryName = findDrawnGeometryNameDeep(event);
+          if (selectSettlementFromGeometryName(geometryName)) {
+            try { window.govmap?.closeBubble?.(); } catch (_) {}
+            return;
+          }
+
+          // 2) Fallback: click event with map coordinates -> ask GovMap layer data.
+          const point = normalizeMapPoint(event);
+          if (!point) return;
+
+          const key = `${Math.round(point.x)}:${Math.round(point.y)}`;
+          if (key === lastHandledClick) return;
+          lastHandledClick = key;
+
+          try {
+            if (typeof window.govmap?.getLayerData === 'function') {
+              const resp = await window.govmap.getLayerData({
+                LayerName: GOVMAP_LAYER,
+                Point: { x: point.x, y: point.y, X: point.x, Y: point.y },
+                Radius: 300
+              });
+              const items = extractLayerItems(resp);
+              for (const item of items) {
+                const attrs = item?.Fields || item?.fields || item?.Attributes || item?.attributes || item;
+                if (selectSettlementFromLayerAttrs(attrs)) {
+                  try { window.govmap?.closeBubble?.(); } catch (_) {}
+                  return;
+                }
+              }
+            }
+          } catch (error) {
+            console.warn('GovMap getLayerData click selection failed:', error);
+          }
+
+          // 3) Final fallback: point-in-polygon against our own WKT geometry cache.
+          const feature = settlementAtPoint(point.x, point.y);
+          if (feature && selectSettlementBySid(feature.sid, false)) {
+            try { window.govmap?.closeBubble?.(); } catch (_) {}
+            return;
+          }
+
+          statusMessage.value = 'לא נמצא יישוב בנקודה שנלחצה. נסה ללחוץ בתוך פוליגון יישוב.';
+        }
+        function installGovMapClickSelection() {
+          if (!window.govmap?.onEvent) return;
+          const clickEventName = window.govmap.events?.CLICK ?? 'CLICK';
+          try { window.govmap.unbindEvent?.(clickEventName); } catch (_) {}
+          try {
+            window.govmap.onEvent(clickEventName).progress((e) => {
+              const point = normalizeMapPoint(e);
+              handleMapClick(point ? { mapPoint: point, __fromGovmap: true } : e);
+            });
+          } catch (e) {
+            try {
+              window.govmap.onEvent(clickEventName, MAP_DIV_ID).progress((e) => {
+                const point = normalizeMapPoint(e);
+                handleMapClick(point ? { mapPoint: point, __fromGovmap: true } : e);
+              });
+            } catch (err) {
+              console.warn('GovMap click event registration failed', err);
+            }
+          }
+        }
+        async function clearOverlay() { if (!window.govmap || !drawnNames.value.length) return; try { await window.govmap.removeGeometries(drawnNames.value); } catch (e) { try { await window.govmap.clearGeometries(); } catch (_) {} } drawnNames.value = []; }
+        async function drawOverlay() {
+          if (!window.govmap || !mapReady.value || !overlayVisible.value || !wktFeatures.value.length) return;
+          isDrawing.value = true; errorMessage.value = '';
+          try {
+            await clearOverlay();
+            // Keep the original GovMap source layer hidden; otherwise it can cover the analytical colors.
+            try { window.govmap.setVisibleLayers([], [GOVMAP_LAYER]); baseLayerVisible.value = false; } catch (_) {}
+            const names = [], wkts = [], symbols = [], tooltips = [], headers = [];
+            const valueBySid = new Map(joinedSettlements.value.map((item) => [String(item.sid), item]));
+            for (const feature of wktFeatures.value) {
+              const item = valueBySid.get(String(feature.sid));
+              const metricValue = colorMetricValue(item);
+              const color = colorForCurrentMetricValue(metricValue);
+              const name = `${DRAWING_NAME_PREFIX}${feature.sid}-${feature.part}`;
+              names.push(name);
+              wkts.push(feature.wkt);
+              symbols.push({ outlineColor: OUTLINE_COLOR, outlineWidth: 1, fillColor: color });
+              tooltips.push(`${feature.name}: ${formatColorMetric(item)}`);
+              headers.push(feature.name);
+            }
+            const geometryClick = window.govmap.displayGeometries({
+              wkts,
+              names,
+              geometryType: (window.govmap.geometryType && window.govmap.geometryType.POLYGON) || 'POLYGON',
+              defaultSymbol: { outlineColor: OUTLINE_COLOR, outlineWidth: 1, fillColor: NO_DATA_COLOR },
+              symbols,
+              clearExisting: true,
+              showBubble: false,
+              allowIdentify: true,
+              data: { tooltips, headers }
+            });
+
+            // GovMap returns a jQuery Deferred for displayGeometries.
+            // The click event is delivered through .progress(...), not through .then(...).
+            if (geometryClick && typeof geometryClick.progress === 'function') {
+              geometryClick.progress((ev) => handleMapClick(ev));
+            } else if (geometryClick && typeof geometryClick.then === 'function') {
+              geometryClick.then((ev) => handleMapClick(ev), (err) => console.warn('displayGeometries click promise rejected:', err));
+            }
+
+            // displayGeometries can replace GovMap's CLICK event handler, so install the map-click fallback again after drawing.
+            installGovMapClickSelection();
+
+            drawnNames.value = names; statusMessage.value = `המפה מוכנה · ${colorMetricLabel.value} · ${wkts.length.toLocaleString('he-IL')} פוליגונים`;
+          } catch (error) { console.error(error); errorMessage.value = error?.message || 'שגיאה בצביעת הפוליגונים.'; } finally { isDrawing.value = false; }
+        }
+        async function toggleOverlay() { overlayVisible.value = !overlayVisible.value; if (overlayVisible.value) await drawOverlay(); else await clearOverlay(); }
+        async function toggleBaseLayer() { if (!window.govmap) return; try { if (baseLayerVisible.value) { window.govmap.setVisibleLayers([], [GOVMAP_LAYER]); baseLayerVisible.value = false; statusMessage.value = 'שכבת המקור כבויה כדי שהצביעה תיראה.'; if (overlayVisible.value) await drawOverlay(); } else { window.govmap.setVisibleLayers([GOVMAP_LAYER], []); baseLayerVisible.value = true; statusMessage.value = 'שכבת המקור דולקת ועלולה להסתיר את הצביעה.'; } } catch (e) { console.warn(e); } }
+        function selectSettlementBySid(sid, shouldFocus = false) {
+          const item = String(sid) === NATIONAL_SID
+            ? nationalSettlement.value
+            : joinedSettlements.value.find((settlement) => String(settlement.sid) === String(sid));
+          if (!item) return false;
+          const changed = selectSettlement(item, shouldFocus);
+          statusMessage.value = changed ? `הגרפים עודכנו לפי ${item.name}.` : `${item.name} כבר מוצג.`;
+          return true;
+        }
+        function installMapSelectionBridge() {
+          window.__selectSettlementFromMap = (sid) => selectSettlementBySid(sid, false);
+          window.__marketMapDebugSelect = (sidOrName) => {
+            if (selectSettlementBySid(sidOrName, false)) return true;
+            return selectSettlementByNameFromClick(sidOrName);
+          };
+        }
+        function selectSettlement(item, shouldFocus = true) {
+          if (!item) return false;
+          const previousSid = selectedSettlement.value?.sid == null ? null : String(selectedSettlement.value.sid);
+          const nextSid = String(item.sid);
+          const isSameSettlement = previousSid === nextSid;
+          selectedSettlement.value = { ...item };
+          if (!isSameSettlement) nextTick(() => renderCharts({ animate: true }));
+          if (shouldFocus && !isSameSettlement) focusSettlement(item);
+          return !isSameSettlement;
+        }
+        function selectFirstSearchResult() { if (filteredSettlementList.value.length) selectSettlement(filteredSettlementList.value[0]); }
+        function selectNational() {
+          const changed = selectSettlement(nationalSettlement.value, false);
+          statusMessage.value = changed
+            ? `חזרת לנתוני כל הארץ לשנת ${targetYear.value}.`
+            : `נתוני כל הארץ כבר מוצגים.`;
+        }
+        function setColorMode(mode) {
+          colorMode.value = mode;
+          if (mode === 'residentialYield') rentalDataType.value = 'regular';
+          if (mode === 'commercialYield') rentalDataType.value = 'commercial';
+        }
+        function setQuarterlyDataType(type) {
+          const keepInvestmentMode = colorMode.value === 'investment';
+          rentalDataType.value = type === 'commercial' ? 'commercial' : 'regular';
+          colorMode.value = keepInvestmentMode ? 'investment' : (rentalDataType.value === 'commercial' ? 'commercialYield' : 'residentialYield');
+        }
+        async function focusSettlement(item) { if (!item || String(item.sid) === NATIONAL_SID) return; const shape = wktFeatures.value.find((feature) => String(feature.sid) === String(item.sid) && feature.bbox); if (!shape || !window.govmap) return; const [xmin, ymin, xmax, ymax] = shape.bbox; const x = (xmin + xmax) / 2, y = (ymin + ymax) / 2; try { if (typeof window.govmap.zoomToXY === 'function') window.govmap.zoomToXY({ x, y, level: 8 }); } catch (e) { console.warn(e); } }
+        function quarterLabel(row) { return periodLabelFromParts(row.year, row.quarter_mapi); }
+        function chartData() {
+          // Slider and charts are aligned: left = earliest year (1999), right = latest year (2025).
+          const rows = [...selectedRows.value].sort((a, b) => Number(a.year) - Number(b.year));
+          const rentRows = [...selectedResidentialRentRows.value].sort((a, b) => (Number(a.year) - Number(b.year)) || (Number(a.quarter_mapi) - Number(b.quarter_mapi)));
+          const commercialRows = [...selectedCommercialRentRows.value].sort((a, b) => (Number(a.year) - Number(b.year)) || (Number(a.quarter_mapi) - Number(b.quarter_mapi)));
+          return {
+            labels: rows.map((row) => String(row.year)),
+            deals: rows.map((row) => normalizeNumber(row.deals)),
+            prices: rows.map((row) => normalizeNumber(row.ppsqm)),
+            avgLine: rows.map(() => selectedSettlement.value?.avgAnnualDeals ?? null),
+            rentLabels: rentRows.map(quarterLabel),
+            rentPrices: rentRows.map((row) => normalizeNumber(row.rental_price)),
+            rentListings: rentRows.map((row) => normalizeNumber(row.listings_amount)),
+            commercialLabels: commercialRows.map(quarterLabel),
+            commercialPrices: commercialRows.map((row) => normalizeNumber(row.rental_price)),
+            commercialListings: commercialRows.map((row) => normalizeNumber(row.listings_amount)),
+            residentialYieldLabels: selectedResidentialYieldRows.value.map(quarterLabel),
+            residentialYieldValues: selectedResidentialYieldRows.value.map((row) => normalizeNumber(row.yield)),
+            residentialYieldListings: selectedResidentialYieldRows.value.map((row) => normalizeNumber(row.listings_amount)),
+            commercialYieldLabels: selectedCommercialYieldRows.value.map(quarterLabel),
+            commercialYieldValues: selectedCommercialYieldRows.value.map((row) => normalizeNumber(row.yield)),
+            commercialYieldListings: selectedCommercialYieldRows.value.map((row) => normalizeNumber(row.listings_amount))
+          };
+        }
+        function destroyCharts() {
+          if (priceChart) { priceChart.destroy(); priceChart = null; }
+          if (salesChart) { salesChart.destroy(); salesChart = null; }
+          if (rentChart) { rentChart.destroy(); rentChart = null; }
+          if (commercialRentChart) { commercialRentChart.destroy(); commercialRentChart = null; }
+          if (residentialYieldChart) { residentialYieldChart.destroy(); residentialYieldChart = null; }
+          if (commercialYieldChart) { commercialYieldChart.destroy(); commercialYieldChart = null; }
+        }
+        function renderCharts(options = {}) {
+          if (!selectedSettlement.value || !window.Chart) return;
+          const { animate = true } = options;
+          const priceCanvas = document.getElementById('priceChart');
+          const salesCanvas = document.getElementById('salesChart');
+          const rentCanvas = document.getElementById('rentChart');
+          const commercialRentCanvas = document.getElementById('commercialRentChart');
+          const residentialYieldCanvas = document.getElementById('residentialYieldChart');
+          const commercialYieldCanvas = document.getElementById('commercialYieldChart');
+          if (!priceCanvas && !salesCanvas && !rentCanvas && !commercialRentCanvas && !residentialYieldCanvas && !commercialYieldCanvas) return;
+          destroyCharts();
+          const { labels, deals, prices, avgLine, rentLabels, rentPrices, rentListings, commercialLabels, commercialPrices, commercialListings, residentialYieldLabels, residentialYieldValues, residentialYieldListings, commercialYieldLabels, commercialYieldValues, commercialYieldListings } = chartData();
+          const selectedIndex = labels.findIndex((y) => y === String(targetYear.value));
+          const selectedYearColors = labels.map((y) => y === String(targetYear.value) ? 'rgba(15,91,255,.88)' : 'rgba(15,91,255,.24)');
+          const selectedYearBorders = labels.map((y) => y === String(targetYear.value) ? 'rgba(15,91,255,1)' : 'rgba(15,91,255,.65)');
+
+          if (priceCanvas) priceChart = new Chart(priceCanvas, {
+            type: 'line',
+            data: {
+              labels,
+              datasets: [{
+                label: `מחיר למ״ר - ${chartEntityName.value}`, 
+                data: prices,
+                borderColor: '#111111',
+                backgroundColor: 'rgba(17,17,17,.05)',
+                borderWidth: 2,
+                pointRadius: labels.map((_, i) => i === selectedIndex ? 5 : 2.5),
+                pointBackgroundColor: labels.map((_, i) => i === selectedIndex ? '#0f5bff' : '#111111'),
+                pointBorderColor: labels.map((_, i) => i === selectedIndex ? '#0f5bff' : '#111111'),
+                tension: .28,
+                fill: false,
+                spanGaps: true
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              animation: animate ? undefined : false,
+              interaction: { mode: 'index', intersect: false },
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { reverse: false, ticks: { maxTicksLimit: 9 } },
+                y: { ticks: { callback: (v) => '₪' + Number(v).toLocaleString('he-IL') } }
+              }
+            }
+          });
+
+          if (salesCanvas) salesChart = new Chart(salesCanvas, {
+            type: 'bar',
+            data: {
+              labels,
+              datasets: [{
+                label: `מספר מכירות - ${chartEntityName.value}`, 
+                data: deals,
+                backgroundColor: selectedYearColors,
+                borderColor: selectedYearBorders,
+                borderWidth: 1.2,
+                borderRadius: 5,
+                maxBarThickness: 28
+              }, {
+                type: 'line',
+                label: `ממוצע השוואה - ${chartEntityName.value}`, 
+                data: avgLine,
+                borderColor: 'rgba(0,0,0,.72)',
+                backgroundColor: 'rgba(0,0,0,.08)',
+                pointRadius: 0,
+                borderWidth: 1.6,
+                borderDash: [5, 4]
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              animation: animate ? undefined : false,
+              interaction: { mode: 'index', intersect: false },
+              plugins: { legend: { display: false } },
+              scales: {
+                x: { reverse: false, ticks: { maxTicksLimit: 9 } },
+                y: { beginAtZero: true, ticks: { callback: (v) => Number(v).toLocaleString('he-IL') } }
+              }
+            }
+          });
+
+          const rentChartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: animate ? undefined : false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { reverse: false, ticks: { maxTicksLimit: 9 } },
+              y: { beginAtZero: true, position: 'left', ticks: { callback: (v) => '₪' + Number(v).toLocaleString('he-IL') } },
+              yListings: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: (v) => Number(v).toLocaleString('he-IL') + ' מודעות' } }
+            }
+          };
+
+          if (rentCanvas) rentChart = new Chart(rentCanvas, {
+            type: 'line',
+            data: {
+              labels: rentLabels,
+              datasets: [{
+                type: 'bar',
+                label: 'היצע מודעות',
+                data: rentListings,
+                yAxisID: 'yListings',
+                backgroundColor: 'rgba(100,116,139,.18)',
+                borderColor: 'rgba(100,116,139,.45)',
+                borderWidth: 1,
+                borderRadius: 5,
+                maxBarThickness: 22,
+                order: 2
+              }, {
+                type: 'line',
+                label: `שכירות מגורים (${selectedRoomGroupLabel.value}) - ${chartEntityName.value}`,
+                data: rentPrices,
+                yAxisID: 'y',
+                borderColor: '#0f5bff',
+                backgroundColor: 'rgba(15,91,255,.08)',
+                borderWidth: 2,
+                pointRadius: 2.5,
+                pointBackgroundColor: '#0f5bff',
+                tension: .28,
+                fill: false,
+                spanGaps: true,
+                order: 1
+              }]
+            },
+            options: rentChartOptions
+          });
+
+          if (commercialRentCanvas) commercialRentChart = new Chart(commercialRentCanvas, {
+            type: 'line',
+            data: {
+              labels: commercialLabels,
+              datasets: [{
+                type: 'bar',
+                label: 'היצע מודעות',
+                data: commercialListings,
+                yAxisID: 'yListings',
+                backgroundColor: 'rgba(100,116,139,.18)',
+                borderColor: 'rgba(100,116,139,.45)',
+                borderWidth: 1,
+                borderRadius: 5,
+                maxBarThickness: 22,
+                order: 2
+              }, {
+                type: 'line',
+                label: `שכירות מסחרית למ״ר לחודש - ${chartEntityName.value}`,
+                data: commercialPrices,
+                yAxisID: 'y',
+                borderColor: '#16a34a',
+                backgroundColor: 'rgba(22,163,74,.08)',
+                borderWidth: 2,
+                pointRadius: 2.5,
+                pointBackgroundColor: '#16a34a',
+                tension: .28,
+                fill: false,
+                spanGaps: true,
+                order: 1
+              }]
+            },
+            options: rentChartOptions
+          });
+
+          const baseYieldChartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: animate ? undefined : false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { reverse: false, ticks: { maxTicksLimit: 9 } },
+              y: { beginAtZero: true, ticks: { callback: (v) => Number(v).toLocaleString('he-IL', { maximumFractionDigits: 1 }) + '%' } }
+            }
+          };
+          const yieldChartOptions = (listings) => ({
+            ...baseYieldChartOptions,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  afterBody: (items) => {
+                    const idx = items?.[0]?.dataIndex;
+                    const value = Array.isArray(listings) ? listings[idx] : null;
+                    return `היצע מודעות: ${formatInteger(value)}`;
+                  }
+                }
+              }
+            }
+          });
+
+          if (residentialYieldCanvas) residentialYieldChart = new Chart(residentialYieldCanvas, {
+            type: 'line',
+            data: {
+              labels: residentialYieldLabels,
+              datasets: [{
+                label: `תשואה גולמית למגורים (${selectedRoomGroupLabel.value}) - ${chartEntityName.value}`,
+                data: residentialYieldValues,
+                borderColor: '#7c3aed',
+                backgroundColor: 'rgba(124,58,237,.08)',
+                borderWidth: 2,
+                pointRadius: 2.5,
+                pointBackgroundColor: '#7c3aed',
+                tension: .28,
+                fill: false,
+                spanGaps: true
+              }]
+            },
+            options: yieldChartOptions(residentialYieldListings)
+          });
+
+          if (commercialYieldCanvas) commercialYieldChart = new Chart(commercialYieldCanvas, {
+            type: 'line',
+            data: {
+              labels: commercialYieldLabels,
+              datasets: [{
+                label: `תשואה מסחרית משוערת - ${chartEntityName.value}`,
+                data: commercialYieldValues,
+                borderColor: '#ea580c',
+                backgroundColor: 'rgba(234,88,12,.08)',
+                borderWidth: 2,
+                pointRadius: 2.5,
+                pointBackgroundColor: '#ea580c',
+                tension: .28,
+                fill: false,
+                spanGaps: true
+              }]
+            },
+            options: yieldChartOptions(commercialYieldListings)
+          });
+
+        }
+        let yearChangeTimer = null;
+        function refreshSelectedSettlementForCurrentYear() {
+          const sid = selectedSettlement.value?.sid;
+          if (!sid) return;
+          const updated = String(sid) === NATIONAL_SID
+            ? nationalSettlement.value
+            : joinedSettlements.value.find((item) => String(item.sid) === String(sid));
+          if (updated) selectedSettlement.value = { ...updated };
+        }
+        async function redrawAfterYearChange() {
+          refreshSelectedSettlementForCurrentYear();
+          await drawOverlay();
+          await nextTick();
+          renderCharts({ animate: false });
+          statusMessage.value = `המפה נצבעה לפי ${colorMetricLabel.value}.`;
+        }
+        function handleYearSliderInput() {
+          refreshSelectedSettlementForCurrentYear();
+          nextTick(() => renderCharts({ animate: false }));
+          if (yearChangeTimer) clearTimeout(yearChangeTimer);
+          yearChangeTimer = setTimeout(() => { redrawAfterYearChange(); }, 260);
+        }
+        async function handleYearChanged() {
+          if (yearChangeTimer) clearTimeout(yearChangeTimer);
+          await redrawAfterYearChange();
+        }
+        let rentalPeriodTimer = null;
+        async function redrawAfterRentalPeriodChange() {
+          refreshSelectedSettlementForCurrentYear();
+          await nextTick();
+          renderCharts({ animate: false });
+          if (isRentalColorMode() || isInvestmentColorMode()) await drawOverlay();
+          statusMessage.value = `נתוני השכירות והתשואה עודכנו לפי ${selectedRentalPeriodLabel.value}.`;
+        }
+        function handleRentalPeriodInput() {
+          refreshSelectedSettlementForCurrentYear();
+          nextTick(() => renderCharts({ animate: false }));
+          if (rentalPeriodTimer) clearTimeout(rentalPeriodTimer);
+          rentalPeriodTimer = setTimeout(() => { redrawAfterRentalPeriodChange(); }, 260);
+        }
+        async function handleRentalPeriodChanged() {
+          if (rentalPeriodTimer) clearTimeout(rentalPeriodTimer);
+          await redrawAfterRentalPeriodChange();
+        }
+        function setRentalShowAll(value) {
+          rentalShowAllQuarters.value = !!value;
+          nextTick(() => renderCharts({ animate: false }));
+        }
+        async function handleAverageModeChanged() { await handleYearChanged(); }
+        async function boot() {
+          isBooting.value = true; errorMessage.value = '';
+          try { await Promise.all([loadLocalFiles(), initGovMap()]); if (availableYears.value.includes(DEFAULT_TARGET_YEAR)) targetYear.value = DEFAULT_TARGET_YEAR; else if (availableYears.value.length) targetYear.value = availableYears.value[availableYears.value.length - 1]; if (availableRentalPeriods.value.length) rentalPeriodIndex.value = availableRentalPeriods.value.length - 1; selectSettlement(nationalSettlement.value, false); await drawOverlay(); statusMessage.value = `המפה מוכנה. מוצגים נתוני כל הארץ והצביעה לפי ${colorMetricLabel.value}.`; } catch (error) { console.error(error); errorMessage.value = error?.message || 'שגיאה כללית בטעינת האתר.'; } finally { isBooting.value = false; }
+        }
+        watch(selectedRows, () => nextTick(() => renderCharts({ animate: true })));
+        watch([selectedRoomGroup, rentalDataType], async () => {
+          refreshSelectedSettlementForCurrentYear();
+          await nextTick();
+          renderCharts({ animate: false });
+          if (isRentalColorMode() || isInvestmentColorMode()) await drawOverlay();
+        });
+        watch(colorMode, async () => {
+          refreshSelectedSettlementForCurrentYear();
+          await drawOverlay();
+        });
+        watch(targetYear, () => refreshSelectedSettlementForCurrentYear());
+        watch(rentalPeriodIndex, () => refreshSelectedSettlementForCurrentYear());
+        onMounted(() => { installMapSelectionBridge(); boot(); });
+        return { ESTIMATED_APARTMENT_SQM, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, rentalShowAllQuarters, availableYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, colorMode, colorMetricLabel, colorModeNote, rankingTitle, investmentScoreTypeLabel, investmentScoreSubtitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, formatInvestmentScore, rankingRowSubtitle, setColorMode, setQuarterlyDataType, formatNumber, formatInteger, formatRatio, formatCurrency, formatCommercialRent, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, handleRentalPeriodInput, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartEntityName, pageTitle, selectedResidentialRentLatest, selectedCommercialRentLatest, selectedResidentialYieldLatest, selectedCommercialYieldLatest, activeYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData, compareSidA, compareSidB, settlementOptions, compareSettlementA, compareSettlementB, comparisonRows, setCompareAFromSelected };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
