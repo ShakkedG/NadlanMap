@@ -159,6 +159,7 @@
     .bottom-tools { max-width: min(100%, 1130px); margin: 32px auto 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
     .mini-panel { border: 1px solid #dfe6ef; border-radius: 14px; padding: 14px; background: #fff; max-height: 310px; overflow: auto; min-width: 0; }
     .mini-panel h3 { margin: 0 0 10px; color: #052a5a; }
+    .ranking-panel { max-height: 620px; align-self: start; }
     .result-row { width: 100%; border: 0; border-bottom: 1px solid #edf2f7; background: #fff; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 4px; color: #052a5a; text-align: right; }
     .result-row:hover { background: #f7faff; }
     .result-row small { display: block; color: #718098; margin-top: 3px; }
@@ -177,9 +178,12 @@
       .map-pane { height: 55vh; }
       .report-pane { height: auto; overflow: visible; padding: 10px; }
       .report-card { min-height: 0; }
-      .analysis-grid, .bottom-tools { grid-template-columns: 1fr; }
+      .bottom-tools { grid-template-columns: 1fr; }
       .stat-cards { grid-template-columns: 1fr; margin-bottom: 30px; }
       .top-controls { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 860px) {
+      .analysis-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 700px) {
       .map-pane { height: 50vh; }
@@ -467,6 +471,19 @@
             </div>
 
             <aside class="info-column">
+              <article class="mini-panel ranking-panel">
+                <h3>{{ rankingTitle }}</h3>
+                <div class="ranking-toolbar">
+                  <button :class="{ active: listSortDirection === 'desc' }" @click="listSortDirection = 'desc'">גבוה → נמוך</button>
+                  <button :class="{ active: listSortDirection === 'asc' }" @click="listSortDirection = 'asc'">נמוך → גבוה</button>
+                </div>
+                <div v-if="rankedSettlementList.length === 0" class="chart-empty" style="height:120px">אין יישובים עם נתון זמין למדד הנבחר.</div>
+                <button v-for="(item, index) in rankedSettlementList" :key="item.sid" class="result-row" @click="selectSettlement(item)">
+                  <span><b class="rank-index">{{ index + 1 }}.</b>{{ item.name }}<small>{{ rankingRowSubtitle(item) }}</small></span>
+                  <b class="ratio-badge">{{ formatColorMetric(item) }}</b>
+                </button>
+              </article>
+
               <article class="info-box">
                 <h3>⌂ מחירי עסקאות ממוצעים</h3>
                 <template v-if="rentalDataType === 'regular'">
@@ -497,20 +514,6 @@
             </aside>
           </section>
 
-          <section class="bottom-tools">
-            <article class="mini-panel">
-              <h3>{{ rankingTitle }}</h3>
-              <div class="ranking-toolbar">
-                <button :class="{ active: listSortDirection === 'asc' }" @click="listSortDirection = 'asc'">נמוך → גבוה</button>
-                <button :class="{ active: listSortDirection === 'desc' }" @click="listSortDirection = 'desc'">גבוה → נמוך</button>
-              </div>
-              <div v-if="rankedSettlementList.length === 0" class="chart-empty" style="height:120px">אין יישובים עם נתון זמין למדד הנבחר.</div>
-              <button v-for="(item, index) in rankedSettlementList" :key="item.sid" class="result-row" @click="selectSettlement(item)">
-                <span><b class="rank-index">{{ index + 1 }}.</b>{{ item.name }}<small>{{ rankingRowSubtitle(item) }}</small></span>
-                <b class="ratio-badge">{{ formatColorMetric(item) }}</b>
-              </button>
-            </article>
-          </section>
         </div>
       </section>
     </main>
@@ -657,7 +660,7 @@
         const commercialRentRows = ref([]);
         const wktFeatures = ref([]);
         const searchText = ref('');
-        const listSortDirection = ref('asc');
+        const listSortDirection = ref('desc');
         const selectedSettlement = ref(null);
         const drawnNames = ref([]);
         const ignoreZeroYears = ref(false);
