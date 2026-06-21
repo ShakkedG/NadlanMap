@@ -17,7 +17,13 @@
     .nadlan-layout { width: 100%; max-width: 100vw; height: 100vh; display: grid; grid-template-columns: minmax(0, 40.2%) minmax(0, 59.8%); direction: ltr; background: #eaf0f8; overflow-x: hidden; }
     .map-pane { position: relative; height: 100vh; overflow: hidden; background: #cfe1ef; border-inline-end: 1px solid #d5deea; min-width: 0; }
     .map-pane.fullscreen { position: fixed; inset: 0; z-index: 9999; }
-    .govmap-box { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .govmap-box {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
     .map-loader { position: absolute; top: 18px; right: 78px; z-index: 18; direction: rtl; background: rgba(255,255,255,.95); border: 1px solid #d8e1ee; box-shadow: 0 12px 28px rgba(5,25,55,.14); border-radius: 16px; padding: 12px 14px; font-weight: 800; color: #06224a; }
     .map-left-controls { position: absolute; top: 28px; left: 12px; z-index: 16; display: flex; flex-direction: column; gap: 10px; direction: rtl; }
     .map-right-tools { position: absolute; top: 28px; right: 18px; z-index: 16; display: flex; gap: 10px; direction: rtl; }
@@ -188,14 +194,87 @@
       .stat-icon { width: 54px; height: 54px; }
       .room-tabs { gap: 12px; font-size: 14px; }
     }
-  </style>
+  
+        .map-legend {
+          position: fixed !important;
+          top: 96px;
+          left: 18px;
+          right: auto;
+          bottom: auto;
+          z-index: 2147483647 !important;
+          background: rgba(255,255,255,.97);
+          border: 1px solid rgba(15,23,42,.14);
+          border-radius: 14px;
+          box-shadow: 0 10px 25px rgba(15,23,42,.22);
+          padding: 12px 14px;
+          min-width: 270px;
+          max-width: 360px;
+          direction: rtl;
+          font-size: 13px;
+          color: #0f172a;
+          backdrop-filter: blur(8px);
+          pointer-events: auto;
+        }
+        .map-legend h4 {
+          margin: 0 0 9px;
+          font-size: 14px;
+          font-weight: 900;
+        }
+        .map-legend-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin: 6px 0;
+          font-weight: 700;
+        }
+        .map-legend-color {
+          width: 18px;
+          height: 18px;
+          border-radius: 5px;
+          border: 1px solid rgba(15,23,42,.22);
+          flex: 0 0 auto;
+        }
+        .map-legend-note {
+          margin-top: 8px;
+          padding-top: 8px;
+          border-top: 1px solid rgba(15,23,42,.10);
+          font-size: 11.5px;
+          color: #475569;
+          line-height: 1.35;
+          font-weight: 700;
+        }
+        @media (max-width: 760px) {
+          .map-legend {
+            top: 88px;
+            left: 10px;
+            min-width: 220px;
+            max-width: calc(100vw - 20px);
+            padding: 10px 11px;
+            font-size: 12px;
+          }
+        }
+
+      </style>
 </head>
 <body>
+
   <div id="app">
     <main class="nadlan-layout">
       <section class="map-pane" :class="{ fullscreen: mapFullscreen }">
         <div v-if="isBooting || isDrawing" class="map-loader">{{ isBooting ? 'טוען מפה...' : 'צובע יישובים...' }}</div>
         <div id="govmap-map" class="govmap-box"></div>
+
+        <div id="mapLegend" class="map-legend" aria-label="מקרא מפה">
+          <h4>מקרא · {{ colorMetricLabel }}</h4>
+          <div v-for="item in legendItems" :key="'map-' + item.label" class="map-legend-row">
+            <span class="map-legend-color" :style="{ background: rgbaCss(item.color) }"></span>
+            <span>{{ item.label }}</span>
+          </div>
+          <div class="map-legend-note">
+            המקרא משתנה לפי המדד שהמפה מודדת עכשיו.
+          </div>
+        </div>
+
 
       </section>
 
@@ -208,7 +287,6 @@
             <button class="primary-btn" @click="selectFirstSearchResult" :disabled="filteredSettlementList.length===0">בחר</button>
             <button class="secondary-btn" @click="selectNational" :disabled="selectedSettlement?.sid === '__national__'">כל הארץ</button>
           </div>
-          <label class="toggle-line"><input type="checkbox" v-model="ignoreZeroYears" @change="handleAverageModeChanged" /> להתעלם משנים עם 0 עסקאות בחישוב הממוצע</label>
 
           <header class="report-title">
             <h1>{{ pageTitle }}</h1>
@@ -412,17 +490,22 @@
                 <b class="ratio-badge">{{ formatColorMetric(item) }}</b>
               </button>
             </article>
-            <article class="mini-panel">
-              <h3>מקרא צביעה</h3>
-              <div class="legend"><div v-for="item in legendItems" :key="item.label" class="legend-row"><i :style="{background: rgbaCss(item.color)}"></i><span>{{ item.label }}</span></div></div>
-            </article>
           </section>
         </div>
       </section>
     </main>
   </div>
 
-  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js">
+        function updateMapLegendText(metricLabel) {
+          const note = document.querySelector('#mapLegend .map-legend-note');
+          if (!note) return;
+          note.textContent = metricLabel
+            ? `הצבע נקבע לפי ${metricLabel}.`
+            : 'הצבע נקבע לפי המדד/ציון ההשקעה שנבחר במפה.';
+        }
+
+      </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
   <script>
     const GOVMAP_SCRIPT_ID = 'govmap-api-script';
@@ -820,7 +903,7 @@
         const hasResidentialYieldData = computed(() => selectedResidentialYieldRows.value.length > 0);
         const hasCommercialYieldData = computed(() => selectedCommercialYieldRows.value.length > 0);
         const investmentScoreTypeLabel = computed(() => rentalDataType.value === 'commercial' ? 'מסחרי' : `מגורים · ${selectedRoomGroupLabel.value}`);
-        const investmentScoreSubtitle = computed(() => `משולב לפי ${investmentScoreTypeLabel.value}: תשואה, היצע, מחיר ושינוי שנתי`);
+        const investmentScoreSubtitle = computed(() => `משולב לפי ${investmentScoreTypeLabel.value}: תשואה, היצע, מחיר, שינוי שנתי ויחס עסקאות`);
         const activeYieldValue = computed(() => rentalDataType.value === 'commercial' ? selectedCommercialYieldLatest.value?.yield : selectedResidentialYieldLatest.value?.yield);
         const activeYieldTitle = computed(() => rentalDataType.value === 'commercial' ? 'תשואה מסחרית משוערת' : `תשואה גולמית משוערת · ${selectedRoomGroupLabel.value}`);
         const activeYieldSubtitle = computed(() => {
@@ -1032,7 +1115,8 @@
               yieldValue: rentalDataType.value === 'commercial' ? commercialYieldSelected : residentialYieldSelected,
               supplyRatio: rentalDataType.value === 'commercial' ? commercialSupplyRatioVsOthers : residentialSupplyRatioVsOthers,
               priceRatio: priceRatioVsOthers,
-              priceChange: demandYoySelected
+              priceChange: demandYoySelected,
+              dealsRatio: ratio
             });
             const investmentScore = Number.isFinite(investmentScoreParts?.score) ? investmentScoreParts.score : null;
             return {
@@ -1176,13 +1260,52 @@
           const values = joinedSettlements.value.map((item) => item.ratio).filter(Number.isFinite);
           return { joined: values.length, aboveAverage: values.filter((v) => v >= 1).length, belowAverage: values.filter((v) => v < 1).length, avgRatio: values.length ? values.reduce((a, b) => a + b, 0) / values.length : null };
         });
+        const LEGEND_COLOR_NAMES = ['אדום כהה', 'אדום', 'כתום', 'צהוב', 'ירוק בהיר', 'ירוק כהה'];
+        function formatLegendRange(min, max, formatter, suffix = '') {
+          const suffixText = suffix ? ` ${suffix}` : '';
+          if (min === -Infinity) return `עד ${formatter(max)}${suffixText}`;
+          if (max === Infinity) return `מעל ${formatter(min)}${suffixText}`;
+          return `${formatter(min)}–${formatter(max)}${suffixText}`;
+        }
+        function buildObjectiveLegendItems(scale, formatter, suffix = '') {
+          return [
+            ...scale.map((bucket, i) => ({
+              color: bucket.color,
+              label: `${LEGEND_COLOR_NAMES[i] || 'צבע'}: ${formatLegendRange(bucket.min, bucket.max, formatter, suffix)}`
+            })),
+            { label: 'אפור: אין מספיק נתונים', color: NO_DATA_COLOR }
+          ];
+        }
         const legendItems = computed(() => {
-          if (isYieldColorMode()) return [...YIELD_COLOR_SCALE.map(({ label, color }) => ({ label, color })), { label: 'אין מספיק נתונים', color: NO_DATA_COLOR }];
-          if (isInvestmentColorMode()) return [...INVESTMENT_COLOR_SCALE.map(({ label, color }) => ({ label, color })), { label: 'אין מספיק נתונים', color: NO_DATA_COLOR }];
-          const labels = colorMode.value === 'price'
-            ? ['עד 50% מממוצע מחיר למ״ר של שאר היישובים - אדום כהה', '50%–80% מהממוצע - אדום', '80%–100% מהממוצע - כתום', '100%–120% מהממוצע - צהוב', '120%–150% מהממוצע - ירוק בהיר', 'מעל 150% מהממוצע - ירוק כהה']
-            : COLOR_SCALE.map((b) => b.label);
-          return [...COLOR_SCALE.map(({ color }, i) => ({ label: labels[i], color })), { label: 'אין מספיק נתונים', color: NO_DATA_COLOR }];
+          if (isInvestmentColorMode()) {
+            return buildObjectiveLegendItems(
+              INVESTMENT_COLOR_SCALE,
+              (v) => Number(v).toLocaleString('he-IL', { maximumFractionDigits: 0 }),
+              'נקודות'
+            );
+          }
+
+          if (isYieldColorMode()) {
+            return buildObjectiveLegendItems(
+              YIELD_COLOR_SCALE,
+              (v) => `${Number(v).toLocaleString('he-IL', { maximumFractionDigits: 1 })}%`,
+              'תשואה'
+            );
+          }
+
+          if (colorMode.value === 'price') {
+            return buildObjectiveLegendItems(
+              COLOR_SCALE,
+              (v) => `${Math.round(Number(v) * 100).toLocaleString('he-IL')}%`,
+              'מממוצע מחיר למ״ר'
+            );
+          }
+
+          return buildObjectiveLegendItems(
+            COLOR_SCALE,
+            (v) => `${Math.round(Number(v) * 100).toLocaleString('he-IL')}%`,
+            'מממוצע העסקאות'
+          );
         });
         const topSettlements = computed(() => joinedSettlements.value.filter((item) => item.hasData).sort((a, b) => b.ratio - a.ratio));
         const bottomSettlements = computed(() => joinedSettlements.value.filter((item) => item.hasData).sort((a, b) => a.ratio - b.ratio));
@@ -1197,7 +1320,7 @@
           if (colorMode.value === 'price') return `הצבע מציג מחיר למ״ר ביישוב מול ממוצע שאר היישובים בשנת ${targetYear.value}. הנוסחה המלאה מופיעה בתיבת החישובים.`;
           if (colorMode.value === 'residentialYield') return `הצבע מציג תשואה גולמית משוערת למגורים לפי ${selectedRoomGroupLabel.value} ברבעון ${selectedRentalPeriodLabel.value}. הנוסחה המלאה מופיעה בתיבת החישובים.`;
           if (colorMode.value === 'commercialYield') return `הצבע מציג תשואה מסחרית משוערת ברבעון ${selectedRentalPeriodLabel.value}. הנוסחה המלאה מופיעה בתיבת החישובים.`;
-          if (colorMode.value === 'investment') return `הצבע מציג ציון השקעה משולב לפי תשואה, היצע מודעות, מחיר יחסי ושינוי מחיר שנתי. הנוסחה המלאה מופיעה בתיבת החישובים.`;
+          if (colorMode.value === 'investment') return `הצבע מציג ציון השקעה משולב לפי תשואה, היצע מודעות, מחיר יחסי, שינוי מחיר שנתי ויחס עסקאות. הנוסחה המלאה מופיעה בתיבת החישובים.`;
           return `הצבע מציג את מספר העסקאות בשנת ${targetYear.value} מול ממוצע השנים האחרות. הנוסחה המלאה מופיעה בתיבת החישובים.`;
         });
         const rankingTitle = computed(() => {
@@ -1293,23 +1416,25 @@
             ? normalizeNumber(item?.commercialSupplyRatioVsOthers)
             : normalizeNumber(item?.residentialSupplyRatioVsOthers);
         }
-        function calculateInvestmentScoreParts({ yieldValue, supplyRatio, priceRatio, priceChange }) {
+        function calculateInvestmentScoreParts({ yieldValue, supplyRatio, priceRatio, priceChange, dealsRatio=1 }) {
           const y = normalizeNumber(yieldValue);
           const supply = normalizeNumber(supplyRatio);
           const price = normalizeNumber(priceRatio);
           const change = normalizeNumber(priceChange);
-          if (![y, supply, price, change].every(Number.isFinite)) return null;
+          const deals = normalizeNumber(dealsRatio);
+          if (![y, supply, price, change, deals].every(Number.isFinite)) return null;
           const yieldScore = clampNumber((y / 6) * 100);
           const supplyScore = clampNumber((supply / 1.6) * 100);
           const priceScore = clampNumber(((1.45 - price) / 0.9) * 100);
           const momentumScore = clampNumber(((change + 5) / 20) * 100);
-          if (![yieldScore, supplyScore, priceScore, momentumScore].every(Number.isFinite)) return null;
+          const dealsScore = clampNumber((deals / 2) * 100);
           return {
             yieldScore,
             supplyScore,
             priceScore,
             momentumScore,
-            score: (yieldScore * 0.42) + (supplyScore * 0.20) + (priceScore * 0.23) + (momentumScore * 0.15)
+            dealsScore,
+            score: (yieldScore * 0.30) + (supplyScore * 0.15) + (priceScore * 0.15) + (momentumScore * 0.20) + (dealsScore * 0.20)
           };
         }
         function calculateInvestmentScoreForSettlement(item) {
