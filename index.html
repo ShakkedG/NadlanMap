@@ -1264,7 +1264,21 @@
         });
         watch(selectedSettlement, (next) => {
           const sid = next?.sid ? String(next.sid) : '';
-          if (sid && sid !== NATIONAL_SID && !compareSidA.value) compareSidA.value = sid;
+          if (!sid || sid === NATIONAL_SID) return;
+
+          const previousA = compareSidA.value ? String(compareSidA.value) : '';
+          const currentB = compareSidB.value ? String(compareSidB.value) : '';
+          if (sid === previousA) return;
+
+          // היישוב האחרון שנבחר במפה/בדירוג הוא תמיד העיר הראשונה להשוואה.
+          // אם הוא כבר העיר השנייה, מחליפים בין הערים כדי למנוע השוואה של עיר לעצמה.
+          if (sid === currentB) {
+            compareSidA.value = sid;
+            compareSidB.value = previousA && previousA !== sid ? previousA : '';
+            return;
+          }
+
+          compareSidA.value = sid;
         });
 
         const selectedRows = computed(() => {
