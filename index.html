@@ -77,8 +77,6 @@
     .compare-panel { max-width: min(100%, 980px); margin: 0 auto 34px; border: 1px solid #dfe6ef; border-radius: 16px; background: #f8fbff; padding: 18px; box-shadow: 0 8px 22px rgba(6,34,74,.05); }
     .compare-panel h3 { margin: 0 0 14px; color: #052a5a; text-align: center; font-size: 21px; font-weight: 900; }
     .compare-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 10px; align-items: end; margin-bottom: 14px; }
-    .compare-city-search { width: 100%; }
-    .compare-city-search::placeholder { color: #98a2b3; }
     .compare-table { border: 1px solid #dfe6ef; border-radius: 14px; overflow: hidden; background: #fff; }
     .compare-row { display: grid; grid-template-columns: minmax(140px, .8fr) repeat(2, minmax(0, 1fr)); align-items: center; border-bottom: 1px solid #edf2f7; }
     .compare-row:last-child { border-bottom: 0; }
@@ -138,22 +136,6 @@
     .rental-filter-row button.active { background: #0f5bff; border-color: #0f5bff; color: #fff; }
     .rental-filter-note { margin: 12px 0 0; color: #718098; font-size: 13px; text-align: center; line-height: 1.45; }
     .chart-note { margin: 0 12px 10px; color: #718098; font-size: 13px; text-align: center; font-weight: 800; }
-    .comparison-chart-legend {
-      max-width: min(100%, 840px);
-      margin: -2px auto 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 22px;
-      flex-wrap: wrap;
-      color: #40516a;
-      font-weight: 900;
-      font-size: 14px;
-    }
-    .comparison-chart-legend span { display: inline-flex; align-items: center; gap: 8px; }
-    .comparison-chart-legend i { width: 13px; height: 13px; border-radius: 50%; display: inline-block; box-shadow: 0 0 0 2px rgba(15,23,42,.06); }
-    .comparison-chart-legend .city-a { background: #0f5bff; }
-    .comparison-chart-legend .city-b { background: #f97316; }
     .listing-metric { margin: 8px 0; padding: 10px 12px; border-radius: 12px; background: #f7fbff; border: 1px solid #d7e6ff; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
     .listing-metric b { color: #0f5bff; font-size: 20px; font-weight: 900; }
     .quality-badge { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 4px 9px; font-size: 12px; font-weight: 900; white-space: nowrap; }
@@ -177,7 +159,6 @@
     .bottom-tools { max-width: min(100%, 1130px); margin: 32px auto 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
     .mini-panel { border: 1px solid #dfe6ef; border-radius: 14px; padding: 14px; background: #fff; max-height: 310px; overflow: auto; min-width: 0; }
     .mini-panel h3 { margin: 0 0 10px; color: #052a5a; }
-    .ranking-panel { max-height: 620px; align-self: start; }
     .result-row { width: 100%; border: 0; border-bottom: 1px solid #edf2f7; background: #fff; display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; padding: 10px 4px; color: #052a5a; text-align: right; }
     .result-row:hover { background: #f7faff; }
     .result-row small { display: block; color: #718098; margin-top: 3px; }
@@ -190,18 +171,115 @@
     .legend-row { display: grid; grid-template-columns: 24px 1fr; gap: 8px; align-items: center; color: #46566d; }
     .legend-row i { width: 24px; height: 14px; border: 1px solid rgba(15, 23, 42, .18); border-radius: 999px; }
 
-    @media (max-width: 1180px) {
+    
+    /* Ranking panel: narrower, right aligned, default High→Low */
+    .bottom-tools {
+      width: min(100%, 360px);
+      max-width: 360px;
+      margin: 22px 0 0 auto;
+      align-self: end;
+    }
+    .bottom-tools .mini-panel {
+      max-height: 340px;
+      padding: 12px;
+    }
+    .bottom-tools .mini-panel h3 {
+      font-size: 17px;
+      line-height: 1.25;
+      margin-bottom: 10px;
+    }
+    .bottom-tools .ranking-toolbar {
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      top: -12px;
+      padding-bottom: 8px;
+    }
+    .bottom-tools .ranking-toolbar button {
+      padding: 7px 8px;
+      font-size: 13px;
+    }
+    .bottom-tools .result-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      padding: 9px 2px;
+    }
+    .bottom-tools .result-row small {
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .bottom-tools .ratio-badge {
+      font-size: 13px;
+    }
+    @media (min-width: 1181px) {
+      .bottom-tools {
+        transform: translateY(-6px);
+      }
+    }
+    
+    .main-mode-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 18px auto 18px;
+      padding: 8px;
+      width: fit-content;
+      max-width: 100%;
+      background: #eef5ff;
+      border: 1px solid #d7e6ff;
+      border-radius: 999px;
+      box-shadow: 0 8px 20px rgba(6,34,74,.05);
+    }
+    .main-mode-tabs button {
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 10px 20px;
+      background: transparent;
+      color: #052a5a;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    .main-mode-tabs button.active {
+      background: #0f5bff;
+      border-color: #0f5bff;
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(15,91,255,.18);
+    }
+    .main-mode-note {
+      margin: -6px auto 16px;
+      color: #718098;
+      font-size: 14px;
+      font-weight: 800;
+      text-align: center;
+      line-height: 1.45;
+    }
+    @media (max-width: 700px) {
+      .main-mode-tabs {
+        width: 100%;
+        border-radius: 18px;
+      }
+      .main-mode-tabs button {
+        flex: 1;
+        padding: 10px 12px;
+      }
+    }
+
+@media (max-width: 1180px) {
+      .bottom-tools {
+        width: 100%;
+        max-width: 100%;
+        margin: 18px auto 0;
+      }
+    }
+
+@media (max-width: 1180px) {
       body { overflow-y: auto; overflow-x: hidden; }
       .nadlan-layout { height: auto; min-height: 100vh; grid-template-columns: 1fr; }
       .map-pane { height: 55vh; }
       .report-pane { height: auto; overflow: visible; padding: 10px; }
       .report-card { min-height: 0; }
-      .bottom-tools { grid-template-columns: 1fr; }
+      .analysis-grid, .bottom-tools { grid-template-columns: 1fr; }
       .stat-cards { grid-template-columns: 1fr; margin-bottom: 30px; }
       .top-controls { grid-template-columns: 1fr 1fr; }
-    }
-    @media (max-width: 860px) {
-      .analysis-grid { grid-template-columns: 1fr; }
     }
     @media (max-width: 700px) {
       .map-pane { height: 50vh; }
@@ -327,7 +405,7 @@
           <div class="top-controls">
             <label class="field"><span>חיפוש יישוב</span><input v-model="searchText" @keyup.enter="selectFirstSearchResult" placeholder="לדוגמה: מודיעין / 1200" /></label>
             <button class="primary-btn" @click="selectFirstSearchResult" :disabled="filteredSettlementList.length===0">בחר</button>
-            <button class="secondary-btn" @click="handleNationalButton" :disabled="selectedSettlement?.sid === '__national__' && !hasComparisonSelection">{{ isComparisonMode ? 'בטל השוואה' : 'כל הארץ' }}</button>
+            <button class="secondary-btn" @click="selectNational" :disabled="selectedSettlement?.sid === '__national__'">כל הארץ</button>
           </div>
 
           <header class="report-title">
@@ -335,6 +413,18 @@
             <p>בהתייחס לשנת {{ targetYear }}</p>
             <div v-if="errorMessage" class="status error">{{ errorMessage }}</div>
           </header>
+
+          
+          <div class="main-mode-tabs" aria-label="בחירת תחום נתונים">
+            <button :class="{ active: mainDataSection === 'sales' }" @click="setMainDataSection('sales')">מכירות</button>
+            <button :class="{ active: mainDataSection === 'rent' }" @click="setMainDataSection('rent')">שכירות</button>
+          </div>
+          <p class="main-mode-note" v-if="mainDataSection === 'sales'">
+            מצב מכירות מציג עסקאות, מחיר למ״ר, שינויי מחיר, ציון השקעה וצביעת מפה לפי נתוני עסקאות.
+          </p>
+          <p class="main-mode-note" v-else>
+            מצב שכירות מציג שכירות, היצע מודעות ותשואה לפי מגורים או מסחרי.
+          </p>
 
           <section class="stat-cards">
             <article class="stat-card sales-kpi">
@@ -363,22 +453,18 @@
             <h3>השוואה בין שתי ערים</h3>
             <div class="compare-controls">
               <label class="field"><span>עיר ראשונה</span>
-                <input class="compare-city-search" v-model="compareSearchA" list="compare-city-options-a"
-                  @input="handleCompareSearchInput('a')" @change="commitCompareSearch('a')"
-                  @keydown.enter.prevent="commitCompareSearch('a')" placeholder="הקלד או בחר עיר" autocomplete="off" />
-                <datalist id="compare-city-options-a">
-                  <option v-for="item in settlementOptions" :key="'a-' + item.sid" :value="item.name"></option>
-                </datalist>
+                <select v-model="compareSidA">
+                  <option value="">בחר עיר</option>
+                  <option v-for="item in settlementOptions" :key="'a-' + item.sid" :value="item.sid">{{ item.name }}</option>
+                </select>
               </label>
               <label class="field"><span>עיר שנייה</span>
-                <input class="compare-city-search" v-model="compareSearchB" list="compare-city-options-b"
-                  @input="handleCompareSearchInput('b')" @change="commitCompareSearch('b')"
-                  @keydown.enter.prevent="commitCompareSearch('b')" placeholder="הקלד או בחר עיר" autocomplete="off" />
-                <datalist id="compare-city-options-b">
-                  <option v-for="item in settlementOptions" :key="'b-' + item.sid" :value="item.name"></option>
-                </datalist>
+                <select v-model="compareSidB">
+                  <option value="">בחר עיר</option>
+                  <option v-for="item in settlementOptions" :key="'b-' + item.sid" :value="item.sid">{{ item.name }}</option>
+                </select>
               </label>
-              <button class="secondary-btn" @click="cancelComparison" :disabled="!hasComparisonSelection">בטל השוואה</button>
+              <button class="secondary-btn" @click="setCompareAFromSelected" :disabled="!selectedSettlement || selectedSettlement.sid === '__national__'">השתמש ביישוב הנבחר</button>
             </div>
             <div v-if="compareSettlementA && compareSettlementB" class="compare-table">
               <div class="compare-row">
@@ -397,13 +483,8 @@
 
           <section class="section-heading">
             <h2>גרפים שנתיים לפי יישוב</h2>
-            <p class="section-subtitle">{{ isComparisonMode ? 'הגרפים מציגים במקביל את שני היישובים שנבחרו להשוואה.' : 'הגרפים מתעדכנים אוטומטית לפי היישוב שנבחר במפה או בחיפוש.' }}</p>
+            <p class="section-subtitle">הגרפים מתעדכנים אוטומטית לפי היישוב שנבחר במפה או בחיפוש.</p>
           </section>
-
-          <div v-if="isComparisonMode" class="comparison-chart-legend" aria-label="מקרא ערים לגרפים">
-            <span><i class="city-a"></i>{{ compareSettlementA.name }}</span>
-            <span><i class="city-b"></i>{{ compareSettlementB.name }}</span>
-          </div>
 
           <section class="analysis-grid">
             <div class="chart-area">
@@ -426,11 +507,11 @@
                 </div>
 
                 <article class="chart-panel">
-                  <h3>מחיר למ״ר לאורך השנים - {{ chartDisplayName }}</h3>
+                  <h3>מחיר למ״ר לאורך השנים - {{ chartEntityName }}</h3>
                   <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
                 </article>
                 <article class="chart-panel">
-                  <h3>מספר מכירות לאורך השנים - {{ chartDisplayName }}</h3>
+                  <h3>מספר מכירות לאורך השנים - {{ chartEntityName }}</h3>
                   <div class="chart-wrap sales-chart-wrap"><canvas id="salesChart"></canvas></div>
                 </article>
 
@@ -467,7 +548,7 @@
                       <p><b>תוצאה משולבת לכל סוגי החדרים:</b> מחשבים בנפרד תשואה ל־3, 4 ו־5 חדרים לפי השטח המייצג של כל קבוצה, ואז מחשבים ממוצע משוקלל לפי היצע המודעות בכל קבוצת חדרים. אין שימוש בהנחת 85 מ״ר.</p>
                       <p><b>תשואה מסחרית:</b> <span class="formula-equation">שכירות חודשית מסחרית למ״ר × 12 ÷ מחיר קנייה למ״ר באותה שנה × 100</span>. בקובץ המסחרי מחיר השכירות הוא למ״ר לחודש, לכן אין הכפלה בשטח נכס.</p>
                       <p><b>היצע מודעות:</b> <span class="formula-equation">listing_amount</span> הוא מספר המודעות/התצפיות באותו יישוב, רבעון וסוג נתון. הוא מוצג כהיצע למשתמשים וגם כרמז לכמה הנתון מבוסס.</p>
-                      <p><b>ציון השקעה:</b> ציון 0–100 שמשלב ארבעה רכיבים: <span class="formula-equation">42% תשואה + 20% היצע מודעות + 23% מחיר יחסי + 15% שינוי מחיר שנתי</span>.</p>
+                      <p><b>ציון השקעה:</b> ציון 0–100 שמשלב ארבעה רכיבים: <span class="formula-equation">30% תשואה + 15% היצע מודעות + 15% מחיר יחסי + 20% שינוי מחיר שנתי + 20% יחס עסקאות</span>.</p>
                       <p><b>פירוט ציון ההשקעה:</b> תשואה גבוהה מעלה את הציון; היצע מודעות גבוה ביחס ליישובים אחרים מעלה את הציון; מחיר למ״ר נמוך יחסית מעלה את הציון; שינוי מחיר שנתי חיובי מעלה את הציון. כל רכיב מוגבל לטווח 0–100 כדי שלא יהיו קפיצות מוגזמות.</p>
                       <p><b>נוסחת ציון ההשקעה:</b> <span class="formula-equation">(תשואה ÷ 6% × 100 × 0.42) + (יחס היצע ÷ 1.6 × 100 × 0.20) + ((1.45 − יחס מחיר) ÷ 0.9 × 100 × 0.23) + ((שינוי מחיר + 5) ÷ 20 × 100 × 0.15)</span>.</p>
                       <p><b>חשוב:</b> התשואה היא גולמית ומשוערת. היא לא מפחיתה מסים, תחזוקה, תקופות ריקות, תיווך, שיפוצים או מימון. ציון ההשקעה הוא כלי השוואה בלבד ולא המלצת השקעה.</p>
@@ -475,22 +556,22 @@
                   </details>
                 </div>
 
-                <article v-if="rentalDataType === 'regular' && chartHasResidentialRentData" class="chart-panel quarterly-chart-panel">
-                  <h3>שכירות חציונית למגורים · {{ selectedRoomGroupLabel }} · {{ rentalChartScopeLabel }} - {{ chartDisplayName }}</h3>
+                <article v-if="mainDataSection === 'rent' && rentalDataType === 'regular' && hasResidentialRentData" class="chart-panel quarterly-chart-panel">
+                  <h3>שכירות חציונית למגורים · {{ selectedRoomGroupLabel }} · {{ rentalChartScopeLabel }} - {{ chartEntityName }}</h3>
                   <p class="chart-note">הקו מציג שכירות. העמודות מציגות היצע מודעות מאותו רבעון.</p>
                   <div class="chart-wrap sales-chart-wrap"><canvas id="rentChart"></canvas></div>
                 </article>
-                <article v-if="rentalDataType === 'commercial' && chartHasCommercialRentData" class="chart-panel quarterly-chart-panel">
-                  <h3>שכירות מסחרית חציונית למ״ר לחודש · {{ rentalChartScopeLabel }} - {{ chartDisplayName }}</h3>
+                <article v-if="mainDataSection === 'rent' && rentalDataType === 'commercial' && hasCommercialRentData" class="chart-panel quarterly-chart-panel">
+                  <h3>שכירות מסחרית חציונית למ״ר לחודש · {{ rentalChartScopeLabel }} - {{ chartEntityName }}</h3>
                   <p class="chart-note">הקו מציג שכירות מסחרית למ״ר לחודש. העמודות מציגות היצע מודעות מאותו רבעון.</p>
                   <div class="chart-wrap sales-chart-wrap"><canvas id="commercialRentChart"></canvas></div>
                 </article>
-                <article v-if="rentalDataType === 'regular' && chartHasResidentialYieldData" class="chart-panel quarterly-chart-panel">
-                  <h3>תשואה גולמית משוערת למגורים · {{ selectedRoomGroupLabel }} · {{ rentalChartScopeLabel }} - {{ chartDisplayName }}</h3>
+                <article v-if="mainDataSection === 'rent' && rentalDataType === 'regular' && hasResidentialYieldData" class="chart-panel quarterly-chart-panel">
+                  <h3>תשואה גולמית משוערת למגורים · {{ selectedRoomGroupLabel }} · {{ rentalChartScopeLabel }} - {{ chartEntityName }}</h3>
                   <div class="chart-wrap sales-chart-wrap"><canvas id="residentialYieldChart"></canvas></div>
                 </article>
-                <article v-if="rentalDataType === 'commercial' && chartHasCommercialYieldData" class="chart-panel quarterly-chart-panel">
-                  <h3>תשואה מסחרית משוערת · {{ rentalChartScopeLabel }} - {{ chartDisplayName }}</h3>
+                <article v-if="mainDataSection === 'rent' && rentalDataType === 'commercial' && hasCommercialYieldData" class="chart-panel quarterly-chart-panel">
+                  <h3>תשואה מסחרית משוערת · {{ rentalChartScopeLabel }} - {{ chartEntityName }}</h3>
                   <div class="chart-wrap sales-chart-wrap"><canvas id="commercialYieldChart"></canvas></div>
                 </article>
               </div>
@@ -498,19 +579,6 @@
             </div>
 
             <aside class="info-column">
-              <article class="mini-panel ranking-panel">
-                <h3>{{ rankingTitle }}</h3>
-                <div class="ranking-toolbar">
-                  <button :class="{ active: listSortDirection === 'desc' }" @click="listSortDirection = 'desc'">גבוה → נמוך</button>
-                  <button :class="{ active: listSortDirection === 'asc' }" @click="listSortDirection = 'asc'">נמוך → גבוה</button>
-                </div>
-                <div v-if="rankedSettlementList.length === 0" class="chart-empty" style="height:120px">אין יישובים עם נתון זמין למדד הנבחר.</div>
-                <button v-for="(item, index) in rankedSettlementList" :key="item.sid" class="result-row" @click="selectSettlement(item)">
-                  <span><b class="rank-index">{{ index + 1 }}.</b>{{ item.name }}<small>{{ rankingRowSubtitle(item) }}</small></span>
-                  <b class="ratio-badge">{{ formatColorMetric(item) }}</b>
-                </button>
-              </article>
-
               <article class="info-box">
                 <h3>⌂ מחירי עסקאות ממוצעים</h3>
                 <template v-if="rentalDataType === 'regular'">
@@ -541,6 +609,20 @@
             </aside>
           </section>
 
+          <section v-if="mainDataSection === 'sales'" class="bottom-tools">
+            <article class="mini-panel">
+              <h3>{{ rankingTitle }}</h3>
+              <div class="ranking-toolbar">
+                <button :class="{ active: listSortDirection === 'desc' }" @click="listSortDirection = 'desc'">גבוה → נמוך</button>
+                <button :class="{ active: listSortDirection === 'asc' }" @click="listSortDirection = 'asc'">נמוך → גבוה</button>
+              </div>
+              <div v-if="rankedSettlementList.length === 0" class="chart-empty" style="height:120px">אין יישובים עם נתון זמין למדד הנבחר.</div>
+              <button v-for="(item, index) in rankedSettlementList" :key="item.sid" class="result-row" @click="selectSettlement(item)">
+                <span><b class="rank-index">{{ index + 1 }}.</b>{{ item.name }}<small>{{ rankingRowSubtitle(item) }}</small></span>
+                <b class="ratio-badge">{{ formatColorMetric(item) }}</b>
+              </button>
+            </article>
+          </section>
         </div>
       </section>
     </main>
@@ -676,6 +758,7 @@
     createApp({
       setup() {
         const isBooting = ref(true);
+        const mainDataSection = ref('sales');
         const isDrawing = ref(false);
         const statusMessage = ref('טוען את GovMap...');
         const errorMessage = ref('');
@@ -701,8 +784,6 @@
         const colorMode = ref('deals');
         const compareSidA = ref('');
         const compareSidB = ref('');
-        const compareSearchA = ref('');
-        const compareSearchB = ref('');
         const roomGroupOptions = [
           { key: 'all', label: 'כל סוגי החדרים' },
           { key: '3', label: '3 חדרים' },
@@ -1190,49 +1271,10 @@
         }
         const compareSettlementA = computed(() => settlementForCompare(compareSidA.value));
         const compareSettlementB = computed(() => settlementForCompare(compareSidB.value));
-        function normalizeCompareSearch(value) {
-          return String(value || '').trim().toLocaleLowerCase('he');
-        }
-        function compareSearchState(target) {
-          return target === 'b'
-            ? { search: compareSearchB, sid: compareSidB }
-            : { search: compareSearchA, sid: compareSidA };
-        }
-        function findSettlementForCompareSearch(value, allowPartial = false) {
-          const query = normalizeCompareSearch(value);
-          if (!query) return null;
-          const exact = settlementOptions.value.find((item) =>
-            normalizeCompareSearch(item.name) === query || String(item.sid) === String(value || '').trim()
-          );
-          if (exact || !allowPartial) return exact || null;
-          return settlementOptions.value.find((item) => normalizeCompareSearch(item.name).includes(query)) || null;
-        }
-        function handleCompareSearchInput(target) {
-          const state = compareSearchState(target);
-          const match = findSettlementForCompareSearch(state.search.value, false);
-          state.sid.value = match ? String(match.sid) : '';
-        }
-        function commitCompareSearch(target) {
-          const state = compareSearchState(target);
-          const match = findSettlementForCompareSearch(state.search.value, true);
-          if (!match) {
-            state.sid.value = '';
-            return;
-          }
-          state.sid.value = String(match.sid);
-          state.search.value = match.name;
-        }
-        function syncCompareSearchFromSid(target, sid) {
-          const state = compareSearchState(target);
-          const item = settlementForCompare(sid);
-          if (item) state.search.value = item.name;
-        }
         function setCompareAFromSelected() {
           const sid = selectedSettlement.value?.sid ? String(selectedSettlement.value.sid) : '';
           if (sid && sid !== NATIONAL_SID) compareSidA.value = sid;
         }
-        watch(compareSidA, (sid) => syncCompareSearchFromSid('a', sid));
-        watch(compareSidB, (sid) => syncCompareSearchFromSid('b', sid));
         function currentYieldForDisplay(item) {
           if (!item) return null;
           return rentalDataType.value === 'commercial' ? normalizeNumber(item.commercialYieldSelected) : normalizeNumber(item.residentialYieldSelected);
@@ -1264,21 +1306,7 @@
         });
         watch(selectedSettlement, (next) => {
           const sid = next?.sid ? String(next.sid) : '';
-          if (!sid || sid === NATIONAL_SID) return;
-
-          const previousA = compareSidA.value ? String(compareSidA.value) : '';
-          const currentB = compareSidB.value ? String(compareSidB.value) : '';
-          if (sid === previousA) return;
-
-          // היישוב האחרון שנבחר במפה/בדירוג הוא תמיד העיר הראשונה להשוואה.
-          // אם הוא כבר העיר השנייה, מחליפים בין הערים כדי למנוע השוואה של עיר לעצמה.
-          if (sid === currentB) {
-            compareSidA.value = sid;
-            compareSidB.value = previousA && previousA !== sid ? previousA : '';
-            return;
-          }
-
-          compareSidA.value = sid;
+          if (sid && sid !== NATIONAL_SID && !compareSidA.value) compareSidA.value = sid;
         });
 
         const selectedRows = computed(() => {
@@ -1290,29 +1318,6 @@
           const name = selectedSettlement.value?.name;
           return name && String(name).trim() ? String(name).trim() : 'כל הארץ';
         });
-        const isComparisonMode = computed(() => !!compareSettlementA.value && !!compareSettlementB.value);
-        const hasComparisonSelection = computed(() => !!compareSidA.value || !!compareSidB.value);
-        const chartDisplayName = computed(() => {
-          if (!isComparisonMode.value) return chartEntityName.value;
-          return `${compareSettlementA.value.name} מול ${compareSettlementB.value.name}`;
-        });
-        const chartSettlementSids = computed(() => {
-          if (isComparisonMode.value) return [String(compareSidA.value), String(compareSidB.value)];
-          const sid = selectedSettlement.value?.sid ? String(selectedSettlement.value.sid) : NATIONAL_SID;
-          return [sid];
-        });
-        const chartHasResidentialRentData = computed(() => chartSettlementSids.value.some((sid) =>
-          buildChartSeriesForSid(sid).residentialRentRows.some((row) => Number.isFinite(normalizeNumber(row.rental_price)))
-        ));
-        const chartHasCommercialRentData = computed(() => chartSettlementSids.value.some((sid) =>
-          buildChartSeriesForSid(sid).commercialRentRows.some((row) => Number.isFinite(normalizeNumber(row.rental_price)))
-        ));
-        const chartHasResidentialYieldData = computed(() => chartSettlementSids.value.some((sid) =>
-          buildChartSeriesForSid(sid).residentialYieldRows.some((row) => Number.isFinite(normalizeNumber(row.yield)))
-        ));
-        const chartHasCommercialYieldData = computed(() => chartSettlementSids.value.some((sid) =>
-          buildChartSeriesForSid(sid).commercialYieldRows.some((row) => Number.isFinite(normalizeNumber(row.yield)))
-        ));
         const pageTitle = computed(() => {
           const sid = selectedSettlement.value?.sid ? String(selectedSettlement.value.sid) : NATIONAL_SID;
           const name = chartEntityName.value;
@@ -1965,27 +1970,11 @@
           return !isSameSettlement;
         }
         function selectFirstSearchResult() { if (filteredSettlementList.value.length) selectSettlement(filteredSettlementList.value[0]); }
-        function cancelComparison(showStatus = true) {
-          const hadComparison = !!compareSidA.value || !!compareSidB.value || !!compareSearchA.value || !!compareSearchB.value;
-          compareSidA.value = '';
-          compareSidB.value = '';
-          compareSearchA.value = '';
-          compareSearchB.value = '';
-          if (showStatus && hadComparison) statusMessage.value = 'ההשוואה בוטלה. הגרפים חזרו להציג את היישוב הנבחר.';
-        }
         function selectNational() {
-          cancelComparison(false);
           const changed = selectSettlement(nationalSettlement.value, false);
           statusMessage.value = changed
-            ? `חזרת לנתוני כל הארץ לשנת ${targetYear.value}. ההשוואה בוטלה.`
-            : `נתוני כל הארץ כבר מוצגים וההשוואה בוטלה.`;
-        }
-        function handleNationalButton() {
-          if (isComparisonMode.value) {
-            cancelComparison(true);
-            return;
-          }
-          selectNational();
+            ? `חזרת לנתוני כל הארץ לשנת ${targetYear.value}.`
+            : `נתוני כל הארץ כבר מוצגים.`;
         }
         function setColorMode(mode) {
           colorMode.value = mode;
@@ -1999,111 +1988,28 @@
         }
         async function focusSettlement(item) { if (!item || String(item.sid) === NATIONAL_SID) return; const shape = wktFeatures.value.find((feature) => String(feature.sid) === String(item.sid) && feature.bbox); if (!shape || !window.govmap) return; const [xmin, ymin, xmax, ymax] = shape.bbox; const x = (xmin + xmax) / 2, y = (ymin + ymax) / 2; try { if (typeof window.govmap.zoomToXY === 'function') window.govmap.zoomToXY({ x, y, level: 8 }); } catch (e) { console.warn(e); } }
         function quarterLabel(row) { return periodLabelFromParts(row.year, row.quarter_mapi); }
-        function annualRowsForSid(sid) {
-          const key = String(sid || NATIONAL_SID);
-          const rows = key === NATIONAL_SID ? nationalRows.value : (rowGroups.value.get(key) || []);
-          return [...rows].sort((a, b) => Number(a.year) - Number(b.year));
-        }
-        function rentalRowsForSid(index, sid, roomGroup = null) {
-          const rows = filterRowsByRentalDisplay(index.get(String(sid || NATIONAL_SID)) || []);
-          if (isCombinedRoomGroup(roomGroup)) return aggregateResidentialRowsByPeriod(rows);
-          return rows
-            .filter((row) => rowMatchesRoomGroup(row, roomGroup))
-            .map((row) => ({
-              ...row,
-              rental_price: normalizeNumber(row.rental_price),
-              listings_amount: normalizeNumber(row.listings_amount)
-            }))
-            .sort((a, b) => (Number(a.year) - Number(b.year)) || (Number(a.quarter_mapi) - Number(b.quarter_mapi)));
-        }
-        function priceByYearForSid(sid) {
-          const priceByYear = new Map();
-          for (const row of annualRowsForSid(sid)) {
-            const year = Number(row.year);
-            const ppsqm = normalizeNumber(row.ppsqm);
-            if (Number.isFinite(year) && Number.isFinite(ppsqm) && ppsqm > 0) priceByYear.set(year, ppsqm);
-          }
-          return priceByYear;
-        }
-        function residentialYieldRowsForSid(sid, rentRows = null) {
-          const rows = rentRows || rentalRowsForSid(residentialRentIndex.value, sid, selectedRoomGroup.value);
-          const priceByYear = priceByYearForSid(sid);
-          return rows.map((row) => {
-            const ppsqm = priceByYear.get(Number(row.year));
-            return { ...row, ppsqm, yield: calcResidentialYieldFromRentRow(row, ppsqm) };
-          }).filter((row) => Number.isFinite(row.yield));
-        }
-        function commercialYieldRowsForSid(sid, rentRows = null) {
-          const rows = rentRows || rentalRowsForSid(commercialRentIndex.value, sid);
-          const priceByYear = priceByYearForSid(sid);
-          return rows.map((row) => {
-            const ppsqm = priceByYear.get(Number(row.year));
-            return { ...row, ppsqm, yield: calcCommercialYield(row.rental_price, ppsqm) };
-          }).filter((row) => Number.isFinite(row.yield));
-        }
-        function buildChartSeriesForSid(sid) {
-          const key = String(sid || NATIONAL_SID);
-          const annualRows = annualRowsForSid(key);
-          const residentialRentRows = rentalRowsForSid(residentialRentIndex.value, key, selectedRoomGroup.value);
-          const commercialRentRows = rentalRowsForSid(commercialRentIndex.value, key);
-          const settlement = key === NATIONAL_SID
-            ? nationalSettlement.value
-            : (settlementForCompare(key) || (String(selectedSettlement.value?.sid || '') === key ? selectedSettlement.value : null));
+        function chartData() {
+          // Slider and charts are aligned: left = earliest year (1999), right = latest year (2025).
+          const rows = [...selectedRows.value].sort((a, b) => Number(a.year) - Number(b.year));
+          const rentRows = [...selectedResidentialRentRows.value].sort((a, b) => (Number(a.year) - Number(b.year)) || (Number(a.quarter_mapi) - Number(b.quarter_mapi)));
+          const commercialRows = [...selectedCommercialRentRows.value].sort((a, b) => (Number(a.year) - Number(b.year)) || (Number(a.quarter_mapi) - Number(b.quarter_mapi)));
           return {
-            sid: key,
-            name: settlement?.name || (key === NATIONAL_SID ? 'כל הארץ' : key),
-            avgAnnualDeals: normalizeNumber(settlement?.avgAnnualDeals),
-            annualRows,
-            residentialRentRows,
-            commercialRentRows,
-            residentialYieldRows: residentialYieldRowsForSid(key, residentialRentRows),
-            commercialYieldRows: commercialYieldRowsForSid(key, commercialRentRows)
-          };
-        }
-        function annualLabel(row) { return String(row.year); }
-        function quarterKey(row) { return `${Number(row.year)}-${Number(row.quarter_mapi)}`; }
-        function sortedAnnualLabels(...seriesLists) {
-          return [...new Set(seriesLists.flat().map(annualLabel))].sort((a, b) => Number(a) - Number(b));
-        }
-        function sortedQuarterLabels(...seriesLists) {
-          const periods = new Map();
-          for (const row of seriesLists.flat()) {
-            const key = quarterKey(row);
-            if (!periods.has(key)) periods.set(key, { key, year: Number(row.year), quarter: Number(row.quarter_mapi), label: quarterLabel(row) });
-          }
-          return [...periods.values()]
-            .sort((a, b) => (a.year - b.year) || (a.quarter - b.quarter))
-            .map((item) => item.label);
-        }
-        function alignAnnualValues(rows, labels, valueKey) {
-          const map = new Map(rows.map((row) => [annualLabel(row), normalizeNumber(row[valueKey])]));
-          return labels.map((label) => map.has(label) ? map.get(label) : null);
-        }
-        function alignQuarterValues(rows, labels, valueKey) {
-          const map = new Map(rows.map((row) => [quarterLabel(row), normalizeNumber(row[valueKey])]));
-          return labels.map((label) => map.has(label) ? map.get(label) : null);
-        }
-        function singleChartData(series) {
-          const labels = series.annualRows.map(annualLabel);
-          const residentialYieldRows = series.residentialYieldRows;
-          const commercialYieldRows = series.commercialYieldRows;
-          return {
-            labels,
-            deals: series.annualRows.map((row) => normalizeNumber(row.deals)),
-            prices: series.annualRows.map((row) => normalizeNumber(row.ppsqm)),
-            avgLine: series.annualRows.map(() => series.avgAnnualDeals),
-            rentLabels: series.residentialRentRows.map(quarterLabel),
-            rentPrices: series.residentialRentRows.map((row) => normalizeNumber(row.rental_price)),
-            rentListings: series.residentialRentRows.map((row) => normalizeNumber(row.listings_amount)),
-            commercialLabels: series.commercialRentRows.map(quarterLabel),
-            commercialPrices: series.commercialRentRows.map((row) => normalizeNumber(row.rental_price)),
-            commercialListings: series.commercialRentRows.map((row) => normalizeNumber(row.listings_amount)),
-            residentialYieldLabels: residentialYieldRows.map(quarterLabel),
-            residentialYieldValues: residentialYieldRows.map((row) => normalizeNumber(row.yield)),
-            residentialYieldListings: residentialYieldRows.map((row) => normalizeNumber(row.listings_amount)),
-            commercialYieldLabels: commercialYieldRows.map(quarterLabel),
-            commercialYieldValues: commercialYieldRows.map((row) => normalizeNumber(row.yield)),
-            commercialYieldListings: commercialYieldRows.map((row) => normalizeNumber(row.listings_amount))
+            labels: rows.map((row) => String(row.year)),
+            deals: rows.map((row) => normalizeNumber(row.deals)),
+            prices: rows.map((row) => normalizeNumber(row.ppsqm)),
+            avgLine: rows.map(() => selectedSettlement.value?.avgAnnualDeals ?? null),
+            rentLabels: rentRows.map(quarterLabel),
+            rentPrices: rentRows.map((row) => normalizeNumber(row.rental_price)),
+            rentListings: rentRows.map((row) => normalizeNumber(row.listings_amount)),
+            commercialLabels: commercialRows.map(quarterLabel),
+            commercialPrices: commercialRows.map((row) => normalizeNumber(row.rental_price)),
+            commercialListings: commercialRows.map((row) => normalizeNumber(row.listings_amount)),
+            residentialYieldLabels: selectedResidentialYieldRows.value.map(quarterLabel),
+            residentialYieldValues: selectedResidentialYieldRows.value.map((row) => normalizeNumber(row.yield)),
+            residentialYieldListings: selectedResidentialYieldRows.value.map((row) => normalizeNumber(row.listings_amount)),
+            commercialYieldLabels: selectedCommercialYieldRows.value.map(quarterLabel),
+            commercialYieldValues: selectedCommercialYieldRows.value.map((row) => normalizeNumber(row.yield)),
+            commercialYieldListings: selectedCommercialYieldRows.value.map((row) => normalizeNumber(row.listings_amount))
           };
         }
         function destroyCharts() {
@@ -2113,72 +2019,6 @@
           if (commercialRentChart) { commercialRentChart.destroy(); commercialRentChart = null; }
           if (residentialYieldChart) { residentialYieldChart.destroy(); residentialYieldChart = null; }
           if (commercialYieldChart) { commercialYieldChart.destroy(); commercialYieldChart = null; }
-        }
-        function lineDataset(label, data, color, selectedLabels = null, labels = []) {
-          return {
-            type: 'line',
-            label,
-            data,
-            borderColor: color,
-            backgroundColor: color === '#0f5bff' ? 'rgba(15,91,255,.08)' : 'rgba(249,115,22,.08)',
-            borderWidth: 2.4,
-            pointRadius: labels.map((labelValue) => selectedLabels && labelValue === selectedLabels ? 5 : 2.7),
-            pointBackgroundColor: color,
-            pointBorderColor: color,
-            tension: .28,
-            fill: false,
-            spanGaps: true
-          };
-        }
-        function comparisonBarDataset(label, data, color, selectedLabel, labels) {
-          const isBlue = color === '#0f5bff';
-          return {
-            type: 'bar',
-            label,
-            data,
-            backgroundColor: labels.map((year) => year === selectedLabel
-              ? (isBlue ? 'rgba(15,91,255,.86)' : 'rgba(249,115,22,.86)')
-              : (isBlue ? 'rgba(15,91,255,.32)' : 'rgba(249,115,22,.32)')),
-            borderColor: color,
-            borderWidth: 1.1,
-            borderRadius: 5,
-            maxBarThickness: 22
-          };
-        }
-        function comparisonRentDatasets(seriesA, seriesB, labels, rowsKey, priceLabelPrefix) {
-          const rowsA = seriesA[rowsKey];
-          const rowsB = seriesB[rowsKey];
-          return [{
-            type: 'bar',
-            label: `היצע מודעות - ${seriesA.name}`,
-            data: alignQuarterValues(rowsA, labels, 'listings_amount'),
-            yAxisID: 'yListings',
-            backgroundColor: 'rgba(15,91,255,.16)',
-            borderColor: 'rgba(15,91,255,.42)',
-            borderWidth: 1,
-            borderRadius: 5,
-            maxBarThickness: 16,
-            order: 2
-          }, {
-            type: 'bar',
-            label: `היצע מודעות - ${seriesB.name}`,
-            data: alignQuarterValues(rowsB, labels, 'listings_amount'),
-            yAxisID: 'yListings',
-            backgroundColor: 'rgba(249,115,22,.16)',
-            borderColor: 'rgba(249,115,22,.42)',
-            borderWidth: 1,
-            borderRadius: 5,
-            maxBarThickness: 16,
-            order: 2
-          }, {
-            ...lineDataset(`${priceLabelPrefix} - ${seriesA.name}`, alignQuarterValues(rowsA, labels, 'rental_price'), '#0f5bff', null, labels),
-            yAxisID: 'y',
-            order: 1
-          }, {
-            ...lineDataset(`${priceLabelPrefix} - ${seriesB.name}`, alignQuarterValues(rowsB, labels, 'rental_price'), '#f97316', null, labels),
-            yAxisID: 'y',
-            order: 1
-          }];
         }
         function renderCharts(options = {}) {
           if (!selectedSettlement.value || !window.Chart) return;
@@ -2191,116 +2031,99 @@
           const commercialYieldCanvas = document.getElementById('commercialYieldChart');
           if (!priceCanvas && !salesCanvas && !rentCanvas && !commercialRentCanvas && !residentialYieldCanvas && !commercialYieldCanvas) return;
           destroyCharts();
-
-          const compareMode = isComparisonMode.value;
-          const primarySid = compareMode ? compareSidA.value : (selectedSettlement.value?.sid || NATIONAL_SID);
-          const seriesA = buildChartSeriesForSid(primarySid);
-          const seriesB = compareMode ? buildChartSeriesForSid(compareSidB.value) : null;
-          const selectedYearLabel = String(targetYear.value);
-          const commonOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: animate ? undefined : false,
-            interaction: { mode: 'index', intersect: false },
-            plugins: { legend: { display: false } }
-          };
-
-          let annualLabels;
-          let priceDatasets;
-          let salesDatasets;
-          if (compareMode) {
-            annualLabels = sortedAnnualLabels(seriesA.annualRows, seriesB.annualRows);
-            priceDatasets = [
-              lineDataset(`מחיר למ״ר - ${seriesA.name}`, alignAnnualValues(seriesA.annualRows, annualLabels, 'ppsqm'), '#0f5bff', selectedYearLabel, annualLabels),
-              lineDataset(`מחיר למ״ר - ${seriesB.name}`, alignAnnualValues(seriesB.annualRows, annualLabels, 'ppsqm'), '#f97316', selectedYearLabel, annualLabels)
-            ];
-            salesDatasets = [
-              comparisonBarDataset(`מספר מכירות - ${seriesA.name}`, alignAnnualValues(seriesA.annualRows, annualLabels, 'deals'), '#0f5bff', selectedYearLabel, annualLabels),
-              comparisonBarDataset(`מספר מכירות - ${seriesB.name}`, alignAnnualValues(seriesB.annualRows, annualLabels, 'deals'), '#f97316', selectedYearLabel, annualLabels)
-            ];
-          } else {
-            const data = singleChartData(seriesA);
-            annualLabels = data.labels;
-            const selectedIndex = annualLabels.findIndex((year) => year === selectedYearLabel);
-            priceDatasets = [{
-              label: `מחיר למ״ר - ${seriesA.name}`,
-              data: data.prices,
-              borderColor: '#111111',
-              backgroundColor: 'rgba(17,17,17,.05)',
-              borderWidth: 2,
-              pointRadius: annualLabels.map((_, index) => index === selectedIndex ? 5 : 2.5),
-              pointBackgroundColor: annualLabels.map((_, index) => index === selectedIndex ? '#0f5bff' : '#111111'),
-              pointBorderColor: annualLabels.map((_, index) => index === selectedIndex ? '#0f5bff' : '#111111'),
-              tension: .28,
-              fill: false,
-              spanGaps: true
-            }];
-            salesDatasets = [{
-              label: `מספר מכירות - ${seriesA.name}`,
-              data: data.deals,
-              backgroundColor: annualLabels.map((year) => year === selectedYearLabel ? 'rgba(15,91,255,.88)' : 'rgba(15,91,255,.24)'),
-              borderColor: annualLabels.map((year) => year === selectedYearLabel ? 'rgba(15,91,255,1)' : 'rgba(15,91,255,.65)'),
-              borderWidth: 1.2,
-              borderRadius: 5,
-              maxBarThickness: 28
-            }, {
-              type: 'line',
-              label: `ממוצע השוואה - ${seriesA.name}`,
-              data: data.avgLine,
-              borderColor: 'rgba(0,0,0,.72)',
-              backgroundColor: 'rgba(0,0,0,.08)',
-              pointRadius: 0,
-              borderWidth: 1.6,
-              borderDash: [5, 4]
-            }];
-          }
+          const { labels, deals, prices, avgLine, rentLabels, rentPrices, rentListings, commercialLabels, commercialPrices, commercialListings, residentialYieldLabels, residentialYieldValues, residentialYieldListings, commercialYieldLabels, commercialYieldValues, commercialYieldListings } = chartData();
+          const selectedIndex = labels.findIndex((y) => y === String(targetYear.value));
+          const selectedYearColors = labels.map((y) => y === String(targetYear.value) ? 'rgba(15,91,255,.88)' : 'rgba(15,91,255,.24)');
+          const selectedYearBorders = labels.map((y) => y === String(targetYear.value) ? 'rgba(15,91,255,1)' : 'rgba(15,91,255,.65)');
 
           if (priceCanvas) priceChart = new Chart(priceCanvas, {
             type: 'line',
-            data: { labels: annualLabels, datasets: priceDatasets },
+            data: {
+              labels,
+              datasets: [{
+                label: `מחיר למ״ר - ${chartEntityName.value}`, 
+                data: prices,
+                borderColor: '#111111',
+                backgroundColor: 'rgba(17,17,17,.05)',
+                borderWidth: 2,
+                pointRadius: labels.map((_, i) => i === selectedIndex ? 5 : 2.5),
+                pointBackgroundColor: labels.map((_, i) => i === selectedIndex ? '#0f5bff' : '#111111'),
+                pointBorderColor: labels.map((_, i) => i === selectedIndex ? '#0f5bff' : '#111111'),
+                tension: .28,
+                fill: false,
+                spanGaps: true
+              }]
+            },
             options: {
-              ...commonOptions,
+              responsive: true,
+              maintainAspectRatio: false,
+              animation: animate ? undefined : false,
+              interaction: { mode: 'index', intersect: false },
+              plugins: { legend: { display: false } },
               scales: {
                 x: { reverse: false, ticks: { maxTicksLimit: 9 } },
-                y: { ticks: { callback: (value) => '₪' + Number(value).toLocaleString('he-IL') } }
+                y: { ticks: { callback: (v) => '₪' + Number(v).toLocaleString('he-IL') } }
               }
             }
           });
 
           if (salesCanvas) salesChart = new Chart(salesCanvas, {
             type: 'bar',
-            data: { labels: annualLabels, datasets: salesDatasets },
+            data: {
+              labels,
+              datasets: [{
+                label: `מספר מכירות - ${chartEntityName.value}`, 
+                data: deals,
+                backgroundColor: selectedYearColors,
+                borderColor: selectedYearBorders,
+                borderWidth: 1.2,
+                borderRadius: 5,
+                maxBarThickness: 28
+              }, {
+                type: 'line',
+                label: `ממוצע השוואה - ${chartEntityName.value}`, 
+                data: avgLine,
+                borderColor: 'rgba(0,0,0,.72)',
+                backgroundColor: 'rgba(0,0,0,.08)',
+                pointRadius: 0,
+                borderWidth: 1.6,
+                borderDash: [5, 4]
+              }]
+            },
             options: {
-              ...commonOptions,
+              responsive: true,
+              maintainAspectRatio: false,
+              animation: animate ? undefined : false,
+              interaction: { mode: 'index', intersect: false },
+              plugins: { legend: { display: false } },
               scales: {
                 x: { reverse: false, ticks: { maxTicksLimit: 9 } },
-                y: { beginAtZero: true, ticks: { callback: (value) => Number(value).toLocaleString('he-IL') } }
+                y: { beginAtZero: true, ticks: { callback: (v) => Number(v).toLocaleString('he-IL') } }
               }
             }
           });
 
           const rentChartOptions = {
-            ...commonOptions,
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: animate ? undefined : false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { display: false } },
             scales: {
               x: { reverse: false, ticks: { maxTicksLimit: 9 } },
-              y: { beginAtZero: true, position: 'left', ticks: { callback: (value) => '₪' + Number(value).toLocaleString('he-IL') } },
-              yListings: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: (value) => Number(value).toLocaleString('he-IL') + ' מודעות' } }
+              y: { beginAtZero: true, position: 'left', ticks: { callback: (v) => '₪' + Number(v).toLocaleString('he-IL') } },
+              yListings: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: (v) => Number(v).toLocaleString('he-IL') + ' מודעות' } }
             }
           };
 
-          if (rentCanvas) {
-            let labels;
-            let datasets;
-            if (compareMode) {
-              labels = sortedQuarterLabels(seriesA.residentialRentRows, seriesB.residentialRentRows);
-              datasets = comparisonRentDatasets(seriesA, seriesB, labels, 'residentialRentRows', `שכירות מגורים (${selectedRoomGroupLabel.value})`);
-            } else {
-              const data = singleChartData(seriesA);
-              labels = data.rentLabels;
-              datasets = [{
+          if (rentCanvas) rentChart = new Chart(rentCanvas, {
+            type: 'line',
+            data: {
+              labels: rentLabels,
+              datasets: [{
                 type: 'bar',
                 label: 'היצע מודעות',
-                data: data.rentListings,
+                data: rentListings,
                 yAxisID: 'yListings',
                 backgroundColor: 'rgba(100,116,139,.18)',
                 borderColor: 'rgba(100,116,139,.45)',
@@ -2309,27 +2132,32 @@
                 maxBarThickness: 22,
                 order: 2
               }, {
-                ...lineDataset(`שכירות מגורים (${selectedRoomGroupLabel.value}) - ${seriesA.name}`, data.rentPrices, '#0f5bff', null, labels),
+                type: 'line',
+                label: `שכירות מגורים (${selectedRoomGroupLabel.value}) - ${chartEntityName.value}`,
+                data: rentPrices,
                 yAxisID: 'y',
+                borderColor: '#0f5bff',
+                backgroundColor: 'rgba(15,91,255,.08)',
+                borderWidth: 2,
+                pointRadius: 2.5,
+                pointBackgroundColor: '#0f5bff',
+                tension: .28,
+                fill: false,
+                spanGaps: true,
                 order: 1
-              }];
-            }
-            rentChart = new Chart(rentCanvas, { type: 'line', data: { labels, datasets }, options: rentChartOptions });
-          }
+              }]
+            },
+            options: rentChartOptions
+          });
 
-          if (commercialRentCanvas) {
-            let labels;
-            let datasets;
-            if (compareMode) {
-              labels = sortedQuarterLabels(seriesA.commercialRentRows, seriesB.commercialRentRows);
-              datasets = comparisonRentDatasets(seriesA, seriesB, labels, 'commercialRentRows', 'שכירות מסחרית למ״ר לחודש');
-            } else {
-              const data = singleChartData(seriesA);
-              labels = data.commercialLabels;
-              datasets = [{
+          if (commercialRentCanvas) commercialRentChart = new Chart(commercialRentCanvas, {
+            type: 'line',
+            data: {
+              labels: commercialLabels,
+              datasets: [{
                 type: 'bar',
                 label: 'היצע מודעות',
-                data: data.commercialListings,
+                data: commercialListings,
                 yAxisID: 'yListings',
                 backgroundColor: 'rgba(100,116,139,.18)',
                 borderColor: 'rgba(100,116,139,.45)',
@@ -2338,99 +2166,91 @@
                 maxBarThickness: 22,
                 order: 2
               }, {
-                ...lineDataset(`שכירות מסחרית למ״ר לחודש - ${seriesA.name}`, data.commercialPrices, '#16a34a', null, labels),
+                type: 'line',
+                label: `שכירות מסחרית למ״ר לחודש - ${chartEntityName.value}`,
+                data: commercialPrices,
                 yAxisID: 'y',
                 borderColor: '#16a34a',
-                pointBackgroundColor: '#16a34a',
-                pointBorderColor: '#16a34a',
                 backgroundColor: 'rgba(22,163,74,.08)',
+                borderWidth: 2,
+                pointRadius: 2.5,
+                pointBackgroundColor: '#16a34a',
+                tension: .28,
+                fill: false,
+                spanGaps: true,
                 order: 1
-              }];
-            }
-            commercialRentChart = new Chart(commercialRentCanvas, { type: 'line', data: { labels, datasets }, options: rentChartOptions });
-          }
+              }]
+            },
+            options: rentChartOptions
+          });
 
-          const yieldChartOptions = {
-            ...commonOptions,
+          const baseYieldChartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: animate ? undefined : false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { reverse: false, ticks: { maxTicksLimit: 9 } },
+              y: { beginAtZero: true, ticks: { callback: (v) => Number(v).toLocaleString('he-IL', { maximumFractionDigits: 1 }) + '%' } }
+            }
+          };
+          const yieldChartOptions = (listings) => ({
+            ...baseYieldChartOptions,
             plugins: {
               legend: { display: false },
               tooltip: {
                 callbacks: {
                   afterBody: (items) => {
-                    const lines = [];
-                    for (const item of items || []) {
-                      const listings = item?.dataset?.listingData;
-                      const value = Array.isArray(listings) ? listings[item.dataIndex] : null;
-                      if (Number.isFinite(normalizeNumber(value))) lines.push(`${item.dataset.label}: היצע ${formatInteger(value)} מודעות`);
-                    }
-                    return lines;
+                    const idx = items?.[0]?.dataIndex;
+                    const value = Array.isArray(listings) ? listings[idx] : null;
+                    return `היצע מודעות: ${formatInteger(value)}`;
                   }
                 }
               }
-            },
-            scales: {
-              x: { reverse: false, ticks: { maxTicksLimit: 9 } },
-              y: { beginAtZero: true, ticks: { callback: (value) => Number(value).toLocaleString('he-IL', { maximumFractionDigits: 1 }) + '%' } }
             }
-          };
+          });
 
-          if (residentialYieldCanvas) {
-            let labels;
-            let datasets;
-            if (compareMode) {
-              labels = sortedQuarterLabels(seriesA.residentialYieldRows, seriesB.residentialYieldRows);
-              const listingsA = alignQuarterValues(seriesA.residentialYieldRows, labels, 'listings_amount');
-              const listingsB = alignQuarterValues(seriesB.residentialYieldRows, labels, 'listings_amount');
-              datasets = [{
-                ...lineDataset(`תשואה גולמית למגורים (${selectedRoomGroupLabel.value}) - ${seriesA.name}`, alignQuarterValues(seriesA.residentialYieldRows, labels, 'yield'), '#0f5bff', null, labels),
-                listingData: listingsA
-              }, {
-                ...lineDataset(`תשואה גולמית למגורים (${selectedRoomGroupLabel.value}) - ${seriesB.name}`, alignQuarterValues(seriesB.residentialYieldRows, labels, 'yield'), '#f97316', null, labels),
-                listingData: listingsB
-              }];
-            } else {
-              const data = singleChartData(seriesA);
-              labels = data.residentialYieldLabels;
-              datasets = [{
-                ...lineDataset(`תשואה גולמית למגורים (${selectedRoomGroupLabel.value}) - ${seriesA.name}`, data.residentialYieldValues, '#7c3aed', null, labels),
+          if (residentialYieldCanvas) residentialYieldChart = new Chart(residentialYieldCanvas, {
+            type: 'line',
+            data: {
+              labels: residentialYieldLabels,
+              datasets: [{
+                label: `תשואה גולמית למגורים (${selectedRoomGroupLabel.value}) - ${chartEntityName.value}`,
+                data: residentialYieldValues,
                 borderColor: '#7c3aed',
-                pointBackgroundColor: '#7c3aed',
-                pointBorderColor: '#7c3aed',
                 backgroundColor: 'rgba(124,58,237,.08)',
-                listingData: data.residentialYieldListings
-              }];
-            }
-            residentialYieldChart = new Chart(residentialYieldCanvas, { type: 'line', data: { labels, datasets }, options: yieldChartOptions });
-          }
+                borderWidth: 2,
+                pointRadius: 2.5,
+                pointBackgroundColor: '#7c3aed',
+                tension: .28,
+                fill: false,
+                spanGaps: true
+              }]
+            },
+            options: yieldChartOptions(residentialYieldListings)
+          });
 
-          if (commercialYieldCanvas) {
-            let labels;
-            let datasets;
-            if (compareMode) {
-              labels = sortedQuarterLabels(seriesA.commercialYieldRows, seriesB.commercialYieldRows);
-              const listingsA = alignQuarterValues(seriesA.commercialYieldRows, labels, 'listings_amount');
-              const listingsB = alignQuarterValues(seriesB.commercialYieldRows, labels, 'listings_amount');
-              datasets = [{
-                ...lineDataset(`תשואה מסחרית משוערת - ${seriesA.name}`, alignQuarterValues(seriesA.commercialYieldRows, labels, 'yield'), '#0f5bff', null, labels),
-                listingData: listingsA
-              }, {
-                ...lineDataset(`תשואה מסחרית משוערת - ${seriesB.name}`, alignQuarterValues(seriesB.commercialYieldRows, labels, 'yield'), '#f97316', null, labels),
-                listingData: listingsB
-              }];
-            } else {
-              const data = singleChartData(seriesA);
-              labels = data.commercialYieldLabels;
-              datasets = [{
-                ...lineDataset(`תשואה מסחרית משוערת - ${seriesA.name}`, data.commercialYieldValues, '#ea580c', null, labels),
+          if (commercialYieldCanvas) commercialYieldChart = new Chart(commercialYieldCanvas, {
+            type: 'line',
+            data: {
+              labels: commercialYieldLabels,
+              datasets: [{
+                label: `תשואה מסחרית משוערת - ${chartEntityName.value}`,
+                data: commercialYieldValues,
                 borderColor: '#ea580c',
-                pointBackgroundColor: '#ea580c',
-                pointBorderColor: '#ea580c',
                 backgroundColor: 'rgba(234,88,12,.08)',
-                listingData: data.commercialYieldListings
-              }];
-            }
-            commercialYieldChart = new Chart(commercialYieldCanvas, { type: 'line', data: { labels, datasets }, options: yieldChartOptions });
-          }
+                borderWidth: 2,
+                pointRadius: 2.5,
+                pointBackgroundColor: '#ea580c',
+                tension: .28,
+                fill: false,
+                spanGaps: true
+              }]
+            },
+            options: yieldChartOptions(commercialYieldListings)
+          });
+
         }
         let yearChangeTimer = null;
         function refreshSelectedSettlementForCurrentYear() {
@@ -2481,12 +2301,27 @@
           nextTick(() => renderCharts({ animate: false }));
         }
         async function handleAverageModeChanged() { await handleYearChanged(); }
+        
+        async function setMainDataSection(section) {
+          mainDataSection.value = section === 'rent' ? 'rent' : 'sales';
+
+          if (mainDataSection.value === 'rent') {
+            if (!isRentalColorMode() && !isInvestmentColorMode()) colorMode.value = 'residentialYield';
+          } else {
+            if (isRentalColorMode()) colorMode.value = 'deals';
+          }
+
+          refreshSelectedSettlementForCurrentYear();
+          await nextTick();
+          renderCharts({ animate: false });
+          await drawOverlay();
+        }
+
         async function boot() {
           isBooting.value = true; errorMessage.value = '';
           try { await Promise.all([loadLocalFiles(), initGovMap()]); if (availableYears.value.includes(DEFAULT_TARGET_YEAR)) targetYear.value = DEFAULT_TARGET_YEAR; else if (availableYears.value.length) targetYear.value = availableYears.value[availableYears.value.length - 1]; if (availableRentalPeriods.value.length) rentalPeriodIndex.value = availableRentalPeriods.value.length - 1; selectSettlement(nationalSettlement.value, false); await drawOverlay(); statusMessage.value = `המפה מוכנה. מוצגים נתוני כל הארץ והצביעה לפי ${colorMetricLabel.value}.`; } catch (error) { console.error(error); errorMessage.value = error?.message || 'שגיאה כללית בטעינת האתר.'; } finally { isBooting.value = false; }
         }
         watch(selectedRows, () => nextTick(() => renderCharts({ animate: true })));
-        watch([compareSidA, compareSidB], () => nextTick(() => renderCharts({ animate: true })));
         watch([selectedRoomGroup, rentalDataType], async () => {
           refreshSelectedSettlementForCurrentYear();
           await nextTick();
@@ -2500,7 +2335,7 @@
         watch(targetYear, () => refreshSelectedSettlementForCurrentYear());
         watch(rentalPeriodIndex, () => refreshSelectedSettlementForCurrentYear());
         onMounted(() => { installMapSelectionBridge(); boot(); });
-        return { ESTIMATED_APARTMENT_SQM, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, rentalShowAllQuarters, availableYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, colorMode, colorMetricLabel, colorModeNote, rankingTitle, investmentScoreTypeLabel, investmentScoreSubtitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, formatInvestmentScore, rankingRowSubtitle, setColorMode, setQuarterlyDataType, formatNumber, formatInteger, formatRatio, formatCurrency, formatCommercialRent, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, handleRentalPeriodInput, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartEntityName, chartDisplayName, isComparisonMode, chartHasResidentialRentData, chartHasCommercialRentData, chartHasResidentialYieldData, chartHasCommercialYieldData, pageTitle, selectedResidentialRentLatest, selectedCommercialRentLatest, selectedResidentialYieldLatest, selectedCommercialYieldLatest, activeYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData, compareSidA, compareSidB, compareSearchA, compareSearchB, settlementOptions, compareSettlementA, compareSettlementB, comparisonRows, hasComparisonSelection, handleCompareSearchInput, commitCompareSearch, setCompareAFromSelected, cancelComparison, handleNationalButton };
+        return { ESTIMATED_APARTMENT_SQM, mainDataSection, setMainDataSection, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, rentalShowAllQuarters, availableYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, colorMode, colorMetricLabel, colorModeNote, rankingTitle, investmentScoreTypeLabel, investmentScoreSubtitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, formatInvestmentScore, rankingRowSubtitle, setColorMode, setQuarterlyDataType, formatNumber, formatInteger, formatRatio, formatCurrency, formatCommercialRent, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, handleRentalPeriodInput, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartEntityName, pageTitle, selectedResidentialRentLatest, selectedCommercialRentLatest, selectedResidentialYieldLatest, selectedCommercialYieldLatest, activeYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData, compareSidA, compareSidB, settlementOptions, compareSettlementA, compareSettlementB, comparisonRows, setCompareAFromSelected };
       }
     }).mount('#app');
   </script>
