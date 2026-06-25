@@ -492,7 +492,7 @@
                   <option v-for="item in settlementOptions" :key="'b-' + item.sid" :value="item.sid">{{ item.name }}</option>
                 </select>
               </label>
-              <button class="secondary-btn" @click="setCompareAFromSelected" :disabled="!selectedSettlement || selectedSettlement.sid === '__national__'">השתמש ביישוב הנבחר</button>
+              <button class="secondary-btn" @click="clearComparison" :disabled="!compareSidA && !compareSidB">בטל השוואה</button>
             </div>
             <div v-if="compareSettlementA && compareSettlementB" class="compare-table">
               <div class="compare-row">
@@ -1566,6 +1566,18 @@
         function setCompareAFromSelected() {
           const sid = selectedSettlement.value?.sid ? String(selectedSettlement.value.sid) : '';
           if (sid && sid !== NATIONAL_SID) compareSidA.value = sid;
+        }
+        function clearComparison() {
+          const fallback = compareSettlementA.value || selectedSettlement.value;
+          compareSidA.value = '';
+          compareSidB.value = '';
+          if (fallback?.sid && String(fallback.sid) !== NATIONAL_SID) {
+            selectedSettlement.value = { ...fallback };
+            statusMessage.value = `ההשוואה בוטלה. מוצגים כעת הנתונים של ${fallback.name}.`;
+          } else {
+            statusMessage.value = 'ההשוואה בוטלה.';
+          }
+          nextTick(() => renderCharts({ animate: false }));
         }
         function currentYieldForDisplay(item) {
           if (!item) return null;
@@ -2938,7 +2950,7 @@
           rentalPeriodSliderPreview.value = Math.min(Math.max(0, Number(rentalPeriodIndex.value) || 0), maxIndex);
         });
         onMounted(() => { installMapSelectionBridge(); boot(); });
-        return { ESTIMATED_APARTMENT_SQM, mainDataSection, setMainDataSection, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, yearSliderPreview, rentalPeriodSliderPreview, rentalSliderPreviewLabel, rentalShowAllQuarters, availableYears, availableRentalYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, rentalYearSliderMin, rentalYearSliderMax, hasTransactionDataForSelectedRentalYear, colorMode, colorMetricLabel, colorModeNote, rankingTitle, investmentScoreTypeLabel, investmentScoreSubtitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, formatInvestmentScore, rankingRowSubtitle, setColorMode, setQuarterlyDataType, setRentalColorMetric, formatNumber, formatInteger, formatRatio, formatCurrency, formatCommercialRent, formatActiveRent, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearChanged, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartComparisonActive, chartEntityName, pageTitle, activeRentValue, activeListingsValue, activeRentQoq, activeAnnualRentValue, activeAnnualListingsValue, activeQuarterCount, activeAnnualIsComplete, activeRentYoy, activeRentTitle, activeRentChartTitle, activeYieldValue, activeAnnualYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData, compareSidA, compareSidB, settlementOptions, compareSettlementA, compareSettlementB, comparisonRows, setCompareAFromSelected };
+        return { ESTIMATED_APARTMENT_SQM, mainDataSection, setMainDataSection, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, yearSliderPreview, rentalPeriodSliderPreview, rentalSliderPreviewLabel, rentalShowAllQuarters, availableYears, availableRentalYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, rentalYearSliderMin, rentalYearSliderMax, hasTransactionDataForSelectedRentalYear, colorMode, colorMetricLabel, colorModeNote, rankingTitle, investmentScoreTypeLabel, investmentScoreSubtitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, formatInvestmentScore, rankingRowSubtitle, setColorMode, setQuarterlyDataType, setRentalColorMetric, formatNumber, formatInteger, formatRatio, formatCurrency, formatCommercialRent, formatActiveRent, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearChanged, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartComparisonActive, chartEntityName, pageTitle, activeRentValue, activeListingsValue, activeRentQoq, activeAnnualRentValue, activeAnnualListingsValue, activeQuarterCount, activeAnnualIsComplete, activeRentYoy, activeRentTitle, activeRentChartTitle, activeYieldValue, activeAnnualYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData, compareSidA, compareSidB, settlementOptions, compareSettlementA, compareSettlementB, comparisonRows, setCompareAFromSelected, clearComparison };
       }
     }).mount('#app');
   </script>
