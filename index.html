@@ -84,6 +84,9 @@
     .compare-row .metric { color: #667085; font-weight: 800; background: #f8fbff; }
     .compare-row .city-name { color: #052a5a; font-weight: 900; text-align: center; background: #eef5ff; }
     .compare-row .metric-value { text-align: center; color: #052a5a; font-weight: 800; }
+    .compare-chart-panel { margin-top: 16px; }
+    .compare-chart-toolbar { margin: 8px 0 10px; }
+    .compare-chart-wrap { height: 330px; }
 
     .section-heading { text-align: center; margin: 0 auto 12px; }
     .section-heading h2 { margin: 0 0 8px; color: #052a5a; font-size: clamp(24px, 2.2vw, 33px); font-weight: 900; }
@@ -506,6 +509,15 @@
                 <div class="metric-value">{{ row.b }}</div>
               </div>
             </div>
+            <article v-if="compareSettlementA && compareSettlementB" class="chart-panel compare-chart-panel">
+              <h3>{{ compareChartTitle }}</h3>
+              <div class="rental-filter-row compare-chart-toolbar">
+                <span>מדד בגרף:</span>
+                <button v-for="option in compareChartMetricOptions" :key="option.key" :class="{ active: compareChartMetric === option.key }" @click="setCompareChartMetric(option.key)">{{ option.label }}</button>
+              </div>
+              <p class="comparison-chart-note">{{ compareChartSubtitle }}</p>
+              <div class="chart-wrap compare-chart-wrap"><canvas id="compareChart"></canvas></div>
+            </article>
             <p v-else class="note">בחר שתי ערים כדי להשוות את נתוני {{ mainDataSection === 'sales' ? 'המכירות השנתיים' : `השכירות ברבעון ${selectedRentalPeriodLabel}` }}.</p>
           </section>
 
@@ -803,6 +815,7 @@
         const colorMode = ref('deals');
         const compareSidA = ref('');
         const compareSidB = ref('');
+        const compareChartMetric = ref('price');
         const roomGroupOptions = [
           { key: 'all', label: 'כל סוגי החדרים' },
           { key: '3', label: '3 חדרים' },
@@ -817,6 +830,7 @@
         let commercialRentChart = null;
         let residentialYieldChart = null;
         let commercialYieldChart = null;
+        let compareChart = null;
 
         const rowGroups = computed(() => {
           const groups = new Map();
@@ -1609,6 +1623,85 @@
           }
           return rows;
         });
+        const compareChartMetricOptions = computed(() => {
+          if (mainDataSection.value === 'sales') {
+            return [
+              { key: 'price', label: 'מחיר למ״ר לאורך השנים' },
+              { key: 'deals', label: 'מספר עסקאות לאורך השנים' }
+            ];
+          }
+          const options = [
+            { key: 'rentPrice', label: 'מחיר שכירות לפי רבעון' },
+            { key: 'listings', label: 'היצע מודעות לפי רבעון' }
+          ];
+          if (hasTransactionDataForSelectedRentalYear.value) {
+            options.push({ key: 'annualYield', label: 'תשואה שנתית משוערת' });
+          }
+          return options;
+        });
+        const compareChartTitle = computed(() => {
+          const label = compareChartMetricOptions.value.find((option) => option.key === compareChartMetric.value)?.label;
+          return label ? `השוואה גרפית · ${label}` : 'השוואה גרפית';
+        });
+        const compareChartSubtitle = computed(() => {
+          if (mainDataSection.value === 'sales') {
+            return compareChartMetric.value === 'deals'
+              ? 'הגרף מציג את מספר העסקאות בכל שנה עבור שתי הערים.'
+              : 'הגרף מציג את מחיר העסקאות למ״ר בכל שנה עבור שתי הערים.';
+          }
+          if (compareChartMetric.value === 'listings') {
+            return 'הגרף מציג את היצע המודעות בכל רבעון עבור שתי הערים.';
+          }
+          if (compareChartMetric.value === 'annualYield') {
+            return 'הגרף מציג תשואה שנתית משוערת על בסיס השכירות השנתית ומחיר העסקאות באותה שנה.';
+          }
+          return 'הגרף מציג את מחיר השכירות בכל רבעון עבור שתי הערים.';
+        });
+        function setCompareChartMetric(metric) {
+          compareChartMetric.value = metric;
+        }
+        function salesRowsForSettlementSid(sid) {
+          const key = String(sid || '');
+          const rows = key === NATIONAL_SID ? nationalRows.value : rawRows.value.filter((row) => String(row.sid) === key);
+          return rows
+            .map((row) => ({
+              year: Number(row.year),
+              deals: normalizeNumber(row.deals),
+              ppsqm: normalizeNumber(row.ppsqm)
+            }))
+            .filter((row) => Number.isFinite(row.year))
+            .sort((a, b) => a.year - b.year);
+        }
+        function rentalRowsForSid(index, sid, roomGroup = null) {
+          const rows = filterRowsByRentalDisplay(index.get(String(sid)) || []);
+          if (isCombinedRoomGroup(roomGroup)) return aggregateResidentialRowsByPeriod(rows);
+          return rows
+            .filter((row) => rowMatchesRoomGroup(row, roomGroup))
+            .map((row) => ({
+              ...row,
+              rental_price: normalizeNumber(row.rental_price),
+              listings_amount: normalizeNumber(row.listings_amount)
+            }))
+            .filter((row) => {
+              const period = periodFromRow(row);
+              return period && Number.isFinite(row.rental_price);
+            })
+            .sort((a, b) => compareRentalPeriods(periodFromRow(a), periodFromRow(b)));
+        }
+        function compareAnnualYieldSeriesForSid(sid) {
+          const salesRows = salesRowsForSettlementSid(sid);
+          const salePriceByYear = new Map(salesRows.map((row) => [Number(row.year), normalizeNumber(row.ppsqm)]).filter((entry) => Number.isFinite(entry[1])));
+          if (rentalDataType.value === 'commercial') {
+            return annualRentalRowsFromIndex(commercialRentIndex.value, sid, null, false)
+              .map((row) => ({ year: Number(row.year), value: calcCommercialYield(row.rental_price, salePriceByYear.get(Number(row.year))) }))
+              .filter((row) => Number.isFinite(row.year) && Number.isFinite(row.value))
+              .sort((a, b) => a.year - b.year);
+          }
+          return annualRentalRowsFromIndex(residentialRentIndex.value, sid, selectedRoomGroup.value, true)
+            .map((row) => ({ year: Number(row.year), value: calcResidentialYieldFromRentRow(row, salePriceByYear.get(Number(row.year))) }))
+            .filter((row) => Number.isFinite(row.year) && Number.isFinite(row.value))
+            .sort((a, b) => a.year - b.year);
+        }
         watch(selectedSettlement, (next) => {
           const sid = next?.sid ? String(next.sid) : '';
           if (sid && sid !== NATIONAL_SID) compareSidA.value = sid;
@@ -1619,7 +1712,11 @@
           if (String(selectedSettlement.value.sid) === NATIONAL_SID) return nationalRows.value;
           return rowGroups.value.get(String(selectedSettlement.value.sid)) || [];
         });
+        const chartComparisonActive = computed(() => !!(compareSettlementA.value && compareSettlementB.value));
         const chartEntityName = computed(() => {
+          if (chartComparisonActive.value) {
+            return `${compareSettlementA.value.name} מול ${compareSettlementB.value.name}`;
+          }
           const name = selectedSettlement.value?.name;
           return name && String(name).trim() ? String(name).trim() : 'כל הארץ';
         });
@@ -1627,6 +1724,7 @@
           const sid = selectedSettlement.value?.sid ? String(selectedSettlement.value.sid) : NATIONAL_SID;
           const name = chartEntityName.value;
           const subject = mainDataSection.value === 'sales' ? 'מגמות קנייה ומכירה' : 'מגמות שכירות רבעוניות';
+          if (chartComparisonActive.value) return `${subject} – ${name}`;
           if (sid === NATIONAL_SID || name === 'כל הארץ') return `${subject} בכל הארץ`;
           return `${subject} ב${name}`;
         });
@@ -2348,6 +2446,7 @@
         async function setQuarterlyDataType(type) {
           const previousPeriod = selectedRentalPeriod.value;
           rentalDataType.value = type === 'commercial' ? 'commercial' : 'regular';
+          if (mainDataSection.value === 'rent' && !['rentPrice', 'listings', 'annualYield'].includes(compareChartMetric.value)) compareChartMetric.value = 'rentPrice';
           await nextTick();
           const periods = availableRentalPeriods.value;
           let nextIndex = previousPeriod ? periods.findIndex((period) => period.key === previousPeriod.key) : -1;
@@ -2377,28 +2476,134 @@
           await drawOverlay();
         }
         async function focusSettlement(item) { if (!item || String(item.sid) === NATIONAL_SID) return; const shape = wktFeatures.value.find((feature) => String(feature.sid) === String(item.sid) && feature.bbox); if (!shape || !window.govmap) return; const [xmin, ymin, xmax, ymax] = shape.bbox; const x = (xmin + xmax) / 2, y = (ymin + ymax) / 2; try { if (typeof window.govmap.zoomToXY === 'function') window.govmap.zoomToXY({ x, y, level: 8 }); } catch (e) { console.warn(e); } }
-        function chartData() {
-          const salesRows = [...selectedRows.value].sort((a, b) => Number(a.year) - Number(b.year));
-          const quarterlyRentRows = (rentalDataType.value === 'commercial'
-            ? selectedCommercialRentRows.value
-            : selectedResidentialRentRows.value
-          ).slice().sort((a, b) => compareRentalPeriods(periodFromRow(a), periodFromRow(b)));
-          const annualRentRows = (rentalDataType.value === 'commercial'
-            ? selectedCommercialAnnualRentRows.value
-            : selectedResidentialAnnualRentRows.value
+        function chartSettlementItemBySid(sid) {
+          const key = String(sid || NATIONAL_SID);
+          if (key === NATIONAL_SID) return nationalSettlement.value;
+          return joinedSettlements.value.find((item) => String(item.sid) === key) || null;
+        }
+        function salesRowsForSid(sid) {
+          const key = String(sid || NATIONAL_SID);
+          const rows = key === NATIONAL_SID ? nationalRows.value : (rowGroups.value.get(key) || []);
+          return [...rows].sort((a, b) => Number(a.year) - Number(b.year));
+        }
+        function quarterlyRentalRowsForSid(sid) {
+          const key = String(sid || NATIONAL_SID);
+          const index = rentalDataType.value === 'commercial' ? commercialRentIndex.value : residentialRentIndex.value;
+          const roomGroup = rentalDataType.value === 'commercial' ? null : selectedRoomGroup.value;
+          const rows = filterRowsByRentalDisplay(index.get(key) || []);
+          if (isCombinedRoomGroup(roomGroup)) {
+            return aggregateResidentialRowsByPeriod(rows).slice().sort((a, b) => compareRentalPeriods(periodFromRow(a), periodFromRow(b)));
+          }
+          return rows
+            .filter((row) => rowMatchesRoomGroup(row, roomGroup))
+            .map((row) => ({
+              ...row,
+              rental_price: normalizeNumber(row.rental_price),
+              listings_amount: normalizeNumber(row.listings_amount)
+            }))
+            .sort((a, b) => compareRentalPeriods(periodFromRow(a), periodFromRow(b)));
+        }
+        function annualRentalRowsForSid(sid) {
+          const key = String(sid || NATIONAL_SID);
+          return annualRentalRowsFromIndex(
+            rentalDataType.value === 'commercial' ? commercialRentIndex.value : residentialRentIndex.value,
+            key,
+            rentalDataType.value === 'commercial' ? null : selectedRoomGroup.value,
+            rentalDataType.value !== 'commercial'
           ).slice().sort((a, b) => Number(a.year) - Number(b.year));
-          const salePriceByYear = new Map(salesRows.map((row) => [Number(row.year), normalizeNumber(row.ppsqm)]));
+        }
+        function chartSeriesForSettlement(settlement) {
+          if (!settlement) return null;
+          const sid = String(settlement.sid || NATIONAL_SID);
+          const name = settlement.name && String(settlement.name).trim() ? String(settlement.name).trim() : 'כל הארץ';
+          const salesRows = salesRowsForSid(sid);
+          const quarterlyRentRows = quarterlyRentalRowsForSid(sid);
+          const annualRentRows = annualRentalRowsForSid(sid);
+          const salesPriceByYear = new Map(salesRows.map((row) => [String(row.year), normalizeNumber(row.ppsqm)]));
           return {
-            labels: salesRows.map((row) => String(row.year)),
-            deals: salesRows.map((row) => normalizeNumber(row.deals)),
-            prices: salesRows.map((row) => normalizeNumber(row.ppsqm)),
-            avgLine: salesRows.map(() => selectedSettlement.value?.avgAnnualDeals ?? null),
-            quarterRentLabels: quarterlyRentRows.map((row) => periodLabelFromParts(row.year, row.quarter_mapi)),
-            quarterRentPrices: quarterlyRentRows.map((row) => normalizeNumber(row.rental_price)),
-            quarterRentListings: quarterlyRentRows.map((row) => normalizeNumber(row.listings_amount)),
-            annualRentLabels: annualRentRows.map((row) => String(row.year)),
-            annualRentPrices: annualRentRows.map((row) => normalizeNumber(row.rental_price)),
-            annualTransactionPrices: annualRentRows.map((row) => salePriceByYear.get(Number(row.year)) ?? null)
+            sid,
+            name,
+            salesYears: salesRows.map((row) => String(row.year)),
+            salesPrices: new Map(salesRows.map((row) => [String(row.year), normalizeNumber(row.ppsqm)])),
+            salesDeals: new Map(salesRows.map((row) => [String(row.year), normalizeNumber(row.deals)])),
+            avgAnnualDeals: normalizeNumber(chartSettlementItemBySid(sid)?.avgAnnualDeals),
+            quarterKeys: quarterlyRentRows.map((row) => `${Number(row.year)}-Q${Number(row.quarter_mapi)}`),
+            quarterLabels: new Map(quarterlyRentRows.map((row) => [`${Number(row.year)}-Q${Number(row.quarter_mapi)}`, periodLabelFromParts(row.year, row.quarter_mapi)])),
+            quarterPrices: new Map(quarterlyRentRows.map((row) => [`${Number(row.year)}-Q${Number(row.quarter_mapi)}`, normalizeNumber(row.rental_price)])),
+            quarterListings: new Map(quarterlyRentRows.map((row) => [`${Number(row.year)}-Q${Number(row.quarter_mapi)}`, normalizeNumber(row.listings_amount)])),
+            annualYears: annualRentRows.map((row) => String(row.year)),
+            annualRentPrices: new Map(annualRentRows.map((row) => [String(row.year), normalizeNumber(row.rental_price)])),
+            annualTransactionPrices: new Map(annualRentRows.map((row) => [String(row.year), salesPriceByYear.get(String(row.year)) ?? null]))
+          };
+        }
+        function uniqueSortedYears(primaryYears = [], secondaryYears = []) {
+          return [...new Set([...(primaryYears || []), ...(secondaryYears || [])])]
+            .filter((year) => year !== undefined && year !== null && `${year}` !== '')
+            .map((year) => String(year))
+            .sort((a, b) => Number(a) - Number(b));
+        }
+        function uniqueSortedQuarterKeys(primaryKeys = [], secondaryKeys = []) {
+          return [...new Set([...(primaryKeys || []), ...(secondaryKeys || [])])]
+            .sort((a, b) => {
+              const [yearA, quarterA] = String(a).split('-Q').map(Number);
+              const [yearB, quarterB] = String(b).split('-Q').map(Number);
+              return (yearA - yearB) || (quarterA - quarterB);
+            });
+        }
+        function valuesForLabels(labels, valueMap) {
+          return labels.map((label) => valueMap?.get(label) ?? null);
+        }
+        function chartData() {
+          const primarySettlement = chartComparisonActive.value ? compareSettlementA.value : selectedSettlement.value;
+          const secondarySettlement = chartComparisonActive.value ? compareSettlementB.value : null;
+          const primary = chartSeriesForSettlement(primarySettlement);
+          const secondary = secondarySettlement ? chartSeriesForSettlement(secondarySettlement) : null;
+          const salesLabels = uniqueSortedYears(primary?.salesYears, secondary?.salesYears);
+          const quarterKeys = uniqueSortedQuarterKeys(primary?.quarterKeys, secondary?.quarterKeys);
+          const annualLabels = uniqueSortedYears(primary?.annualYears, secondary?.annualYears);
+          return {
+            compareMode: !!secondary,
+            sales: {
+              labels: salesLabels,
+              primary: primary ? {
+                name: primary.name,
+                prices: valuesForLabels(salesLabels, primary.salesPrices),
+                deals: valuesForLabels(salesLabels, primary.salesDeals),
+                avgLine: salesLabels.map(() => primary.avgAnnualDeals ?? null)
+              } : null,
+              secondary: secondary ? {
+                name: secondary.name,
+                prices: valuesForLabels(salesLabels, secondary.salesPrices),
+                deals: valuesForLabels(salesLabels, secondary.salesDeals),
+                avgLine: salesLabels.map(() => secondary.avgAnnualDeals ?? null)
+              } : null
+            },
+            rent: {
+              labels: quarterKeys.map((key) => primary?.quarterLabels.get(key) || secondary?.quarterLabels.get(key) || key),
+              primary: primary ? {
+                name: primary.name,
+                prices: valuesForLabels(quarterKeys, primary.quarterPrices),
+                listings: valuesForLabels(quarterKeys, primary.quarterListings)
+              } : null,
+              secondary: secondary ? {
+                name: secondary.name,
+                prices: valuesForLabels(quarterKeys, secondary.quarterPrices),
+                listings: valuesForLabels(quarterKeys, secondary.quarterListings)
+              } : null
+            },
+            annual: {
+              labels: annualLabels,
+              primary: primary ? {
+                name: primary.name,
+                rentPrices: valuesForLabels(annualLabels, primary.annualRentPrices),
+                transactionPrices: valuesForLabels(annualLabels, primary.annualTransactionPrices)
+              } : null,
+              secondary: secondary ? {
+                name: secondary.name,
+                rentPrices: valuesForLabels(annualLabels, secondary.annualRentPrices),
+                transactionPrices: valuesForLabels(annualLabels, secondary.annualTransactionPrices)
+              } : null
+            }
           };
         }
         function destroyCharts() {
@@ -2420,115 +2625,208 @@
           if (!priceCanvas && !salesCanvas && !rentCanvas && !annualMarketCanvas) return;
           destroyCharts();
 
-          const {
-            labels, deals, prices, avgLine,
-            quarterRentLabels, quarterRentPrices, quarterRentListings,
-            annualRentLabels, annualRentPrices, annualTransactionPrices
-          } = chartData();
-          const selectedIndex = labels.findIndex((year) => year === String(targetYear.value));
-          const selectedYearColors = labels.map((year) => year === String(targetYear.value) ? 'rgba(15,91,255,.88)' : 'rgba(15,91,255,.24)');
-          const selectedYearBorders = labels.map((year) => year === String(targetYear.value) ? 'rgba(15,91,255,1)' : 'rgba(15,91,255,.65)');
+          const chartBundle = chartData();
+          const sales = chartBundle.sales;
+          const rent = chartBundle.rent;
+          const annual = chartBundle.annual;
+          const compareMode = chartBundle.compareMode;
 
-          if (priceCanvas) priceChart = new Chart(priceCanvas, {
-            type: 'line',
-            data: {
-              labels,
-              datasets: [{
-                label: `מחיר למ״ר - ${chartEntityName.value}`,
-                data: prices,
-                borderColor: '#111111',
-                backgroundColor: 'rgba(17,17,17,.05)',
-                borderWidth: 2,
-                pointRadius: labels.map((_, i) => i === selectedIndex ? 5 : 2.5),
-                pointBackgroundColor: labels.map((_, i) => i === selectedIndex ? '#0f5bff' : '#111111'),
-                pointBorderColor: labels.map((_, i) => i === selectedIndex ? '#0f5bff' : '#111111'),
+          const primaryLineColor = '#0f5bff';
+          const secondaryLineColor = '#16a34a';
+          const primaryBarColor = 'rgba(15,91,255,.68)';
+          const primaryBarBorder = 'rgba(15,91,255,1)';
+          const secondaryBarColor = 'rgba(22,163,74,.48)';
+          const secondaryBarBorder = 'rgba(22,163,74,1)';
+          const primaryMutedBar = 'rgba(124,58,237,.40)';
+          const primaryMutedBarBorder = 'rgba(124,58,237,.95)';
+          const secondaryMutedBar = 'rgba(34,197,94,.28)';
+          const secondaryMutedBarBorder = 'rgba(22,163,74,.9)';
+
+          if (priceCanvas && sales?.primary) {
+            const selectedIndex = sales.labels.findIndex((year) => year === String(targetYear.value));
+            const datasets = [{
+              label: `מחיר למ״ר - ${sales.primary.name}`,
+              data: sales.primary.prices,
+              borderColor: primaryLineColor,
+              backgroundColor: 'rgba(15,91,255,.08)',
+              borderWidth: 2.5,
+              pointRadius: sales.labels.map((_, i) => i === selectedIndex ? 5 : 3),
+              pointBackgroundColor: primaryLineColor,
+              pointBorderColor: primaryLineColor,
+              tension: .28,
+              fill: false,
+              spanGaps: true
+            }];
+            if (sales.secondary) {
+              datasets.push({
+                label: `מחיר למ״ר - ${sales.secondary.name}`,
+                data: sales.secondary.prices,
+                borderColor: secondaryLineColor,
+                backgroundColor: 'rgba(22,163,74,.08)',
+                borderWidth: 2.5,
+                pointRadius: sales.labels.map((_, i) => i === selectedIndex ? 5 : 3),
+                pointBackgroundColor: secondaryLineColor,
+                pointBorderColor: secondaryLineColor,
                 tension: .28,
                 fill: false,
                 spanGaps: true
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              animation: animate ? undefined : false,
-              interaction: { mode: 'index', intersect: false },
-              plugins: { legend: { display: false } },
-              scales: {
-                x: { reverse: false, ticks: { maxTicksLimit: 9 } },
-                y: { ticks: { callback: (v) => '₪' + Number(v).toLocaleString('he-IL') } }
-              }
+              });
             }
-          });
+            priceChart = new Chart(priceCanvas, {
+              type: 'line',
+              data: { labels: sales.labels, datasets },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: animate ? undefined : false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: { legend: { display: compareMode, position: 'bottom', rtl: true } },
+                scales: {
+                  x: { reverse: false, ticks: { maxTicksLimit: 9 } },
+                  y: { ticks: { callback: (v) => '₪' + Number(v).toLocaleString('he-IL') } }
+                }
+              }
+            });
+          }
 
-          if (salesCanvas) salesChart = new Chart(salesCanvas, {
-            type: 'bar',
-            data: {
-              labels,
-              datasets: [{
-                label: `מספר עסקאות - ${chartEntityName.value}`,
-                data: deals,
-                backgroundColor: selectedYearColors,
-                borderColor: selectedYearBorders,
+          if (salesCanvas && sales?.primary) {
+            const selectedIndex = sales.labels.findIndex((year) => year === String(targetYear.value));
+            const primaryColors = sales.labels.map((_, i) => i === selectedIndex ? primaryBarColor : 'rgba(15,91,255,.24)');
+            const primaryBorders = sales.labels.map((_, i) => i === selectedIndex ? primaryBarBorder : 'rgba(15,91,255,.65)');
+            const datasets = [{
+              type: 'bar',
+              label: `מספר עסקאות - ${sales.primary.name}`,
+              data: sales.primary.deals,
+              backgroundColor: primaryColors,
+              borderColor: primaryBorders,
+              borderWidth: 1.2,
+              borderRadius: 5,
+              maxBarThickness: 28
+            }];
+            if (sales.secondary) {
+              const secondaryColors = sales.labels.map((_, i) => i === selectedIndex ? secondaryBarColor : 'rgba(22,163,74,.18)');
+              const secondaryBorders = sales.labels.map((_, i) => i === selectedIndex ? secondaryBarBorder : 'rgba(22,163,74,.55)');
+              datasets.push({
+                type: 'bar',
+                label: `מספר עסקאות - ${sales.secondary.name}`,
+                data: sales.secondary.deals,
+                backgroundColor: secondaryColors,
+                borderColor: secondaryBorders,
                 borderWidth: 1.2,
                 borderRadius: 5,
                 maxBarThickness: 28
-              }, {
+              });
+              datasets.push({
                 type: 'line',
-                label: `ממוצע השוואה - ${chartEntityName.value}`,
-                data: avgLine,
+                label: `ממוצע עסקאות - ${sales.primary.name}`,
+                data: sales.primary.avgLine,
+                borderColor: primaryLineColor,
+                backgroundColor: 'rgba(15,91,255,.08)',
+                pointRadius: 0,
+                borderWidth: 1.6,
+                borderDash: [5, 4],
+                spanGaps: true
+              });
+              datasets.push({
+                type: 'line',
+                label: `ממוצע עסקאות - ${sales.secondary.name}`,
+                data: sales.secondary.avgLine,
+                borderColor: secondaryLineColor,
+                backgroundColor: 'rgba(22,163,74,.08)',
+                pointRadius: 0,
+                borderWidth: 1.6,
+                borderDash: [5, 4],
+                spanGaps: true
+              });
+            } else {
+              datasets.push({
+                type: 'line',
+                label: `ממוצע השוואה - ${sales.primary.name}`,
+                data: sales.primary.avgLine,
                 borderColor: 'rgba(0,0,0,.72)',
                 backgroundColor: 'rgba(0,0,0,.08)',
                 pointRadius: 0,
                 borderWidth: 1.6,
-                borderDash: [5, 4]
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              animation: animate ? undefined : false,
-              interaction: { mode: 'index', intersect: false },
-              plugins: { legend: { display: false } },
-              scales: {
-                x: { reverse: false, ticks: { maxTicksLimit: 9 } },
-                y: { beginAtZero: true, ticks: { callback: (v) => Number(v).toLocaleString('he-IL') } }
-              }
+                borderDash: [5, 4],
+                spanGaps: true
+              });
             }
-          });
+            salesChart = new Chart(salesCanvas, {
+              type: 'bar',
+              data: { labels: sales.labels, datasets },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: animate ? undefined : false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: { legend: { display: compareMode, position: 'bottom', rtl: true } },
+                scales: {
+                  x: { reverse: false, ticks: { maxTicksLimit: 9 } },
+                  y: { beginAtZero: true, ticks: { callback: (v) => Number(v).toLocaleString('he-IL') } }
+                }
+              }
+            });
+          }
 
-          if (rentCanvas) {
-            const selectedQuarterIndex = quarterRentLabels.findIndex((label) => label === selectedRentalPeriodLabel.value);
+          if (rentCanvas && rent?.primary) {
+            const selectedQuarterIndex = rent.labels.findIndex((label) => label === selectedRentalPeriodLabel.value);
+            const datasets = [{
+              type: 'line',
+              label: `${activeRentTitle.value} - ${rent.primary.name}`,
+              data: rent.primary.prices,
+              yAxisID: 'yRent',
+              borderColor: primaryLineColor,
+              backgroundColor: 'rgba(15,91,255,.08)',
+              borderWidth: 2.5,
+              pointRadius: rent.labels.map((_, i) => i === selectedQuarterIndex ? 5 : 3),
+              pointBackgroundColor: primaryLineColor,
+              tension: .25,
+              fill: false,
+              spanGaps: true,
+              order: 1
+            }, {
+              type: 'bar',
+              label: `היצע מודעות - ${rent.primary.name}`,
+              data: rent.primary.listings,
+              yAxisID: 'yListings',
+              backgroundColor: rent.labels.map((_, i) => i === selectedQuarterIndex ? primaryMutedBar : 'rgba(100,116,139,.18)'),
+              borderColor: rent.labels.map((_, i) => i === selectedQuarterIndex ? primaryMutedBarBorder : 'rgba(100,116,139,.45)'),
+              borderWidth: 1,
+              borderRadius: 4,
+              maxBarThickness: compareMode ? 20 : 28,
+              order: 2
+            }];
+            if (rent.secondary) {
+              datasets.push({
+                type: 'line',
+                label: `${activeRentTitle.value} - ${rent.secondary.name}`,
+                data: rent.secondary.prices,
+                yAxisID: 'yRent',
+                borderColor: secondaryLineColor,
+                backgroundColor: 'rgba(22,163,74,.08)',
+                borderWidth: 2.5,
+                pointRadius: rent.labels.map((_, i) => i === selectedQuarterIndex ? 5 : 3),
+                pointBackgroundColor: secondaryLineColor,
+                tension: .25,
+                fill: false,
+                spanGaps: true,
+                order: 1
+              }, {
+                type: 'bar',
+                label: `היצע מודעות - ${rent.secondary.name}`,
+                data: rent.secondary.listings,
+                yAxisID: 'yListings',
+                backgroundColor: rent.labels.map((_, i) => i === selectedQuarterIndex ? secondaryMutedBar : 'rgba(34,197,94,.14)'),
+                borderColor: rent.labels.map((_, i) => i === selectedQuarterIndex ? secondaryMutedBarBorder : 'rgba(22,163,74,.45)'),
+                borderWidth: 1,
+                borderRadius: 4,
+                maxBarThickness: 20,
+                order: 2
+              });
+            }
             rentChart = new Chart(rentCanvas, {
               type: 'line',
-              data: {
-                labels: quarterRentLabels,
-                datasets: [{
-                  type: 'line',
-                  label: activeRentTitle.value,
-                  data: quarterRentPrices,
-                  yAxisID: 'yRent',
-                  borderColor: '#0f5bff',
-                  backgroundColor: 'rgba(15,91,255,.08)',
-                  borderWidth: 2.5,
-                  pointRadius: quarterRentLabels.map((_, i) => i === selectedQuarterIndex ? 5 : 3),
-                  pointBackgroundColor: '#0f5bff',
-                  tension: .25,
-                  fill: false,
-                  spanGaps: true,
-                  order: 1
-                }, {
-                  type: 'bar',
-                  label: 'היצע מודעות ברבעון',
-                  data: quarterRentListings,
-                  yAxisID: 'yListings',
-                  backgroundColor: quarterRentLabels.map((_, i) => i === selectedQuarterIndex ? 'rgba(124,58,237,.50)' : 'rgba(100,116,139,.18)'),
-                  borderColor: quarterRentLabels.map((_, i) => i === selectedQuarterIndex ? 'rgba(124,58,237,1)' : 'rgba(100,116,139,.45)'),
-                  borderWidth: 1,
-                  borderRadius: 4,
-                  maxBarThickness: 28,
-                  order: 2
-                }]
-              },
+              data: { labels: rent.labels, datasets },
               options: {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -2553,37 +2851,61 @@
             });
           }
 
-          if (annualMarketCanvas) {
-            const selectedAnnualIndex = annualRentLabels.findIndex((year) => year === String(targetYear.value));
+          if (annualMarketCanvas && annual?.primary) {
+            const selectedAnnualIndex = annual.labels.findIndex((year) => year === String(targetYear.value));
+            const datasets = [{
+              label: `שכירות חודשית מייצגת - ${annual.primary.name}`,
+              data: annual.primary.rentPrices,
+              yAxisID: 'yRent',
+              borderColor: primaryLineColor,
+              backgroundColor: 'rgba(15,91,255,.08)',
+              borderWidth: 2.5,
+              pointRadius: annual.labels.map((_, i) => i === selectedAnnualIndex ? 5 : 3),
+              pointBackgroundColor: primaryLineColor,
+              tension: .25,
+              spanGaps: true
+            }, {
+              label: `מחיר עסקאות למ״ר - ${annual.primary.name}`,
+              data: annual.primary.transactionPrices,
+              yAxisID: 'yPrice',
+              borderColor: 'rgba(17,17,17,.88)',
+              backgroundColor: 'rgba(17,17,17,.04)',
+              borderWidth: 2,
+              borderDash: [6, 4],
+              pointRadius: annual.labels.map((_, i) => i === selectedAnnualIndex ? 5 : 3),
+              pointBackgroundColor: 'rgba(17,17,17,.88)',
+              tension: .25,
+              spanGaps: true
+            }];
+            if (annual.secondary) {
+              datasets.push({
+                label: `שכירות חודשית מייצגת - ${annual.secondary.name}`,
+                data: annual.secondary.rentPrices,
+                yAxisID: 'yRent',
+                borderColor: secondaryLineColor,
+                backgroundColor: 'rgba(22,163,74,.08)',
+                borderWidth: 2.5,
+                pointRadius: annual.labels.map((_, i) => i === selectedAnnualIndex ? 5 : 3),
+                pointBackgroundColor: secondaryLineColor,
+                tension: .25,
+                spanGaps: true
+              }, {
+                label: `מחיר עסקאות למ״ר - ${annual.secondary.name}`,
+                data: annual.secondary.transactionPrices,
+                yAxisID: 'yPrice',
+                borderColor: 'rgba(34,197,94,.88)',
+                backgroundColor: 'rgba(34,197,94,.04)',
+                borderWidth: 2,
+                borderDash: [6, 4],
+                pointRadius: annual.labels.map((_, i) => i === selectedAnnualIndex ? 5 : 3),
+                pointBackgroundColor: 'rgba(34,197,94,.88)',
+                tension: .25,
+                spanGaps: true
+              });
+            }
             residentialYieldChart = new Chart(annualMarketCanvas, {
               type: 'line',
-              data: {
-                labels: annualRentLabels,
-                datasets: [{
-                  label: 'שכירות חודשית מייצגת בשנה',
-                  data: annualRentPrices,
-                  yAxisID: 'yRent',
-                  borderColor: '#0f5bff',
-                  backgroundColor: 'rgba(15,91,255,.08)',
-                  borderWidth: 2.5,
-                  pointRadius: annualRentLabels.map((_, i) => i === selectedAnnualIndex ? 5 : 3),
-                  pointBackgroundColor: '#0f5bff',
-                  tension: .25,
-                  spanGaps: true
-                }, {
-                  label: 'מחיר עסקאות למ״ר',
-                  data: annualTransactionPrices,
-                  yAxisID: 'yPrice',
-                  borderColor: '#111111',
-                  backgroundColor: 'rgba(17,17,17,.04)',
-                  borderWidth: 2,
-                  borderDash: [6, 4],
-                  pointRadius: annualRentLabels.map((_, i) => i === selectedAnnualIndex ? 5 : 3),
-                  pointBackgroundColor: '#111111',
-                  tension: .25,
-                  spanGaps: true
-                }]
-              },
+              data: { labels: annual.labels, datasets },
               options: {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -2663,6 +2985,7 @@
         
         async function setMainDataSection(section) {
           mainDataSection.value = section === 'rent' ? 'rent' : 'sales';
+          compareChartMetric.value = mainDataSection.value === 'rent' ? 'rentPrice' : 'price';
 
           if (mainDataSection.value === 'rent') {
             if (selectedRentalPeriod.value) targetYear.value = Number(selectedRentalPeriod.value.year);
@@ -2685,6 +3008,12 @@
           try { await Promise.all([loadLocalFiles(), initGovMap()]); if (availableYears.value.includes(DEFAULT_TARGET_YEAR)) targetYear.value = DEFAULT_TARGET_YEAR; else if (availableYears.value.length) targetYear.value = availableYears.value[availableYears.value.length - 1]; if (availableRentalPeriods.value.length) rentalPeriodIndex.value = availableRentalPeriods.value.length - 1; selectSettlement(nationalSettlement.value, false); await drawOverlay(); statusMessage.value = `המפה מוכנה. מוצגים נתוני כל הארץ והצביעה לפי ${colorMetricLabel.value}.`; } catch (error) { console.error(error); errorMessage.value = error?.message || 'שגיאה כללית בטעינת האתר.'; } finally { isBooting.value = false; }
         }
         watch(selectedRows, () => nextTick(() => renderCharts({ animate: true })));
+        watch([compareSidA, compareSidB], () => nextTick(() => renderCharts({ animate: false })));
+        watch([compareSidA, compareSidB, compareChartMetric], () => nextTick(() => renderCharts({ animate: false })));
+        watch(compareChartMetricOptions, (options) => {
+          const keys = options.map((option) => option.key);
+          if (keys.length && !keys.includes(compareChartMetric.value)) compareChartMetric.value = keys[0];
+        }, { immediate: true });
         watch([selectedRoomGroup, rentalDataType], async () => {
           const periods = availableRentalPeriods.value;
           if (rentalPeriodIndex.value > periods.length - 1) rentalPeriodIndex.value = Math.max(0, periods.length - 1);
@@ -2701,7 +3030,7 @@
         watch(targetYear, () => refreshSelectedSettlementForCurrentYear());
         watch(rentalPeriodIndex, () => refreshSelectedSettlementForCurrentYear());
         onMounted(() => { installMapSelectionBridge(); boot(); });
-        return { ESTIMATED_APARTMENT_SQM, mainDataSection, setMainDataSection, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, rentalShowAllQuarters, availableYears, availableRentalYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, rentalYearSliderMin, rentalYearSliderMax, hasTransactionDataForSelectedRentalYear, colorMode, colorMetricLabel, colorModeNote, rankingTitle, investmentScoreTypeLabel, investmentScoreSubtitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, formatInvestmentScore, rankingRowSubtitle, setColorMode, setQuarterlyDataType, setRentalColorMetric, formatNumber, formatInteger, formatRatio, formatCurrency, formatCommercialRent, formatActiveRent, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, handleRentalPeriodInput, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartEntityName, pageTitle, activeRentValue, activeListingsValue, activeRentQoq, activeAnnualRentValue, activeAnnualListingsValue, activeQuarterCount, activeAnnualIsComplete, activeRentYoy, activeRentTitle, activeRentChartTitle, activeYieldValue, activeAnnualYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData, compareSidA, compareSidB, settlementOptions, compareSettlementA, compareSettlementB, comparisonRows, setCompareAFromSelected };
+        return { ESTIMATED_APARTMENT_SQM, mainDataSection, setMainDataSection, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, rentalShowAllQuarters, availableYears, availableRentalYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, rentalYearSliderMin, rentalYearSliderMax, hasTransactionDataForSelectedRentalYear, colorMode, colorMetricLabel, colorModeNote, rankingTitle, investmentScoreTypeLabel, investmentScoreSubtitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, formatInvestmentScore, rankingRowSubtitle, setColorMode, setQuarterlyDataType, setRentalColorMetric, formatNumber, formatInteger, formatRatio, formatCurrency, formatCommercialRent, formatActiveRent, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearSliderInput, handleYearChanged, handleRentalPeriodInput, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartComparisonActive, chartEntityName, pageTitle, activeRentValue, activeListingsValue, activeRentQoq, activeAnnualRentValue, activeAnnualListingsValue, activeQuarterCount, activeAnnualIsComplete, activeRentYoy, activeRentTitle, activeRentChartTitle, activeYieldValue, activeAnnualYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData, compareSidA, compareSidB, compareChartMetric, compareChartMetricOptions, compareChartTitle, compareChartSubtitle, settlementOptions, compareSettlementA, compareSettlementB, comparisonRows, setCompareAFromSelected, setCompareChartMetric };
       }
     }).mount('#app');
   </script>
