@@ -73,6 +73,27 @@
     .sales-kpi .stat-label strong { color: #052a5a; font-size: 16px; }
     .stat-label { color: #718098; font-weight: 700; }
     .stat-icon { flex: 0 0 auto; width: 70px; height: 70px; border-radius: 14px; background: #f3f5f9; display: grid; place-items: center; font-size: 28px; }
+    .score-card { position: relative; }
+    .score-help-btn { margin-top: 10px; border: 1px solid #b9d2ff; border-radius: 999px; padding: 6px 11px; background: #eef5ff; color: #0f5bff; font-size: 13px; font-weight: 900; }
+    .score-help-btn:hover { background: #dfeaff; }
+    .investment-explanation { max-width: min(100%, 980px); margin: -22px auto 34px; border: 1px solid #cfe0ff; border-radius: 16px; background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%); padding: 20px; box-shadow: 0 10px 26px rgba(15,91,255,.07); }
+    .investment-explanation-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+    .investment-explanation-head h2 { margin: 0 0 5px; color: #052a5a; font-size: 23px; font-weight: 900; }
+    .investment-explanation-head p { margin: 0; color: #667085; font-weight: 700; line-height: 1.5; }
+    .explanation-close { flex: 0 0 auto; width: 36px; height: 36px; border: 1px solid #d7e3f4; border-radius: 10px; background: #fff; color: #52627a; font-size: 20px; line-height: 1; }
+    .score-formula { margin: 0 0 18px; border: 1px solid #dbe7f8; border-radius: 13px; background: #eef5ff; padding: 13px 15px; text-align: center; color: #052a5a; font-weight: 900; line-height: 1.7; }
+    .score-components { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+    .score-component { border: 1px solid #e1e8f1; border-radius: 13px; background: #fff; padding: 14px; min-width: 0; }
+    .score-component h3 { margin: 0 0 5px; color: #052a5a; font-size: 16px; font-weight: 900; }
+    .score-weight { display: inline-flex; margin-bottom: 8px; border-radius: 999px; padding: 3px 8px; background: #e8f0ff; color: #0f5bff; font-size: 12px; font-weight: 900; }
+    .score-component p { margin: 5px 0; color: #5f6f86; font-size: 13px; font-weight: 700; line-height: 1.45; }
+    .score-component code { display: block; direction: ltr; text-align: left; overflow-wrap: anywhere; margin-top: 8px; border-radius: 8px; padding: 7px 8px; background: #f5f7fa; color: #253754; font-family: Consolas, monospace; font-size: 11px; }
+    .current-score-breakdown { margin-top: 18px; border-top: 1px solid #e3eaf3; padding-top: 17px; }
+    .current-score-breakdown h3 { margin: 0 0 12px; color: #052a5a; font-size: 18px; }
+    .score-breakdown-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+    .score-breakdown-item { border-radius: 11px; background: #f7f9fc; padding: 10px; text-align: center; color: #627086; font-size: 12px; font-weight: 800; }
+    .score-breakdown-item b { display: block; margin-top: 4px; color: #052a5a; font-size: 17px; }
+    .score-note { margin: 16px 0 0; border-inline-start: 4px solid #f59e0b; border-radius: 8px; background: #fffbeb; padding: 10px 12px; color: #75530a; font-size: 13px; font-weight: 700; line-height: 1.5; }
 
     .compare-panel { max-width: min(100%, 980px); margin: 0 auto 34px; border: 1px solid #dfe6ef; border-radius: 16px; background: #f8fbff; padding: 18px; box-shadow: 0 8px 22px rgba(6,34,74,.05); }
     .compare-panel h3 { margin: 0 0 14px; color: #052a5a; text-align: center; font-size: 21px; font-weight: 900; }
@@ -324,6 +345,9 @@
       }
       .map-pane { height: 38vh; height: 38dvh; }
       .report-pane { height: 62vh; height: 62dvh; }
+      .score-components, .score-breakdown-grid { grid-template-columns: 1fr; }
+      .investment-explanation { margin-top: -18px; padding: 16px; }
+      .investment-explanation-head { align-items: flex-start; }
       .top-controls, .compare-controls { grid-template-columns: 1fr; }
       .compare-row { grid-template-columns: 1fr; }
       .compare-row .metric, .compare-row .city-name, .compare-row .metric-value { text-align: right; }
@@ -480,13 +504,78 @@
               <div class="stat-text"><p class="stat-value">{{ formatPercent(selectedSettlement?.demandYoySelected) }}</p><div class="stat-label"><strong>שינוי שנתי במחיר</strong><br>לעומת השנה הקודמת</div></div>
               <div class="stat-icon">📊</div>
             </article>
-            <article class="stat-card">
-              <div class="stat-text"><p class="stat-value">{{ formatInvestmentScore(selectedSettlement?.investmentScore) }}</p><div class="stat-label"><strong>ציון השקעה</strong><br>{{ investmentScoreSubtitle }}</div></div>
+            <article class="stat-card score-card">
+              <div class="stat-text">
+                <p class="stat-value">{{ formatInvestmentScore(selectedSettlement?.investmentScore) }}</p>
+                <div class="stat-label"><strong>ציון השקעה</strong><br>{{ investmentScoreSubtitle }}</div>
+                <button class="score-help-btn" type="button" @click="showInvestmentExplanation = !showInvestmentExplanation" :aria-expanded="showInvestmentExplanation">איך הציון מחושב?</button>
+              </div>
               <div class="stat-icon">★</div>
             </article>
           </section>
 
-          <section v-else class="stat-cards">
+          <section v-if="mainDataSection === 'sales' && showInvestmentExplanation" class="investment-explanation">
+            <div class="investment-explanation-head">
+              <div>
+                <h2>איך ציון ההשקעה מחושב?</h2>
+                <p>הציון נע בין 0 ל־100 ומשלב חמישה מדדים. כל מדד מומר לציון 0–100 ולאחר מכן מוכפל במשקל שלו.</p>
+              </div>
+              <button class="explanation-close" type="button" @click="showInvestmentExplanation = false" aria-label="סגור הסבר">×</button>
+            </div>
+
+            <div class="score-formula">
+              ציון השקעה = 30% תשואה + 15% היצע שכירות + 15% מחיר למ״ר + 20% שינוי שנתי במחיר + 20% פעילות עסקאות
+            </div>
+
+            <div class="score-components">
+              <article class="score-component">
+                <h3>תשואה משוערת</h3>
+                <span class="score-weight">משקל 30%</span>
+                <p>תשואה גבוהה יותר מקבלת ציון גבוה יותר. תשואה של 6% ומעלה מקבלת 100.</p>
+                <code>תשואה ÷ 6 × 100</code>
+              </article>
+              <article class="score-component">
+                <h3>היצע שכירות</h3>
+                <span class="score-weight">משקל 15%</span>
+                <p>מספר המודעות ביישוב ביחס לממוצע שאר היישובים. יחס של 1.6 ומעלה מקבל 100.</p>
+                <code>יחס היצע ÷ 1.6 × 100</code>
+              </article>
+              <article class="score-component">
+                <h3>מחיר למ״ר</h3>
+                <span class="score-weight">משקל 15%</span>
+                <p>מחיר נמוך יותר ביחס לשאר היישובים מקבל ציון גבוה יותר. מחיר השווה לממוצע מקבל 50.</p>
+                <code>(1.45 − יחס מחיר) ÷ 0.9 × 100</code>
+              </article>
+              <article class="score-component">
+                <h3>שינוי שנתי במחיר</h3>
+                <span class="score-weight">משקל 20%</span>
+                <p>עלייה שנתית גבוהה יותר מקבלת ציון גבוה יותר. ירידה של 5% מקבלת 0 ועלייה של 15% מקבלת 100.</p>
+                <code>(שינוי שנתי + 5) ÷ 20 × 100</code>
+              </article>
+              <article class="score-component">
+                <h3>פעילות עסקאות</h3>
+                <span class="score-weight">משקל 20%</span>
+                <p>מספר העסקאות בשנה לעומת הממוצע ההיסטורי של היישוב. פעילות כפולה מהממוצע מקבלת 100.</p>
+                <code>יחס עסקאות ÷ 2 × 100</code>
+              </article>
+            </div>
+
+            <div v-if="selectedSettlement?.investmentScoreParts" class="current-score-breakdown">
+              <h3>פירוט הציון של {{ selectedSettlement.name }}</h3>
+              <div class="score-breakdown-grid">
+                <div class="score-breakdown-item">ציון תשואה<b>{{ formatInvestmentScore(selectedSettlement.investmentScoreParts.yieldScore) }}</b></div>
+                <div class="score-breakdown-item">ציון היצע<b>{{ formatInvestmentScore(selectedSettlement.investmentScoreParts.supplyScore) }}</b></div>
+                <div class="score-breakdown-item">ציון מחיר<b>{{ formatInvestmentScore(selectedSettlement.investmentScoreParts.priceScore) }}</b></div>
+                <div class="score-breakdown-item">ציון שינוי שנתי<b>{{ formatInvestmentScore(selectedSettlement.investmentScoreParts.momentumScore) }}</b></div>
+                <div class="score-breakdown-item">ציון עסקאות<b>{{ formatInvestmentScore(selectedSettlement.investmentScoreParts.dealsScore) }}</b></div>
+              </div>
+            </div>
+            <p v-else class="score-note">כדי לחשב ציון דרושים כל חמשת הנתונים. אם אחד מהם חסר, הציון מסומן כ״לא ידוע״.</p>
+
+            <p class="score-note">הציון הוא כלי השוואתי ולא תחזית לרווח. היצע מודעות גבוה עשוי להעיד על שוק פעיל, אך גם על עודף היצע, ולכן כדאי לבחון גם את הנתונים הנוספים.</p>
+          </section>
+
+          <section v-if="mainDataSection !== 'sales'" class="stat-cards">
             <article class="stat-card sales-kpi">
               <div class="stat-text"><p class="stat-value">{{ formatActiveRent(activeRentValue) }}</p><div class="stat-label"><strong>{{ activeRentTitle }}</strong><br>{{ selectedRentalPeriodLabel }}</div></div>
               <div class="stat-icon">⌂</div>
@@ -715,6 +804,14 @@
       { min: 1.20, max: 1.50, color: [74, 222, 128, 0.84], label: '120%–150% מהממוצע - ירוק בהיר' },
       { min: 1.50, max: Infinity, color: [22, 101, 52, 0.88], label: 'מעל 150% מהממוצע - ירוק כהה' }
     ];
+    const PRICE_COLOR_SCALE = [
+      { min: -Infinity, max: 0.50, color: [22, 101, 52, 0.88], label: 'עד 50% מממוצע מחיר למ״ר - ירוק כהה' },
+      { min: 0.50, max: 0.80, color: [74, 222, 128, 0.84], label: '50%–80% מממוצע מחיר למ״ר - ירוק בהיר' },
+      { min: 0.80, max: 1.00, color: [234, 179, 8, 0.84], label: '80%–100% מממוצע מחיר למ״ר - צהוב' },
+      { min: 1.00, max: 1.20, color: [249, 115, 22, 0.84], label: '100%–120% מממוצע מחיר למ״ר - כתום' },
+      { min: 1.20, max: 1.50, color: [239, 68, 68, 0.86], label: '120%–150% מממוצע מחיר למ״ר - אדום' },
+      { min: 1.50, max: Infinity, color: [153, 27, 27, 0.88], label: 'מעל 150% מממוצע מחיר למ״ר - אדום כהה' }
+    ];
     const YIELD_COLOR_SCALE = [
       { min: -Infinity, max: 1.00, color: [153, 27, 27, 0.88], label: 'עד 1% תשואה - אדום כהה' },
       { min: 1.00, max: 2.00, color: [239, 68, 68, 0.86], label: '1%–2% תשואה - אדום' },
@@ -840,6 +937,7 @@
     }
     function rgbaCss(color) { return `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${color[3]})`; }
     function colorForRatio(ratio) { if (!Number.isFinite(ratio)) return NO_DATA_COLOR; return COLOR_SCALE.find((b) => ratio >= b.min && ratio < b.max)?.color || COLOR_SCALE[COLOR_SCALE.length - 1].color; }
+    function colorForPriceRatio(ratio) { if (!Number.isFinite(ratio)) return NO_DATA_COLOR; return PRICE_COLOR_SCALE.find((b) => ratio >= b.min && ratio < b.max)?.color || PRICE_COLOR_SCALE[PRICE_COLOR_SCALE.length - 1].color; }
     function colorForYield(value) { if (!Number.isFinite(value)) return NO_DATA_COLOR; return YIELD_COLOR_SCALE.find((b) => value >= b.min && value < b.max)?.color || YIELD_COLOR_SCALE[YIELD_COLOR_SCALE.length - 1].color; }
     function colorForInvestmentScore(value) { if (!Number.isFinite(value)) return NO_DATA_COLOR; return INVESTMENT_COLOR_SCALE.find((b) => value >= b.min && value < b.max)?.color || INVESTMENT_COLOR_SCALE[INVESTMENT_COLOR_SCALE.length - 1].color; }
     function isCombinedRoomGroup(roomGroup) { return String(roomGroup ?? '').toLowerCase() === 'all'; }
@@ -881,6 +979,7 @@
         const colorMode = ref('deals');
         const compareSidA = ref('');
         const compareSidB = ref('');
+        const showInvestmentExplanation = ref(false);
         const roomGroupOptions = [
           { key: 'all', label: 'כל סוגי החדרים' },
           { key: '3', label: '3 חדרים' },
@@ -1768,7 +1867,7 @@
         function isInvestmentColorMode() { return colorMode.value === 'investment'; }
         function isAnnualColorMode() { return colorMode.value === 'deals' || colorMode.value === 'price'; }
         function isRentalColorMode() { return isYieldColorMode() || colorMode.value === 'rentPrice' || colorMode.value === 'rentListings'; }
-        function colorForCurrentMetricValue(value) { return isInvestmentColorMode() ? colorForInvestmentScore(value) : (isYieldColorMode() ? colorForYield(value) : colorForRatio(value)); }
+        function colorForCurrentMetricValue(value) { if (colorMode.value === 'price') return colorForPriceRatio(value); return isInvestmentColorMode() ? colorForInvestmentScore(value) : (isYieldColorMode() ? colorForYield(value) : colorForRatio(value)); }
         function hasKnownRankingMetric(item) {
           if (!item) return false;
           const metric = normalizeNumber(colorMetricValue(item));
@@ -1885,7 +1984,7 @@
 
           if (colorMode.value === 'price') {
             return buildObjectiveLegendItems(
-              COLOR_SCALE,
+              PRICE_COLOR_SCALE,
               (v) => `${Math.round(Number(v) * 100).toLocaleString('he-IL')}%`,
               'מממוצע מחיר למ״ר'
             );
@@ -3165,7 +3264,7 @@
           document.addEventListener('visibilitychange', handleVisibility);
           boot();
         });
-        return { ESTIMATED_APARTMENT_SQM, mainDataSection, setMainDataSection, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, yearSliderPreview, rentalPeriodSliderPreview, rentalSliderPreviewLabel, rentalShowAllQuarters, availableYears, availableRentalYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, rentalYearSliderMin, rentalYearSliderMax, hasTransactionDataForSelectedRentalYear, colorMode, colorMetricLabel, colorModeNote, rankingTitle, investmentScoreTypeLabel, investmentScoreSubtitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, formatInvestmentScore, rankingRowSubtitle, setColorMode, setQuarterlyDataType, setRentalColorMetric, formatNumber, formatInteger, formatRatio, formatCurrency, formatCommercialRent, formatActiveRent, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearChanged, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartComparisonActive, chartEntityName, pageTitle, activeRentValue, activeListingsValue, activeRentQoq, activeAnnualRentValue, activeAnnualListingsValue, activeQuarterCount, activeAnnualIsComplete, activeRentYoy, activeRentTitle, activeRentChartTitle, activeYieldValue, activeAnnualYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData, compareSidA, compareSidB, settlementOptions, compareSettlementA, compareSettlementB, comparisonRows, setCompareAFromSelected, clearComparison };
+        return { ESTIMATED_APARTMENT_SQM, mainDataSection, setMainDataSection, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, yearSliderPreview, rentalPeriodSliderPreview, rentalSliderPreviewLabel, rentalShowAllQuarters, availableYears, availableRentalYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, rentalYearSliderMin, rentalYearSliderMax, hasTransactionDataForSelectedRentalYear, colorMode, colorMetricLabel, colorModeNote, rankingTitle, investmentScoreTypeLabel, investmentScoreSubtitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, formatInvestmentScore, rankingRowSubtitle, setColorMode, setQuarterlyDataType, setRentalColorMetric, formatNumber, formatInteger, formatRatio, formatCurrency, formatCommercialRent, formatActiveRent, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearChanged, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartComparisonActive, chartEntityName, pageTitle, activeRentValue, activeListingsValue, activeRentQoq, activeAnnualRentValue, activeAnnualListingsValue, activeQuarterCount, activeAnnualIsComplete, activeRentYoy, activeRentTitle, activeRentChartTitle, activeYieldValue, activeAnnualYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData, compareSidA, compareSidB, showInvestmentExplanation, settlementOptions, compareSettlementA, compareSettlementB, comparisonRows, setCompareAFromSelected, clearComparison };
       }
     }).mount('#app');
   </script>
