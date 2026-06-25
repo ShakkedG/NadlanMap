@@ -7,15 +7,15 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800;900&display=swap');
     * { box-sizing: border-box; }
-    html, body, #app { width: 100%; max-width: 100vw; height: 100%; margin: 0; overflow-x: hidden; }
+    html, body, #app { width: 100%; max-width: 100vw; height: 100%; margin: 0; overflow: hidden; }
     body { font-family: "Assistant", "Heebo", "Noto Sans Hebrew", Arial, sans-serif; font-size: 16px; font-weight: 400; letter-spacing: -.01em; background: #eef3fb; color: #06224a; overflow: hidden; }
     button, input, select, a { font: inherit; }
     button { cursor: pointer; }
     button:disabled { opacity: .55; cursor: not-allowed; }
     a { color: inherit; text-decoration: none; }
 
-    .nadlan-layout { width: 100%; max-width: 100vw; height: 100vh; display: grid; grid-template-columns: minmax(0, 40.2%) minmax(0, 59.8%); direction: ltr; background: #eaf0f8; overflow-x: hidden; }
-    .map-pane { position: relative; height: 100vh; overflow: hidden; background: #cfe1ef; border-inline-end: 1px solid #d5deea; min-width: 0; }
+    .nadlan-layout { width: 100%; max-width: 100vw; height: 100vh; height: 100dvh; display: grid; grid-template-columns: minmax(0, 40.2%) minmax(0, 59.8%); direction: ltr; background: #eaf0f8; overflow: hidden; }
+    .map-pane { position: relative; height: 100vh; height: 100dvh; overflow: hidden; background: #cfe1ef; border-inline-end: 1px solid #d5deea; min-width: 0; min-height: 0; }
     .map-pane.fullscreen { position: fixed; inset: 0; z-index: 9999; }
     .govmap-box {
       position: absolute;
@@ -46,7 +46,7 @@
     .tile-img.none { background: #f6f7f9; color: #98a2b3; }
     .layer-tile span { padding: 7px 4px; text-align: center; }
 
-    .report-pane { direction: rtl; height: 100vh; overflow-y: auto; overflow-x: hidden; padding: 16px 16px 28px 12px; min-width: 0; max-width: 100%; }
+    .report-pane { direction: rtl; height: 100vh; height: 100dvh; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-gutter: stable; -webkit-overflow-scrolling: touch; padding: 16px 16px 28px 12px; min-width: 0; max-width: 100%; }
     .report-card { min-height: calc(100vh - 32px); background: #ffffff; border: 1px solid #dfe6ef; border-radius: 18px; box-shadow: 0 10px 30px rgba(17, 34, 64, .08); position: relative; padding: 36px 18px 28px; overflow: hidden; max-width: 100%; }
     .blue-tab { position: absolute; top: -16px; left: 40%; right: 40%; height: 3px; background: #1f5bff; border-radius: 99px; }
     .top-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: end; margin: 0 auto 14px; max-width: min(100%, 860px); }
@@ -281,17 +281,49 @@
     }
 
 @media (max-width: 1180px) {
-      body { overflow-y: auto; overflow-x: hidden; }
-      .nadlan-layout { height: auto; min-height: 100vh; grid-template-columns: 1fr; }
-      .map-pane { height: 55vh; }
-      .report-pane { height: auto; overflow: visible; padding: 10px; }
-      .report-card { min-height: 0; }
+      html, body, #app { height: 100%; overflow: hidden; }
+      body { overflow: hidden; }
+      .nadlan-layout {
+        height: 100vh;
+        height: 100dvh;
+        min-height: 0;
+        grid-template-columns: 1fr;
+        grid-template-rows: 44vh minmax(0, 56vh);
+        grid-template-rows: 44dvh minmax(0, 56dvh);
+        overflow: hidden;
+      }
+      .map-pane {
+        position: relative;
+        top: auto;
+        height: 44vh;
+        height: 44dvh;
+        min-height: 0;
+        overflow: hidden;
+        border-inline-end: 0;
+        border-bottom: 1px solid #d5deea;
+      }
+      .report-pane {
+        height: 56vh;
+        height: 56dvh;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
+        padding: 10px;
+      }
+      .report-card { min-height: 100%; }
       .analysis-grid, .bottom-tools { grid-template-columns: 1fr; }
       .stat-cards { grid-template-columns: 1fr; margin-bottom: 30px; }
       .top-controls { grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 700px) {
-      .map-pane { height: 50vh; }
+      .nadlan-layout {
+        grid-template-rows: 38vh minmax(0, 62vh);
+        grid-template-rows: 38dvh minmax(0, 62dvh);
+      }
+      .map-pane { height: 38vh; height: 38dvh; }
+      .report-pane { height: 62vh; height: 62dvh; }
       .top-controls, .compare-controls { grid-template-columns: 1fr; }
       .compare-row { grid-template-columns: 1fr; }
       .compare-row .metric, .compare-row .city-name, .compare-row .metric-value { text-align: right; }
@@ -305,10 +337,10 @@
     }
   
         .map-legend {
-          position: fixed !important;
-          left: calc(41vw - 320px);
+          position: absolute !important;
+          left: 14px;
           right: auto;
-          bottom: 58px;
+          bottom: 14px;
           top: auto;
           z-index: 2147483647 !important;
           background: rgba(255,255,255,.50);
@@ -371,9 +403,9 @@
         }
         @media (max-width: 760px) {
           .map-legend {
-            left: auto;
-            right: 12px;
-            bottom: 58px;
+            left: 12px;
+            right: auto;
+            bottom: 12px;
             top: auto;
             min-width: 190px;
             max-width: min(270px, calc(100vw - 24px));
@@ -702,25 +734,69 @@
     const NO_DATA_COLOR = [148, 163, 184, 0.50];
     const OUTLINE_COLOR = [25, 25, 25, 0.86];
 
-    function loadScript(id, src) {
+    function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+    function loadScript(id, src, timeoutMs = 15000) {
+      if (window.govmap) return Promise.resolve();
       return new Promise((resolve, reject) => {
-        const existing = document.getElementById(id);
-        if (existing) {
-          if (window.govmap) resolve();
-          else {
-            existing.addEventListener('load', resolve, { once: true });
-            existing.addEventListener('error', reject, { once: true });
-          }
-          return;
-        }
+        const previous = document.getElementById(id);
+        if (previous) previous.remove();
+
         const script = document.createElement('script');
+        let settled = false;
+        const finish = (error = null) => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timeoutId);
+          script.onload = null;
+          script.onerror = null;
+          if (error) reject(error);
+          else resolve();
+        };
+        const timeoutId = setTimeout(() => {
+          script.remove();
+          finish(new Error('טעינת ספריית GovMap ארכה זמן רב מדי.'));
+        }, timeoutMs);
+
         script.id = id;
-        script.src = src;
+        script.src = `${src}${src.includes('?') ? '&' : '?'}_=${Date.now()}`;
         script.async = true;
-        script.onload = resolve;
-        script.onerror = () => reject(new Error('לא הצלחתי לטעון את GovMap'));
+        script.onload = () => {
+          if (window.govmap) finish();
+          else finish(new Error('ספריית GovMap נטענה, אך ה-API לא זמין.'));
+        };
+        script.onerror = () => {
+          script.remove();
+          finish(new Error('לא הצלחתי לטעון את GovMap'));
+        };
         document.head.appendChild(script);
       });
+    }
+    function mapContainerHasLayout() {
+      const element = document.getElementById(MAP_DIV_ID);
+      if (!element) return false;
+      const rect = element.getBoundingClientRect();
+      return rect.width >= 120 && rect.height >= 120;
+    }
+    function mapContainerHasContent() {
+      const element = document.getElementById(MAP_DIV_ID);
+      if (!element || !mapContainerHasLayout()) return false;
+      return element.childElementCount > 0 || !!element.querySelector('iframe, canvas, svg');
+    }
+    async function waitForMapContainerLayout(timeoutMs = 8000) {
+      const started = Date.now();
+      while (Date.now() - started < timeoutMs) {
+        if (mapContainerHasLayout()) return;
+        await delay(100);
+      }
+      throw new Error('אזור המפה עדיין לא קיבל גודל תקין.');
+    }
+    function forceGovMapResize() {
+      const element = document.getElementById(MAP_DIV_ID);
+      if (!element) return;
+      void element.offsetHeight;
+      try { window.dispatchEvent(new Event('resize')); } catch (_) {}
+      try { window.govmap?.resizeMap?.(); } catch (_) {}
+      try { window.govmap?.refreshMap?.(); } catch (_) {}
     }
     function dataUrl(fileName) { return new URL(fileName, window.location.href).toString(); }
     function normalizeNumber(value) { if (value === null || value === undefined || value === '') return null; const n = Number(value); return Number.isFinite(n) ? n : null; }
@@ -819,6 +895,10 @@
         let commercialRentChart = null;
         let residentialYieldChart = null;
         let commercialYieldChart = null;
+        let govMapInitPromise = null;
+        let mapRecoveryPromise = null;
+        let mapRecoveryAttempts = 0;
+        const mapResizeTimers = [];
 
         const rowGroups = computed(() => {
           const groups = new Map();
@@ -1985,43 +2065,145 @@
           residentialRentRows.value = parseCsv(residentialCsv);
           commercialRentRows.value = parseCsv(commercialCsv);
         }
-        async function initGovMap() {
-          statusMessage.value = 'טוען את ספריית GovMap...'; await loadScript(GOVMAP_SCRIPT_ID, GOVMAP_SCRIPT_URL); if (!window.govmap) throw new Error('ספריית GovMap לא זמינה.');
-          statusMessage.value = 'יוצר מפה...';
-          await new Promise((resolve) => {
-            let resolved = false;
-            const done = () => {
-              if (!resolved) {
-                resolved = true;
-                mapReady.value = true;
-                try { window.govmap.setBackground && window.govmap.setBackground(0); } catch (_) {}
-                resolve();
-              }
+        function scheduleMapResizePasses() {
+          while (mapResizeTimers.length) clearTimeout(mapResizeTimers.pop());
+          for (const wait of [120, 450, 1100, 2400]) {
+            mapResizeTimers.push(setTimeout(() => forceGovMapResize(), wait));
+          }
+        }
+        async function createGovMapInstance() {
+          await waitForMapContainerLayout();
+          const mapElement = document.getElementById(MAP_DIV_ID);
+          if (!mapElement) throw new Error('לא נמצא אזור המפה באתר.');
+          mapElement.innerHTML = '';
+          mapReady.value = false;
+
+          await new Promise((resolve, reject) => {
+            let settled = false;
+            let fallbackTimer = null;
+            let hardTimeout = null;
+            const finish = (error = null) => {
+              if (settled) return;
+              settled = true;
+              clearTimeout(fallbackTimer);
+              clearTimeout(hardTimeout);
+              if (error) reject(error);
+              else resolve();
             };
-            window.govmap.createMap(MAP_DIV_ID, {
-              token: GOVMAP_TOKEN,
-              layers: [],
-              visibleLayers: [],
-              showXY: true,
-              identifyOnClick: false,
-              identifyOnlyBubble: true,
-              isEmbeddedToggle: false,
-              background: 0,
-              layersMode: 4,
-              zoomButtons: true,
-              center: { x: 219529, y: 626907 },
-              level: 7,
-              // הכי חשוב: משתמשים ב-onClick של createMap עצמו כדי שלחיצה על המפה
-              // תעדכן את היישוב והגרפים גם כשיש שכבת פוליגונים מצוירת מעל GovMap.
-              onClick: handleMapClick,
-              onLoad: done,
-              onError: () => { errorMessage.value = 'GovMap החזיר שגיאה. בדוק שהטוקן מתאים לדומיין.'; }
-            });
-            setTimeout(done, 2600);
+            const ready = () => {
+              mapReady.value = true;
+              try { window.govmap.setBackground?.(0); } catch (_) {}
+              finish();
+            };
+
+            try {
+              window.govmap.createMap(MAP_DIV_ID, {
+                token: GOVMAP_TOKEN,
+                layers: [],
+                visibleLayers: [],
+                showXY: true,
+                identifyOnClick: false,
+                identifyOnlyBubble: true,
+                isEmbeddedToggle: false,
+                background: 0,
+                layersMode: 4,
+                zoomButtons: true,
+                center: { x: 219529, y: 626907 },
+                level: 7,
+                onClick: handleMapClick,
+                onLoad: ready,
+                onError: (error) => finish(new Error(error?.message || 'GovMap החזיר שגיאה בזמן יצירת המפה.'))
+              });
+            } catch (error) {
+              finish(error);
+              return;
+            }
+
+            // בחלק מהגרסאות של GovMap אירוע onLoad אינו נשלח באופן עקבי.
+            // משתמשים ב-DOM רק כגיבוי, ורק לאחר שנוצר בפועל תוכן בתוך אזור המפה.
+            fallbackTimer = setTimeout(() => {
+              if (mapContainerHasContent()) ready();
+            }, 5000);
+            hardTimeout = setTimeout(() => {
+              if (mapContainerHasContent()) ready();
+              else finish(new Error('GovMap לא סיים ליצור את המפה בזמן.'));
+            }, 12000);
           });
+
+          await delay(220);
+          forceGovMapResize();
+          try { window.govmap.zoomToXY?.({ x: 219529, y: 626907, level: 7 }); } catch (_) {}
           try { window.govmap.setVisibleLayers([], [GOVMAP_LAYER]); baseLayerVisible.value = false; } catch (e) { console.warn(e); }
           installGovMapClickSelection();
+          scheduleMapResizePasses();
         }
+        async function initGovMap(forceReload = false) {
+          if (govMapInitPromise && !forceReload) return govMapInitPromise;
+          govMapInitPromise = (async () => {
+            statusMessage.value = 'טוען את ספריית GovMap...';
+            let lastError = null;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+              try {
+                if (forceReload || !window.govmap) {
+                  await loadScript(GOVMAP_SCRIPT_ID, GOVMAP_SCRIPT_URL);
+                }
+                if (!window.govmap) throw new Error('ספריית GovMap לא זמינה.');
+                statusMessage.value = attempt === 1 ? 'יוצר מפה...' : `מנסה לטעון את המפה מחדש (${attempt}/3)...`;
+                await createGovMapInstance();
+                mapRecoveryAttempts = 0;
+                return;
+              } catch (error) {
+                lastError = error;
+                console.warn(`GovMap init attempt ${attempt} failed`, error);
+                mapReady.value = false;
+                const mapElement = document.getElementById(MAP_DIV_ID);
+                if (mapElement) mapElement.innerHTML = '';
+                if (attempt < 3) {
+                  await delay(650 * attempt);
+                  if (!window.govmap) {
+                    document.getElementById(GOVMAP_SCRIPT_ID)?.remove();
+                  }
+                }
+              }
+            }
+            throw lastError || new Error('לא ניתן היה לאתחל את GovMap.');
+          })();
+          try {
+            await govMapInitPromise;
+          } finally {
+            govMapInitPromise = null;
+          }
+        }
+        async function recoverMapIfNeeded(force = false) {
+          if (mapRecoveryPromise) return mapRecoveryPromise;
+          mapRecoveryPromise = (async () => {
+            await nextTick();
+            forceGovMapResize();
+            await delay(300);
+            if (!force && mapReady.value && mapContainerHasContent()) {
+              scheduleMapResizePasses();
+              return;
+            }
+            if (mapRecoveryAttempts >= 2) return;
+            mapRecoveryAttempts += 1;
+            statusMessage.value = 'המפה לא נטענה כראוי. מבצע תיקון אוטומטי...';
+            try {
+              await initGovMap(false);
+              if (overlayVisible.value && wktFeatures.value.length) await drawOverlay();
+              statusMessage.value = `המפה נטענה מחדש בהצלחה · ${colorMetricLabel.value}`;
+              errorMessage.value = '';
+            } catch (error) {
+              console.error('GovMap automatic recovery failed', error);
+              errorMessage.value = 'המפה לא נטענה. רענן את הדף או בדוק את החיבור ל-GovMap.';
+            }
+          })();
+          try {
+            await mapRecoveryPromise;
+          } finally {
+            mapRecoveryPromise = null;
+          }
+        }
+
 
         const parsedGeometryCache = new Map();
         function parsePolygonWkt(wkt) {
@@ -2919,8 +3101,25 @@
         }
 
         async function boot() {
-          isBooting.value = true; errorMessage.value = '';
-          try { await Promise.all([loadLocalFiles(), initGovMap()]); if (availableYears.value.includes(DEFAULT_TARGET_YEAR)) targetYear.value = DEFAULT_TARGET_YEAR; else if (availableYears.value.length) targetYear.value = availableYears.value[availableYears.value.length - 1]; if (availableRentalPeriods.value.length) rentalPeriodIndex.value = availableRentalPeriods.value.length - 1; selectSettlement(nationalSettlement.value, false); await drawOverlay(); statusMessage.value = `המפה מוכנה. מוצגים נתוני כל הארץ והצביעה לפי ${colorMetricLabel.value}.`; } catch (error) { console.error(error); errorMessage.value = error?.message || 'שגיאה כללית בטעינת האתר.'; } finally { isBooting.value = false; }
+          isBooting.value = true;
+          errorMessage.value = '';
+          try {
+            await Promise.all([loadLocalFiles(), initGovMap()]);
+            if (availableYears.value.includes(DEFAULT_TARGET_YEAR)) targetYear.value = DEFAULT_TARGET_YEAR;
+            else if (availableYears.value.length) targetYear.value = availableYears.value[availableYears.value.length - 1];
+            if (availableRentalPeriods.value.length) rentalPeriodIndex.value = availableRentalPeriods.value.length - 1;
+            selectSettlement(nationalSettlement.value, false);
+            await drawOverlay();
+            scheduleMapResizePasses();
+            setTimeout(() => recoverMapIfNeeded(false), 3500);
+            statusMessage.value = `המפה מוכנה. מוצגים נתוני כל הארץ והצביעה לפי ${colorMetricLabel.value}.`;
+          } catch (error) {
+            console.error(error);
+            errorMessage.value = error?.message || 'שגיאה כללית בטעינת האתר.';
+            setTimeout(() => recoverMapIfNeeded(true), 800);
+          } finally {
+            isBooting.value = false;
+          }
         }
         watch(selectedRows, () => nextTick(() => renderCharts({ animate: true })));
         watch([compareSidA, compareSidB], () => nextTick(() => renderCharts({ animate: false })));
@@ -2949,7 +3148,23 @@
           const maxIndex = Math.max(0, periods.length - 1);
           rentalPeriodSliderPreview.value = Math.min(Math.max(0, Number(rentalPeriodIndex.value) || 0), maxIndex);
         });
-        onMounted(() => { installMapSelectionBridge(); boot(); });
+        onMounted(() => {
+          installMapSelectionBridge();
+          const handlePageShow = () => recoverMapIfNeeded(false);
+          const handleVisibility = () => {
+            if (!document.hidden) recoverMapIfNeeded(false);
+          };
+          const handleResize = () => {
+            requestAnimationFrame(() => {
+              try { window.govmap?.resizeMap?.(); } catch (_) {}
+              try { window.govmap?.refreshMap?.(); } catch (_) {}
+            });
+          };
+          window.addEventListener('pageshow', handlePageShow);
+          window.addEventListener('resize', handleResize, { passive: true });
+          document.addEventListener('visibilitychange', handleVisibility);
+          boot();
+        });
         return { ESTIMATED_APARTMENT_SQM, mainDataSection, setMainDataSection, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, yearSliderPreview, rentalPeriodSliderPreview, rentalSliderPreviewLabel, rentalShowAllQuarters, availableYears, availableRentalYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, rentalYearSliderMin, rentalYearSliderMax, hasTransactionDataForSelectedRentalYear, colorMode, colorMetricLabel, colorModeNote, rankingTitle, investmentScoreTypeLabel, investmentScoreSubtitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, formatInvestmentScore, rankingRowSubtitle, setColorMode, setQuarterlyDataType, setRentalColorMetric, formatNumber, formatInteger, formatRatio, formatCurrency, formatCommercialRent, formatActiveRent, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearChanged, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartComparisonActive, chartEntityName, pageTitle, activeRentValue, activeListingsValue, activeRentQoq, activeAnnualRentValue, activeAnnualListingsValue, activeQuarterCount, activeAnnualIsComplete, activeRentYoy, activeRentTitle, activeRentChartTitle, activeYieldValue, activeAnnualYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData, compareSidA, compareSidB, settlementOptions, compareSettlementA, compareSettlementB, comparisonRows, setCompareAFromSelected, clearComparison };
       }
     }).mount('#app');
