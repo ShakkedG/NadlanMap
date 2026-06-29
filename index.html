@@ -794,6 +794,7 @@
     const FIXED_AVERAGE_END_YEAR = 2024;
     // אין לנו גודל דירה אמיתי בקובצי העסקאות/השכירות, לכן מחשבים תשואה לפי שטח מייצג לכל קבוצת חדרים.
     const ESTIMATED_APARTMENT_SQM = 90;
+    const ESTIMATED_COMMERCIAL_SQM = 80;
     const ROOM_GROUP_SQM = { '3': 70, '4': 90, '5': 110 };
 
     const COLOR_SCALE = [
@@ -811,6 +812,14 @@
       { min: 1.00, max: 1.20, color: [249, 115, 22, 0.84], label: '100%–120% מממוצע מחיר למ״ר - כתום' },
       { min: 1.20, max: 1.50, color: [239, 68, 68, 0.86], label: '120%–150% מממוצע מחיר למ״ר - אדום' },
       { min: 1.50, max: Infinity, color: [153, 27, 27, 0.88], label: 'מעל 150% מממוצע מחיר למ״ר - אדום כהה' }
+    ];
+    const RENT_PRICE_COLOR_SCALE = [
+      { min: -Infinity, max: 0.50, color: [22, 101, 52, 0.88], label: 'עד 50% מממוצע מחיר השכירות - ירוק כהה' },
+      { min: 0.50, max: 0.80, color: [74, 222, 128, 0.84], label: '50%–80% מממוצע מחיר השכירות - ירוק בהיר' },
+      { min: 0.80, max: 1.00, color: [234, 179, 8, 0.84], label: '80%–100% מממוצע מחיר השכירות - צהוב' },
+      { min: 1.00, max: 1.20, color: [249, 115, 22, 0.84], label: '100%–120% מממוצע מחיר השכירות - כתום' },
+      { min: 1.20, max: 1.50, color: [239, 68, 68, 0.86], label: '120%–150% מממוצע מחיר השכירות - אדום' },
+      { min: 1.50, max: Infinity, color: [153, 27, 27, 0.88], label: 'מעל 150% מממוצע מחיר השכירות - אדום כהה' }
     ];
     const YIELD_COLOR_SCALE = [
       { min: -Infinity, max: 1.00, color: [153, 27, 27, 0.88], label: 'עד 1% תשואה - אדום כהה' },
@@ -936,11 +945,17 @@
       return raw.replace(/^s_/i, '');
     }
     function rgbaCss(color) { return `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${color[3]})`; }
-    function colorForRatio(ratio) { if (!Number.isFinite(ratio)) return NO_DATA_COLOR; return COLOR_SCALE.find((b) => ratio >= b.min && ratio < b.max)?.color || COLOR_SCALE[COLOR_SCALE.length - 1].color; }
-    function colorForPriceRatio(ratio) { if (!Number.isFinite(ratio)) return NO_DATA_COLOR; return PRICE_COLOR_SCALE.find((b) => ratio >= b.min && ratio < b.max)?.color || PRICE_COLOR_SCALE[PRICE_COLOR_SCALE.length - 1].color; }
-    function colorForYield(value) { if (!Number.isFinite(value)) return NO_DATA_COLOR; return YIELD_COLOR_SCALE.find((b) => value >= b.min && value < b.max)?.color || YIELD_COLOR_SCALE[YIELD_COLOR_SCALE.length - 1].color; }
+    function colorForScale(value, scale) { if (!Number.isFinite(value)) return NO_DATA_COLOR; return scale.find((b) => value >= b.min && value < b.max)?.color || scale[scale.length - 1].color; }
+    function colorForRatio(ratio) { return colorForScale(ratio, COLOR_SCALE); }
+    function colorForPriceRatio(ratio) { return colorForScale(ratio, PRICE_COLOR_SCALE); }
+    function colorForYield(value) { return colorForScale(value, YIELD_COLOR_SCALE); }
     function colorForInvestmentScore(value) { if (!Number.isFinite(value)) return NO_DATA_COLOR; return INVESTMENT_COLOR_SCALE.find((b) => value >= b.min && value < b.max)?.color || INVESTMENT_COLOR_SCALE[INVESTMENT_COLOR_SCALE.length - 1].color; }
     function isCombinedRoomGroup(roomGroup) { return String(roomGroup ?? '').toLowerCase() === 'all'; }
+    function commercialMonthlyRent(valuePerSqm) {
+      const rentPerSqm = normalizeNumber(valuePerSqm);
+      if (!Number.isFinite(rentPerSqm)) return null;
+      return rentPerSqm * ESTIMATED_COMMERCIAL_SQM;
+    }
     function sqmForRoomGroup(roomGroup) {
       if (isCombinedRoomGroup(roomGroup)) return null;
       return ROOM_GROUP_SQM[String(roomGroup || '4')] || null;
@@ -1446,10 +1461,10 @@
           : normalizeNumber(selectedSettlement.value?.residentialYieldSelected));
         const activeYieldTitle = computed(() => rentalDataType.value === 'commercial' ? 'תשואה מסחרית משוערת' : `תשואה גולמית משוערת · ${selectedRoomGroupLabel.value}`);
         const activeRentTitle = computed(() => rentalDataType.value === 'commercial'
-          ? 'שכירות מסחרית למ״ר לחודש'
+          ? 'שכירות מסחרית חודשית משוערת'
           : `שכירות חודשית למגורים · ${selectedRoomGroupLabel.value}`);
         const activeRentChartTitle = computed(() => rentalDataType.value === 'commercial'
-          ? 'שכירות מסחרית לפי רבעון'
+          ? 'שכירות מסחרית חודשית לפי רבעון'
           : `שכירות מגורים לפי רבעון · ${selectedRoomGroupLabel.value}`);
         const activeYieldSubtitle = computed(() => 'הכנסה שנתית משוערת לפי שכירות הרבעון חלקי שווי הרכישה באותה שנה');
 
@@ -1867,7 +1882,7 @@
         function isInvestmentColorMode() { return colorMode.value === 'investment'; }
         function isAnnualColorMode() { return colorMode.value === 'deals' || colorMode.value === 'price'; }
         function isRentalColorMode() { return isYieldColorMode() || colorMode.value === 'rentPrice' || colorMode.value === 'rentListings'; }
-        function colorForCurrentMetricValue(value) { if (colorMode.value === 'price') return colorForPriceRatio(value); return isInvestmentColorMode() ? colorForInvestmentScore(value) : (isYieldColorMode() ? colorForYield(value) : colorForRatio(value)); }
+        function colorForCurrentMetricValue(value) { if (colorMode.value === 'price') return colorForPriceRatio(value); if (colorMode.value === 'rentPrice') return colorForScale(value, RENT_PRICE_COLOR_SCALE); return isInvestmentColorMode() ? colorForInvestmentScore(value) : (isYieldColorMode() ? colorForYield(value) : colorForRatio(value)); }
         function hasKnownRankingMetric(item) {
           if (!item) return false;
           const metric = normalizeNumber(colorMetricValue(item));
@@ -1968,7 +1983,7 @@
 
           if (colorMode.value === 'rentPrice') {
             return buildObjectiveLegendItems(
-              COLOR_SCALE,
+              RENT_PRICE_COLOR_SCALE,
               (v) => `${Math.round(Number(v) * 100).toLocaleString('he-IL')}%`,
               'מממוצע מחיר השכירות'
             );
@@ -2030,7 +2045,7 @@
         function formatInteger(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return value.toLocaleString('he-IL', { maximumFractionDigits: 0 }); }
         function formatRatio(value) { if (!Number.isFinite(value)) return 'לא ידוע'; const percent = value * 100; return `${percent.toLocaleString('he-IL', { maximumFractionDigits: 0 })}%`; }
         function formatCurrency(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return `₪${value.toLocaleString('he-IL', { maximumFractionDigits: 0 })}`; }
-        function formatCommercialRent(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return `${formatCurrency(value)} למ״ר לחודש`; }
+        function formatCommercialRent(value) { const monthly = commercialMonthlyRent(value); if (!Number.isFinite(monthly)) return 'לא ידוע'; return `${formatCurrency(monthly)} לחודש`; }
         function formatActiveRent(value) { return rentalDataType.value === 'commercial' ? formatCommercialRent(value) : formatCurrency(value); }
         function formatPercent(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return `${value.toLocaleString('he-IL', { maximumFractionDigits: 1 })}%`; }
         function formatYield(value) { if (!Number.isFinite(value)) return 'לא ידוע'; return `${value.toLocaleString('he-IL', { maximumFractionDigits: 2 })}%`; }
@@ -2737,10 +2752,10 @@
             avgAnnualDeals: normalizeNumber(chartSettlementItemBySid(sid)?.avgAnnualDeals),
             quarterKeys: quarterlyRentRows.map((row) => `${Number(row.year)}-Q${Number(row.quarter_mapi)}`),
             quarterLabels: new Map(quarterlyRentRows.map((row) => [`${Number(row.year)}-Q${Number(row.quarter_mapi)}`, periodLabelFromParts(row.year, row.quarter_mapi)])),
-            quarterPrices: new Map(quarterlyRentRows.map((row) => [`${Number(row.year)}-Q${Number(row.quarter_mapi)}`, normalizeNumber(row.rental_price)])),
+            quarterPrices: new Map(quarterlyRentRows.map((row) => [`${Number(row.year)}-Q${Number(row.quarter_mapi)}`, rentalDataType.value === 'commercial' ? commercialMonthlyRent(row.rental_price) : normalizeNumber(row.rental_price)])),
             quarterListings: new Map(quarterlyRentRows.map((row) => [`${Number(row.year)}-Q${Number(row.quarter_mapi)}`, normalizeNumber(row.listings_amount)])),
             annualYears: annualRentRows.map((row) => String(row.year)),
-            annualRentPrices: new Map(annualRentRows.map((row) => [String(row.year), normalizeNumber(row.rental_price)])),
+            annualRentPrices: new Map(annualRentRows.map((row) => [String(row.year), rentalDataType.value === 'commercial' ? commercialMonthlyRent(row.rental_price) : normalizeNumber(row.rental_price)])),
             annualTransactionPrices: new Map(annualRentRows.map((row) => [String(row.year), salesPriceByYear.get(String(row.year)) ?? null]))
           };
         }
@@ -3046,7 +3061,7 @@
                   yRent: {
                     position: 'left',
                     beginAtZero: false,
-                    ticks: { callback: (v) => rentalDataType.value === 'commercial' ? `₪${Number(v).toLocaleString('he-IL')} למ״ר` : `₪${Number(v).toLocaleString('he-IL')}` }
+                    ticks: { callback: (v) => rentalDataType.value === 'commercial' ? `₪${Number(v).toLocaleString('he-IL')}` : `₪${Number(v).toLocaleString('he-IL')}` }
                   },
                   yListings: {
                     position: 'right',
@@ -3125,7 +3140,7 @@
                   yRent: {
                     position: 'left',
                     beginAtZero: false,
-                    ticks: { callback: (v) => rentalDataType.value === 'commercial' ? `₪${Number(v).toLocaleString('he-IL')} למ״ר` : `₪${Number(v).toLocaleString('he-IL')}` }
+                    ticks: { callback: (v) => rentalDataType.value === 'commercial' ? `₪${Number(v).toLocaleString('he-IL')}` : `₪${Number(v).toLocaleString('he-IL')}` }
                   },
                   yPrice: {
                     position: 'right',
