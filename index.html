@@ -286,6 +286,8 @@
       text-align: center;
       line-height: 1.45;
     }
+    .kpi-context-note { max-width: min(100%, 840px); margin: -4px auto 22px; padding: 11px 14px; border: 1px solid #cfe0ff; border-radius: 999px; background: #f4f8ff; color: #37516f; text-align: center; font-size: 14px; font-weight: 800; line-height: 1.35; }
+    .kpi-context-note b { color: #0f5bff; font-weight: 900; }
     @media (max-width: 700px) {
       .main-mode-tabs {
         width: 100%;
@@ -498,18 +500,21 @@
           <p class="main-mode-note" v-else>
             מצב שכירות מבוסס קודם כול על רבעונים. סיכומים שנתיים מוצגים רק להשוואת מגמות, עסקאות ותשואה.
           </p>
+          <p v-if="chartComparisonActive" class="kpi-context-note">
+            הכרטיסים הבאים מתייחסים ל־<b>{{ selectedSettlement?.name || 'כל הארץ' }}</b>. הגרפים וטבלת ההשוואה מציגים את <b>{{ compareSettlementA?.name }}</b> מול <b>{{ compareSettlementB?.name }}</b>.
+          </p>
 
           <section v-if="mainDataSection === 'sales'" class="stat-cards">
             <article class="stat-card sales-kpi">
-              <div class="stat-text"><p class="stat-value">{{ formatInteger(selectedSettlement?.dealsSelected) }}</p><div class="stat-label"><strong>עסקאות בשנת {{ targetYear }}</strong><br>מספר המכירות ביישוב בשנה שנבחרה</div></div>
+              <div class="stat-text"><p class="stat-value">{{ formatInteger(selectedSettlement?.dealsSelected) }}</p><div class="stat-label"><strong>עסקאות בשנת {{ targetYear }}</strong><br>נתון עבור {{ selectedSettlement?.name || 'כל הארץ' }}</div></div>
               <div class="stat-icon">🏘️</div>
             </article>
             <article class="stat-card">
-              <div class="stat-text"><p class="stat-value">{{ formatCurrency(selectedSettlement?.ppsqmSelected) }}</p><div class="stat-label"><strong>מחיר למ״ר</strong><br>מחיר העסקאות החציוני בשנת {{ targetYear }}</div></div>
+              <div class="stat-text"><p class="stat-value">{{ formatCurrency(selectedSettlement?.ppsqmSelected) }}</p><div class="stat-label"><strong>מחיר למ״ר</strong><br>נתון עבור {{ selectedSettlement?.name || 'כל הארץ' }} · {{ targetYear }}</div></div>
               <div class="stat-icon">₪</div>
             </article>
             <article class="stat-card">
-              <div class="stat-text"><p class="stat-value">{{ formatPercent(selectedSettlement?.demandYoySelected) }}</p><div class="stat-label"><strong>שינוי שנתי במחיר</strong><br>לעומת השנה הקודמת</div></div>
+              <div class="stat-text"><p class="stat-value">{{ formatPercent(selectedSettlement?.demandYoySelected) }}</p><div class="stat-label"><strong>שינוי שנתי במחיר</strong><br>נתון עבור {{ selectedSettlement?.name || 'כל הארץ' }}</div></div>
               <div class="stat-icon">📊</div>
             </article>
             <article class="stat-card score-card">
@@ -585,23 +590,23 @@
 
           <section v-if="mainDataSection !== 'sales'" class="stat-cards">
             <article class="stat-card sales-kpi">
-              <div class="stat-text"><p class="stat-value">{{ formatActiveRent(activeRentValue) }}</p><div class="stat-label"><strong>{{ activeRentTitle }}</strong><br>{{ selectedRentalPeriodLabel }}</div></div>
+              <div class="stat-text"><p class="stat-value">{{ formatActiveRent(activeRentValue) }}</p><div class="stat-label"><strong>{{ activeRentTitle }}</strong><br>{{ selectedSettlement?.name || 'כל הארץ' }} · {{ selectedRentalPeriodLabel }}</div></div>
               <div class="stat-icon">⌂</div>
             </article>
             <article class="stat-card">
-              <div class="stat-text"><p class="stat-value">{{ formatInteger(activeListingsValue) }}</p><div class="stat-label"><strong>היצע מודעות ברבעון</strong><br>{{ selectedRentalPeriodLabel }}</div></div>
+              <div class="stat-text"><p class="stat-value">{{ formatInteger(activeListingsValue) }}</p><div class="stat-label"><strong>היצע מודעות ברבעון</strong><br>{{ selectedSettlement?.name || 'כל הארץ' }} · {{ selectedRentalPeriodLabel }}</div></div>
               <div class="stat-icon">▤</div>
             </article>
             <article class="stat-card">
-              <div class="stat-text"><p class="stat-value">{{ formatPercent(activeRentQoq) }}</p><div class="stat-label"><strong>שינוי מהרבעון הקודם</strong><br>לפי הרבעון הקודם שבו קיים נתון</div></div>
+              <div class="stat-text"><p class="stat-value">{{ formatPercent(activeRentQoq) }}</p><div class="stat-label"><strong>שינוי מהרבעון הקודם</strong><br>{{ selectedSettlement?.name || 'כל הארץ' }}</div></div>
               <div class="stat-icon">↗</div>
             </article>
             <article v-if="hasTransactionDataForSelectedRentalYear" class="stat-card">
-              <div class="stat-text"><p class="stat-value">{{ formatYield(activeYieldValue) }}</p><div class="stat-label"><strong>{{ activeYieldTitle }}</strong><br>שכירות הרבעון מול מחיר העסקאות השנתי</div></div>
+              <div class="stat-text"><p class="stat-value">{{ formatYield(activeYieldValue) }}</p><div class="stat-label"><strong>{{ activeYieldTitle }}</strong><br>{{ selectedSettlement?.name || 'כל הארץ' }} · שכירות מול עסקאות</div></div>
               <div class="stat-icon">%</div>
             </article>
             <article v-else class="stat-card">
-              <div class="stat-text"><p class="stat-value">{{ formatActiveRent(activeAnnualRentValue) }}</p><div class="stat-label"><strong>ממוצע חודשי בשנת {{ targetYear }}</strong><br>לפי {{ formatInteger(activeQuarterCount) }} רבעונים זמינים</div></div>
+              <div class="stat-text"><p class="stat-value">{{ formatActiveRent(activeAnnualRentValue) }}</p><div class="stat-label"><strong>ממוצע חודשי בשנת {{ targetYear }}</strong><br>{{ selectedSettlement?.name || 'כל הארץ' }} · {{ formatInteger(activeQuarterCount) }} רבעונים</div></div>
               <div class="stat-icon">Σ</div>
             </article>
           </section>
