@@ -450,7 +450,7 @@
           </section>
 
           <section class="compare-panel">
-            <h3>השוואה בין שתי ערים</h3>
+            <h3>השוואה בין שני יישובים</h3>
             <div class="compare-controls">
               <label class="field"><span>עיר ראשונה</span>
                 <select v-model="compareSidA" @change="selectCompareASettlement">
@@ -464,7 +464,7 @@
                   <option v-for="item in settlementOptions" :key="'b-' + item.sid" :value="item.sid">{{ item.name }}</option>
                 </select>
               </label>
-              <button class="secondary-btn" @click="setCompareAFromSelected" :disabled="!selectedSettlement || selectedSettlement.sid === '__national__'">השתמש ביישוב הנבחר</button>
+              <button class="secondary-btn" @click="clearComparison" :disabled="!compareSidA && !compareSidB">בטל השוואה</button>
             </div>
             <div v-if="compareSettlementA && compareSettlementB" class="compare-table">
               <div class="compare-row">
@@ -478,7 +478,7 @@
                 <div class="metric-value">{{ row.b }}</div>
               </div>
             </div>
-            <p v-else class="note">בחר שתי ערים כדי לראות השוואה של מחיר, עסקאות, שכירות, תשואה וציון השקעה.</p>
+            <p v-else class="note">בחר יישוב שני כדי להשוות מול היישוב הנבחר.</p>
           </section>
 
           <section class="section-heading">
@@ -1281,6 +1281,15 @@
           selectSettlement(item, true);
           statusMessage.value = `הנתונים עודכנו לפי ${item.name}.`;
         }
+        function clearComparison() {
+          compareSidA.value = selectedSettlement.value?.sid && String(selectedSettlement.value.sid) !== NATIONAL_SID
+            ? String(selectedSettlement.value.sid)
+            : '';
+          compareSidB.value = '';
+          statusMessage.value = compareSidA.value
+            ? `ההשוואה בוטלה. העיר הראשונה נשארה ${selectedSettlement.value.name}.`
+            : 'ההשוואה בוטלה.';
+        }
         function currentYieldForDisplay(item) {
           if (!item) return null;
           return rentalDataType.value === 'commercial' ? normalizeNumber(item.commercialYieldSelected) : normalizeNumber(item.residentialYieldSelected);
@@ -1312,7 +1321,7 @@
         });
         watch(selectedSettlement, (next) => {
           const sid = next?.sid ? String(next.sid) : '';
-          if (sid && sid !== NATIONAL_SID && !compareSidA.value) compareSidA.value = sid;
+          if (sid && sid !== NATIONAL_SID) compareSidA.value = sid;
         });
         watch(compareSidA, (sid, previousSid) => {
           if (!sid || sid === previousSid) return;
@@ -1981,6 +1990,15 @@
           const nextSid = String(item.sid);
           const isSameSettlement = previousSid === nextSid;
           selectedSettlement.value = { ...item };
+
+          // היישוב הנבחר הופך אוטומטית לעיר הראשונה בהשוואה
+          if (nextSid && nextSid !== NATIONAL_SID) {
+            compareSidA.value = nextSid;
+          } else {
+            compareSidA.value = '';
+            compareSidB.value = '';
+          }
+
           if (!isSameSettlement) nextTick(() => renderCharts({ animate: true }));
           if (shouldFocus && !isSameSettlement) focusSettlement(item);
           return !isSameSettlement;
