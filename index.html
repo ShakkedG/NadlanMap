@@ -506,6 +506,10 @@
               <div class="stat-icon">🏘️</div>
             </article>
             <article class="stat-card">
+              <div class="stat-text"><p class="stat-value">{{ formatInteger(selectedSettlement?.population2023) }}</p><div class="stat-label"><strong>אוכלוסייה ב־2023</strong><br>לפי דוח הלמ״ס עבור {{ selectedSettlement?.name || 'כל הארץ' }}</div></div>
+              <div class="stat-icon">👥</div>
+            </article>
+            <article class="stat-card">
               <div class="stat-text"><p class="stat-value">{{ formatCurrency(selectedSettlement?.ppsqmSelected) }}</p><div class="stat-label"><strong>מחיר למ״ר</strong><br>נתון עבור {{ selectedSettlement?.name || 'כל הארץ' }} · {{ targetYear }}</div></div>
               <div class="stat-icon">₪</div>
             </article>
@@ -588,6 +592,10 @@
             <article class="stat-card sales-kpi">
               <div class="stat-text"><p class="stat-value">{{ formatActiveRent(activeRentValue) }}</p><div class="stat-label"><strong>{{ activeRentTitle }}</strong><br>{{ selectedSettlement?.name || 'כל הארץ' }} · {{ selectedRentalPeriodLabel }}</div></div>
               <div class="stat-icon">⌂</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-text"><p class="stat-value">{{ formatInteger(selectedSettlement?.population2023) }}</p><div class="stat-label"><strong>אוכלוסייה ב־2023</strong><br>לפי דוח הלמ״ס עבור {{ selectedSettlement?.name || 'כל הארץ' }}</div></div>
+              <div class="stat-icon">👥</div>
             </article>
             <article class="stat-card">
               <div class="stat-text"><p class="stat-value">{{ formatInteger(activeListingsValue) }}</p><div class="stat-label"><strong>היצע מודעות ברבעון</strong><br>{{ selectedSettlement?.name || 'כל הארץ' }} · {{ selectedRentalPeriodLabel }}</div></div>
@@ -949,6 +957,7 @@
         const rawRows = ref([]);
         const residentialRentRows = ref([]);
         const commercialRentRows = ref([]);
+        const populationBySid = ref({});
         const wktFeatures = ref([]);
         const searchText = ref('');
         const listSortDirection = ref('desc');
@@ -1510,6 +1519,7 @@
           return {
             sid: NATIONAL_SID,
             name: 'כל הארץ',
+            population2023: populationForSid(NATIONAL_SID),
             dealsSelected,
             avgAnnualDeals,
             ratio,
@@ -1667,6 +1677,10 @@
           if (ignoreZeroYears.value) values = values.filter((value) => value > 0);
           return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
         }
+        function populationForSid(sid) {
+          const key = String(sid || '');
+          return normalizeNumber(populationBySid.value?.[key]?.population2023);
+        }
         const joinedSettlements = computed(() => {
           const selectedYear = Number(targetYear.value);
           return uniqueGeometrySettlements.value.map((feature) => {
@@ -1701,6 +1715,7 @@
             const residentialSupplyRatioVsOthers = Number.isFinite(residentialListingsSelected) && Number.isFinite(avgOtherResidentialListings) && avgOtherResidentialListings > 0 ? residentialListingsSelected / avgOtherResidentialListings : null;
             const commercialSupplyRatioVsOthers = Number.isFinite(commercialListingsSelected) && Number.isFinite(avgOtherCommercialListings) && avgOtherCommercialListings > 0 ? commercialListingsSelected / avgOtherCommercialListings : null;
             const demandYoySelected = normalizeNumber(rowSelected?.demand_yoy);
+            const population2023 = populationForSid(sid);
             const investmentScoreParts = calculateInvestmentScoreParts({
               yieldValue: rentalDataType.value === 'commercial' ? commercialYieldSelected : residentialYieldSelected,
               supplyRatio: rentalDataType.value === 'commercial' ? commercialSupplyRatioVsOthers : residentialSupplyRatioVsOthers,
@@ -1710,7 +1725,7 @@
             });
             const investmentScore = Number.isFinite(investmentScoreParts?.score) ? investmentScoreParts.score : null;
             return {
-              sid, name: feature.name, dealsSelected, avgAnnualDeals, ratio,
+              sid, name: feature.name, population2023, dealsSelected, avgAnnualDeals, ratio,
               ppsqmSelected, ppsqmForYield, avgOtherPpsqm, priceRatioVsOthers, residentialRentSelected, commercialRentSelected, residentialYieldSelected, commercialYieldSelected,
               residentialRentQuarterSelected, commercialRentQuarterSelected, residentialQuarterYieldSelected, commercialQuarterYieldSelected, residentialRentQoq, commercialRentQoq,
               residentialQuarterPriceRatioVsOthers, commercialQuarterPriceRatioVsOthers, residentialQuarterSupplyRatioVsOthers, commercialQuarterSupplyRatioVsOthers,
@@ -1764,6 +1779,7 @@
           if (!a || !b) return [];
           if (mainDataSection.value === 'sales') {
             return [
+              { label: 'אוכלוסייה 2023', a: formatInteger(a.population2023), b: formatInteger(b.population2023) },
               { label: `מחיר למ״ר ${targetYear.value}`, a: formatCurrency(a.ppsqmSelected), b: formatCurrency(b.ppsqmSelected) },
               { label: `עסקאות ${targetYear.value}`, a: formatInteger(a.dealsSelected), b: formatInteger(b.dealsSelected) },
               { label: 'שינוי מחיר מול השנה הקודמת', a: formatPercent(a.demandYoySelected), b: formatPercent(b.demandYoySelected) },
@@ -1781,6 +1797,7 @@
           const qoqA = rentalDataType.value === 'commercial' ? a.commercialRentQoq : a.residentialRentQoq;
           const qoqB = rentalDataType.value === 'commercial' ? b.commercialRentQoq : b.residentialRentQoq;
           const rows = [
+            { label: 'אוכלוסייה 2023', a: formatInteger(a.population2023), b: formatInteger(b.population2023) },
             { label: `${activeRentTitle.value} · ${selectedRentalPeriodLabel.value}`, a: formatActiveRent(quarterRentA?.rental_price), b: formatActiveRent(quarterRentB?.rental_price) },
             { label: `היצע מודעות ברבעון`, a: formatInteger(quarterRentA?.listings_amount), b: formatInteger(quarterRentB?.listings_amount) },
             { label: 'שינוי מהרבעון הקודם', a: formatPercent(qoqA), b: formatPercent(qoqB) }
@@ -2141,16 +2158,18 @@
         async function fetchText(fileName) { const response = await fetch(dataUrl(fileName), { cache: 'no-store' }); if (!response.ok) throw new Error(`לא הצלחתי לטעון ${fileName}: ${response.status}`); return response.text(); }
         async function loadLocalFiles() {
           statusMessage.value = 'טוען קבצי נתונים...';
-          const [rows, geometry, residentialCsv, commercialCsv] = await Promise.all([
+          const [rows, geometry, residentialCsv, commercialCsv, populationJson] = await Promise.all([
             fetchJson('settlements_flat.json'),
             fetchJson('settlements_wkt_2039.json'),
             fetchText('2026-04_citiesagg.csv'),
-            fetchText('2026-04_com_citiesagg.csv')
+            fetchText('2026-04_com_citiesagg.csv'),
+            fetchJson('population_2023_by_settlement.json')
           ]);
           rawRows.value = rows;
           wktFeatures.value = geometry.features || [];
           residentialRentRows.value = parseCsv(residentialCsv);
           commercialRentRows.value = parseCsv(commercialCsv);
+          populationBySid.value = populationJson || {};
         }
         function scheduleMapResizePasses() {
           while (mapResizeTimers.length) clearTimeout(mapResizeTimers.pop());
