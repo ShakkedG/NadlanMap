@@ -510,6 +510,10 @@
               <div class="stat-icon">👥</div>
             </article>
             <article class="stat-card">
+              <div class="stat-text"><p class="stat-value">{{ formatSocioEconomicCluster(selectedSettlement?.socioEconomicCluster) }}</p><div class="stat-label"><strong>אשכול חברתי־כלכלי</strong><br>לפי מדד למ״ס עבור {{ selectedSettlement?.name || 'כל הארץ' }}</div></div>
+              <div class="stat-icon">🏘️</div>
+            </article>
+            <article class="stat-card">
               <div class="stat-text"><p class="stat-value">{{ formatCurrency(selectedSettlement?.ppsqmSelected) }}</p><div class="stat-label"><strong>מחיר למ״ר</strong><br>נתון עבור {{ selectedSettlement?.name || 'כל הארץ' }} · {{ targetYear }}</div></div>
               <div class="stat-icon">₪</div>
             </article>
@@ -596,6 +600,10 @@
             <article class="stat-card">
               <div class="stat-text"><p class="stat-value">{{ formatInteger(selectedSettlement?.population2023) }}</p><div class="stat-label"><strong>אוכלוסייה ב־2023</strong><br>לפי דוח הלמ״ס עבור {{ selectedSettlement?.name || 'כל הארץ' }}</div></div>
               <div class="stat-icon">👥</div>
+            </article>
+            <article class="stat-card">
+              <div class="stat-text"><p class="stat-value">{{ formatSocioEconomicCluster(selectedSettlement?.socioEconomicCluster) }}</p><div class="stat-label"><strong>אשכול חברתי־כלכלי</strong><br>לפי מדד למ״ס עבור {{ selectedSettlement?.name || 'כל הארץ' }}</div></div>
+              <div class="stat-icon">🏘️</div>
             </article>
             <article class="stat-card">
               <div class="stat-text"><p class="stat-value">{{ formatInteger(activeListingsValue) }}</p><div class="stat-label"><strong>היצע מודעות ברבעון</strong><br>{{ selectedSettlement?.name || 'כל הארץ' }} · {{ selectedRentalPeriodLabel }}</div></div>
@@ -958,6 +966,7 @@
         const residentialRentRows = ref([]);
         const commercialRentRows = ref([]);
         const populationBySid = ref({});
+        const socioEconomicBySid = ref({});
         const wktFeatures = ref([]);
         const searchText = ref('');
         const listSortDirection = ref('desc');
@@ -1520,6 +1529,7 @@
             sid: NATIONAL_SID,
             name: 'כל הארץ',
             population2023: populationForSid(NATIONAL_SID),
+            socioEconomicCluster: socioEconomicForSid(NATIONAL_SID),
             dealsSelected,
             avgAnnualDeals,
             ratio,
@@ -1681,6 +1691,17 @@
           const key = String(sid || '');
           return normalizeNumber(populationBySid.value?.[key]?.population2023);
         }
+        function socioEconomicForSid(sid) {
+          const key = String(sid || '');
+          const entry = socioEconomicBySid.value?.[key];
+          const value = normalizeNumber(entry?.cluster ?? entry?.socioEconomicCluster ?? entry);
+          return Number.isFinite(value) ? value : null;
+        }
+        function formatSocioEconomicCluster(value) {
+          const cluster = normalizeNumber(value);
+          if (!Number.isFinite(cluster)) return 'לא ידוע';
+          return `אשכול ${Math.round(cluster)} מתוך 10`;
+        }
         const joinedSettlements = computed(() => {
           const selectedYear = Number(targetYear.value);
           return uniqueGeometrySettlements.value.map((feature) => {
@@ -1716,6 +1737,7 @@
             const commercialSupplyRatioVsOthers = Number.isFinite(commercialListingsSelected) && Number.isFinite(avgOtherCommercialListings) && avgOtherCommercialListings > 0 ? commercialListingsSelected / avgOtherCommercialListings : null;
             const demandYoySelected = normalizeNumber(rowSelected?.demand_yoy);
             const population2023 = populationForSid(sid);
+            const socioEconomicCluster = socioEconomicForSid(sid);
             const investmentScoreParts = calculateInvestmentScoreParts({
               yieldValue: rentalDataType.value === 'commercial' ? commercialYieldSelected : residentialYieldSelected,
               supplyRatio: rentalDataType.value === 'commercial' ? commercialSupplyRatioVsOthers : residentialSupplyRatioVsOthers,
@@ -1725,7 +1747,7 @@
             });
             const investmentScore = Number.isFinite(investmentScoreParts?.score) ? investmentScoreParts.score : null;
             return {
-              sid, name: feature.name, population2023, dealsSelected, avgAnnualDeals, ratio,
+              sid, name: feature.name, population2023, socioEconomicCluster, dealsSelected, avgAnnualDeals, ratio,
               ppsqmSelected, ppsqmForYield, avgOtherPpsqm, priceRatioVsOthers, residentialRentSelected, commercialRentSelected, residentialYieldSelected, commercialYieldSelected,
               residentialRentQuarterSelected, commercialRentQuarterSelected, residentialQuarterYieldSelected, commercialQuarterYieldSelected, residentialRentQoq, commercialRentQoq,
               residentialQuarterPriceRatioVsOthers, commercialQuarterPriceRatioVsOthers, residentialQuarterSupplyRatioVsOthers, commercialQuarterSupplyRatioVsOthers,
@@ -1780,6 +1802,7 @@
           if (mainDataSection.value === 'sales') {
             return [
               { label: 'אוכלוסייה 2023', a: formatInteger(a.population2023), b: formatInteger(b.population2023) },
+              { label: 'אשכול חברתי־כלכלי', a: formatSocioEconomicCluster(a.socioEconomicCluster), b: formatSocioEconomicCluster(b.socioEconomicCluster) },
               { label: `מחיר למ״ר ${targetYear.value}`, a: formatCurrency(a.ppsqmSelected), b: formatCurrency(b.ppsqmSelected) },
               { label: `עסקאות ${targetYear.value}`, a: formatInteger(a.dealsSelected), b: formatInteger(b.dealsSelected) },
               { label: 'שינוי מחיר מול השנה הקודמת', a: formatPercent(a.demandYoySelected), b: formatPercent(b.demandYoySelected) },
@@ -1798,6 +1821,7 @@
           const qoqB = rentalDataType.value === 'commercial' ? b.commercialRentQoq : b.residentialRentQoq;
           const rows = [
             { label: 'אוכלוסייה 2023', a: formatInteger(a.population2023), b: formatInteger(b.population2023) },
+            { label: 'אשכול חברתי־כלכלי', a: formatSocioEconomicCluster(a.socioEconomicCluster), b: formatSocioEconomicCluster(b.socioEconomicCluster) },
             { label: `${activeRentTitle.value} · ${selectedRentalPeriodLabel.value}`, a: formatActiveRent(quarterRentA?.rental_price), b: formatActiveRent(quarterRentB?.rental_price) },
             { label: `היצע מודעות ברבעון`, a: formatInteger(quarterRentA?.listings_amount), b: formatInteger(quarterRentB?.listings_amount) },
             { label: 'שינוי מהרבעון הקודם', a: formatPercent(qoqA), b: formatPercent(qoqB) }
@@ -2156,20 +2180,199 @@
 
         async function fetchJson(fileName) { const response = await fetch(dataUrl(fileName), { cache: 'no-store' }); if (!response.ok) throw new Error(`לא הצלחתי לטעון ${fileName}: ${response.status}`); return response.json(); }
         async function fetchText(fileName) { const response = await fetch(dataUrl(fileName), { cache: 'no-store' }); if (!response.ok) throw new Error(`לא הצלחתי לטעון ${fileName}: ${response.status}`); return response.text(); }
+        function normalizeHebrewSettlementName(value) {
+          return String(value || '')
+            .replace(/ð/g, 'נ')
+            .replace(/[״”]/g, '"')
+            .replace(/[׳’]/g, "'")
+            .replace(/[־–—]/g, '-')
+            .replace(/\*/g, '')
+            .replace(/\s*\(.*?\)\s*/g, ' ')
+            .replace(/\s+/g, ' ')
+            .replace(/\s*-\s*/g, '-')
+            .trim();
+        }
+        function settlementNameToSidMap() {
+          const map = new Map();
+          for (const feature of wktFeatures.value || []) {
+            const name = normalizeHebrewSettlementName(feature?.name);
+            if (name && feature?.sid) map.set(name, String(feature.sid));
+          }
+          for (const [sid, entry] of Object.entries(populationBySid.value || {})) {
+            const name = normalizeHebrewSettlementName(entry?.name);
+            if (name) map.set(name, String(sid));
+          }
+          return map;
+        }
+        function firstMatchingKey(keys, tests) {
+          return keys.find((key) => tests.some((test) => test.test(String(key)))) || null;
+        }
+        function normalizeSocioEconomicDataset(raw, defaults = {}) {
+          const output = {};
+          if (!raw) return output;
+          if (!Array.isArray(raw)) {
+            for (const [sid, entry] of Object.entries(raw || {})) {
+              if (String(sid).startsWith('__')) continue;
+              const cluster = normalizeNumber(entry?.cluster ?? entry?.socioEconomicCluster ?? entry);
+              if (Number.isFinite(cluster)) output[String(sid)] = { name: entry?.name, cluster, year: entry?.year || defaults.year || null, source: entry?.source || defaults.source || 'local' };
+            }
+            return output;
+          }
+          const byName = settlementNameToSidMap();
+          const candidates = new Map();
+          for (const sourceRecord of raw) {
+            const record = sourceRecord?.attributes || sourceRecord?.properties || sourceRecord;
+            if (!record || typeof record !== 'object') continue;
+            const keys = Object.keys(record);
+            const sidKey = firstMatchingKey(keys, [/סמל.*י[י]?שוב/i, /י[י]?שוב.*סמל/i, /SEMEL.*(YISHUV|YESHUV|LOCALITY)/i, /(YISHUV|YESHUV|LOCALITY).*SEMEL/i, /LOCALITY.*CODE/i, /CODE.*LOCALITY/i, /^SETL.*CODE/i]);
+            const nameKey = firstMatchingKey(keys, [/שם.*י[י]?שוב/i, /י[י]?שוב.*שם/i, /SHEM.*(YISHUV|YESHUV|LOCALITY)/i, /(YISHUV|YESHUV|LOCALITY).*NAME/i, /LOCALITY.*NAME/i, /NAME.*LOCALITY/i, /^SETL.*NAME/i]);
+            const clusterKey = firstMatchingKey(keys, [/אשכול/i, /cluster/i, /eshkol/i, /socio/i, /index.*rank/i]);
+            if (!clusterKey) continue;
+            const cluster = normalizeNumber(record[clusterKey]);
+            if (!Number.isFinite(cluster) || cluster < 1 || cluster > 10) continue;
+            let sid = sidKey ? String(record[sidKey] || '').replace(/\.0$/, '').trim() : '';
+            if (!sid && nameKey) sid = byName.get(normalizeHebrewSettlementName(record[nameKey])) || '';
+            if (!sid || sid === NATIONAL_SID) continue;
+            const name = nameKey ? normalizeHebrewSettlementName(record[nameKey]) : (populationBySid.value?.[sid]?.name || '');
+            if (!candidates.has(sid)) candidates.set(sid, { name, values: new Set(), cluster, year: defaults.year || null, source: defaults.source || 'external' });
+            const current = candidates.get(sid);
+            current.values.add(String(Math.round(cluster * 100) / 100));
+            current.cluster = cluster;
+            if (!current.name && name) current.name = name;
+          }
+          for (const [sid, item] of candidates.entries()) {
+            if (item.values.size === 1) output[sid] = { name: item.name, cluster: item.cluster, year: item.year, source: item.source };
+          }
+          return output;
+        }
+        function mergeSocioEconomicClusters(data) {
+          if (!data || !Object.keys(data).length) return;
+          socioEconomicBySid.value = { ...socioEconomicBySid.value, ...data };
+        }
+        async function fetchJsonUrl(url) {
+          const response = await fetch(url, { cache: 'force-cache' });
+          if (!response.ok) throw new Error(`remote ${response.status}`);
+          return response.json();
+        }
+        async function fetchJsonp(url) {
+          return new Promise((resolve, reject) => {
+            const callbackName = `__socioEconomicCallback_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+            const script = document.createElement('script');
+            const separator = url.includes('?') ? '&' : '?';
+            const timer = window.setTimeout(() => {
+              delete window[callbackName];
+              script.remove();
+              reject(new Error('jsonp timeout'));
+            }, 12000);
+            window[callbackName] = (payload) => {
+              window.clearTimeout(timer);
+              delete window[callbackName];
+              script.remove();
+              resolve(payload);
+            };
+            script.onerror = () => {
+              window.clearTimeout(timer);
+              delete window[callbackName];
+              script.remove();
+              reject(new Error('jsonp error'));
+            };
+            script.src = `${url}${separator}callback=${callbackName}`;
+            document.head.appendChild(script);
+          });
+        }
+        async function loadDataGovSocioEconomicClusters() {
+          const endpoint = 'https://data.gov.il/api/action/datastore_search?resource_id=7c860e04-9f8d-41c2-9f24-6249958d2081&limit=32000';
+          try {
+            let json;
+            try { json = await fetchJsonUrl(endpoint); }
+            catch (_) { json = await fetchJsonp(endpoint); }
+            const records = json?.result?.records || [];
+            mergeSocioEconomicClusters(normalizeSocioEconomicDataset(records, { year: 2019, source: 'data.gov.il' }));
+          } catch (error) {
+            console.warn('לא נטענו אשכולות חברתיים-כלכליים מ-data.gov.il', error);
+          }
+        }
+        async function queryArcgisFeatureLayer(url) {
+          const output = [];
+          const base = String(url || '').replace(/\/$/, '');
+          if (!base || !/FeatureServer/i.test(base)) return output;
+          for (let offset = 0; offset < 6000; offset += 2000) {
+            const queryUrl = `${base}/query?where=1%3D1&outFields=*&returnGeometry=false&f=json&resultOffset=${offset}&resultRecordCount=2000`;
+            const json = await fetchJsonUrl(queryUrl);
+            const features = json?.features || [];
+            output.push(...features.map((feature) => feature?.attributes || feature).filter(Boolean));
+            if (!json?.exceededTransferLimit || features.length < 2000) break;
+          }
+          return output;
+        }
+        async function arcgisLayerUrlsFromService(url) {
+          const base = String(url || '').replace(/\/$/, '');
+          if (!base || !/FeatureServer/i.test(base)) return [];
+          if (/FeatureServer\/\d+$/i.test(base)) return [base];
+          try {
+            const service = await fetchJsonUrl(`${base}?f=json`);
+            const layers = Array.isArray(service?.layers) ? service.layers : [];
+            return layers.map((layer) => `${base}/${layer.id}`).filter(Boolean).slice(0, 12);
+          } catch (_) {
+            return [base];
+          }
+        }
+        async function loadArcgisSocioEconomicClusters2021() {
+          const itemIds = ['5814e892a6494b3488f9bccf67e36687', 'cf08f368bb3e45b2a363b49e9ef071cc'];
+          try {
+            for (const itemId of itemIds) {
+              const layerUrls = new Set();
+              try {
+                const item = await fetchJsonUrl(`https://www.arcgis.com/sharing/rest/content/items/${itemId}?f=json`);
+                if (item?.url) {
+                  for (const layerUrl of await arcgisLayerUrlsFromService(item.url)) layerUrls.add(layerUrl);
+                }
+              } catch (_) {}
+              try {
+                const webMap = await fetchJsonUrl(`https://www.arcgis.com/sharing/rest/content/items/${itemId}/data?f=json`);
+                const urls = (webMap?.operationalLayers || [])
+                  .flatMap((layer) => [layer, ...(layer.layers || [])])
+                  .map((layer) => layer?.url)
+                  .filter(Boolean)
+                  .slice(0, 12);
+                for (const url of urls) {
+                  for (const layerUrl of await arcgisLayerUrlsFromService(url)) layerUrls.add(layerUrl);
+                }
+              } catch (_) {}
+              for (const layerUrl of layerUrls) {
+                try {
+                  const records = await queryArcgisFeatureLayer(layerUrl);
+                  const normalized = normalizeSocioEconomicDataset(records, { year: 2021, source: 'ArcGIS/CBS' });
+                  if (Object.keys(normalized).length) mergeSocioEconomicClusters(normalized);
+                } catch (layerError) {
+                  console.warn('שכבת מדד חברתי-כלכלי לא נטענה', layerError);
+                }
+              }
+            }
+          } catch (error) {
+            console.warn('לא נטען מדד חברתי-כלכלי 2021 מ-ArcGIS', error);
+          }
+        }
+        async function loadRemoteSocioEconomicClusters() {
+          await Promise.allSettled([loadArcgisSocioEconomicClusters2021(), loadDataGovSocioEconomicClusters()]);
+        }
         async function loadLocalFiles() {
           statusMessage.value = 'טוען קבצי נתונים...';
-          const [rows, geometry, residentialCsv, commercialCsv, populationJson] = await Promise.all([
+          const [rows, geometry, residentialCsv, commercialCsv, populationJson, socioEconomicJson] = await Promise.all([
             fetchJson('settlements_flat.json'),
             fetchJson('settlements_wkt_2039.json'),
             fetchText('2026-04_citiesagg.csv'),
             fetchText('2026-04_com_citiesagg.csv'),
-            fetchJson('population_2023_by_settlement.json')
+            fetchJson('population_2023_by_settlement.json'),
+            fetchJson('socio_economic_cluster_2021_by_settlement.json').catch(() => ({}))
           ]);
           rawRows.value = rows;
           wktFeatures.value = geometry.features || [];
           residentialRentRows.value = parseCsv(residentialCsv);
           commercialRentRows.value = parseCsv(commercialCsv);
           populationBySid.value = populationJson || {};
+          socioEconomicBySid.value = normalizeSocioEconomicDataset(socioEconomicJson || {}, { year: 2021, source: 'local' });
+          loadRemoteSocioEconomicClusters();
         }
         function scheduleMapResizePasses() {
           while (mapResizeTimers.length) clearTimeout(mapResizeTimers.pop());
@@ -3362,7 +3565,7 @@
           document.addEventListener('visibilitychange', handleVisibility);
           boot();
         });
-        return { ESTIMATED_APARTMENT_SQM, mainDataSection, setMainDataSection, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, yearSliderPreview, rentalPeriodSliderPreview, rentalSliderPreviewLabel, rentalShowAllQuarters, availableYears, availableRentalYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, rentalYearSliderMin, rentalYearSliderMax, hasTransactionDataForSelectedRentalYear, colorMode, colorMetricLabel, colorModeNote, rankingTitle, investmentScoreTypeLabel, investmentScoreSubtitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, formatInvestmentScore, rankingRowSubtitle, setColorMode, setQuarterlyDataType, setRentalColorMetric, formatNumber, formatInteger, formatRatio, formatCurrency, formatCommercialRent, formatActiveRent, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearChanged, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartComparisonActive, chartEntityName, pageTitle, activeRentValue, activeListingsValue, activeRentQoq, activeAnnualRentValue, activeAnnualListingsValue, activeQuarterCount, activeAnnualIsComplete, activeRentYoy, activeRentTitle, activeRentChartTitle, activeYieldValue, activeAnnualYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData, compareSidA, compareSidB, showInvestmentExplanation, settlementOptions, compareSettlementA, compareSettlementB, comparisonRows, setCompareAFromSelected, clearComparison };
+        return { ESTIMATED_APARTMENT_SQM, mainDataSection, setMainDataSection, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, yearSliderPreview, rentalPeriodSliderPreview, rentalSliderPreviewLabel, rentalShowAllQuarters, availableYears, availableRentalYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, rentalYearSliderMin, rentalYearSliderMax, hasTransactionDataForSelectedRentalYear, colorMode, colorMetricLabel, colorModeNote, rankingTitle, investmentScoreTypeLabel, investmentScoreSubtitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, formatInvestmentScore, rankingRowSubtitle, setColorMode, setQuarterlyDataType, setRentalColorMetric, formatNumber, formatInteger, formatSocioEconomicCluster, formatRatio, formatCurrency, formatCommercialRent, formatActiveRent, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearChanged, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartComparisonActive, chartEntityName, pageTitle, activeRentValue, activeListingsValue, activeRentQoq, activeAnnualRentValue, activeAnnualListingsValue, activeQuarterCount, activeAnnualIsComplete, activeRentYoy, activeRentTitle, activeRentChartTitle, activeYieldValue, activeAnnualYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData, compareSidA, compareSidB, showInvestmentExplanation, settlementOptions, compareSettlementA, compareSettlementB, comparisonRows, setCompareAFromSelected, clearComparison };
       }
     }).mount('#app');
   </script>

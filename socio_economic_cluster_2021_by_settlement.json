@@ -1,0 +1,7 @@
+{
+  "__meta": {
+    "description": "Socio-economic cluster data. The app first reads this file and then tries to enrich it in the browser from CBS/GovMap ArcGIS 2021 and data.gov.il fallback.",
+    "displayField": "cluster",
+    "range": "1-10"
+  }
+}
