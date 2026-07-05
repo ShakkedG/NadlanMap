@@ -640,44 +640,6 @@
                       <div class="year-slider-labels"><span>{{ yearSliderMin }}</span><span>{{ yearSliderMax }}</span></div>
                     </div>
                     <div class="rental-filter-row">
-                      <span>צביעת המפה ודירוג היישובים:</span>
-                      <button :class="{ active: colorMode === 'deals' }" @click="setColorMode('deals')">עסקאות מול ממוצע</button>
-                      <button :class="{ active: colorMode === 'price' }" @click="setColorMode('price')">מחיר למ״ר</button>
-                      <button :class="{ active: colorMode === 'investment' }" @click="setColorMode('investment')">ציון השקעה</button>
-                    </div>
-                  </div>
-
-                  <article class="chart-panel">
-                    <h3>מחיר למ״ר לאורך השנים - {{ chartEntityName }}</h3>
-                    <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
-                  </article>
-                  <article class="chart-panel">
-                    <h3>מספר עסקאות לאורך השנים - {{ chartEntityName }}</h3>
-                    <div class="chart-wrap sales-chart-wrap"><canvas id="salesChart"></canvas></div>
-                  </article>
-                </template>
-
-                <template v-else>
-                  <div class="rental-filter-panel data-set-panel quarterly-data-panel">
-                    <h3 class="rental-filter-title">נתוני שכירות רבעוניים</h3>
-                    <div class="year-slider-card embedded-slider-card quarter-slider-card">
-                      <div class="year-slider-title">
-                        <span>הרבעון הנבחר: {{ rentalSliderPreviewLabel }}</span>
-                        <small>הנתונים והמפה מתעדכנים לאחר שחרור הסליידר</small>
-                      </div>
-                      <input class="year-slider" dir="ltr" type="range" min="0" :max="rentalSliderMax" step="1" v-model.number="rentalPeriodSliderPreview" @change="handleRentalPeriodChanged" />
-                      <div class="year-slider-labels"><span>{{ rentalSliderMinLabel }}</span><span>{{ rentalSliderMaxLabel }}</span></div>
-                    </div>
-                    <div class="rental-filter-row">
-                      <span>סוג נכס:</span>
-                      <button :class="{ active: rentalDataType === 'regular' }" @click="setQuarterlyDataType('regular')">מגורים</button>
-                      <button :class="{ active: rentalDataType === 'commercial' }" @click="setQuarterlyDataType('commercial')">מסחרי</button>
-                    </div>
-                    <div v-if="rentalDataType === 'regular'" class="rental-filter-row">
-                      <span>מספר חדרים:</span>
-                      <button v-for="option in roomGroupOptions" :key="option.key" :class="{ active: selectedRoomGroup === option.key }" @click="selectedRoomGroup = option.key">{{ option.label }}</button>
-                    </div>
-                    <div class="rental-filter-row">
                       <span>צביעת המפה ודירוג:</span>
                       <button :class="{ active: colorMode === 'rentPrice' }" @click="setRentalColorMetric('rentPrice')">מחיר שכירות</button>
                       <button :class="{ active: colorMode === 'rentListings' }" @click="setRentalColorMetric('rentListings')">היצע מודעות</button>
@@ -737,7 +699,7 @@
               </label>
               <button class="secondary-btn" @click="clearComparison" :disabled="!compareSidA && !compareSidB">בטל השוואה</button>
             </div>
-            <div v-if="compareSettlementA && compareSettlementB" class="compare-table">
+            <div v-if="compareSettlementA" class="compare-table">
               <div class="compare-row">
                 <div class="metric">מדד</div>
                 <div class="city-name">{{ compareSettlementA.name }}</div>
@@ -987,13 +949,11 @@
         const compareSidB = ref('');
         const showInvestmentExplanation = ref(false);
         const roomGroupOptions = [
-          { key: 'all', label: 'כל סוגי החדרים' },
-          { key: '3', label: '3 חדרים' },
-          { key: '4', label: '4 חדרים' },
-          { key: '5', label: '5 חדרים' }
+          { key: 'all', label: 'כל החדרים' }
         ];
-        const selectedRoomGroupLabel = computed(() => roomGroupOptions.find((option) => option.key === selectedRoomGroup.value)?.label || 'כל סוגי החדרים');
+        const selectedRoomGroupLabel = computed(() => roomGroupOptions.find((option) => option.key === selectedRoomGroup.value)?.label || 'כל החדרים');
         const selectedRoomGroupSqm = computed(() => sqmForRoomGroup(selectedRoomGroup.value));
+        watch(selectedRoomGroup, () => { if (selectedRoomGroup.value !== 'all') selectedRoomGroup.value = 'all'; });
         let priceChart = null;
         let salesChart = null;
         let rentChart = null;
@@ -1765,8 +1725,14 @@
           if (!key) return null;
           return joinedSettlements.value.find((item) => String(item.sid) === key) || null;
         }
-        const compareSettlementA = computed(() => settlementForCompare(compareSidA.value));
-        const compareSettlementB = computed(() => settlementForCompare(compareSidB.value));
+        const compareSettlementA = computed(() => {
+          const sid = selectedSettlement.value?.sid ? String(selectedSettlement.value.sid) : '';
+          if (sid && sid !== NATIONAL_SID) return settlementForCompare(sid) || selectedSettlement.value;
+          return nationalSettlement.value;
+        });
+        const compareSettlementB = computed(() => {
+          return compareSidB.value ? settlementForCompare(compareSidB.value) : nationalSettlement.value;
+        });
         function setCompareAFromSelected() {
           const sid = selectedSettlement.value?.sid ? String(selectedSettlement.value.sid) : '';
           if (sid && sid !== NATIONAL_SID) compareSidA.value = sid;
