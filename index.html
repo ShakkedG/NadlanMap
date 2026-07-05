@@ -681,10 +681,7 @@
                       <button :class="{ active: rentalDataType === 'regular' }" @click="setQuarterlyDataType('regular')">מגורים</button>
                       <button :class="{ active: rentalDataType === 'commercial' }" @click="setQuarterlyDataType('commercial')">מסחרי</button>
                     </div>
-                    <div v-if="rentalDataType === 'regular'" class="rental-filter-row">
-                      <span>מספר חדרים:</span>
-                      <button v-for="option in roomGroupOptions" :key="option.key" :class="{ active: selectedRoomGroup === option.key }" @click="selectedRoomGroup = option.key">{{ option.label }}</button>
-                    </div>
+                    
                     <div class="rental-filter-row">
                       <span>צביעת המפה ודירוג:</span>
                       <button :class="{ active: colorMode === 'rentPrice' }" @click="setRentalColorMetric('rentPrice')">מחיר שכירות</button>
