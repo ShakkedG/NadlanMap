@@ -448,7 +448,15 @@
           }
         }
 
-      </style>
+      
+    .room-tabs,
+    .room-group-tabs,
+    [data-room-tabs],
+    select[v-model="selectedRoomGroup"] {
+      display: none !important;
+    }
+
+</style>
 </head>
 <body>
 
@@ -638,6 +646,44 @@
                       <div class="year-slider-title"><span>שנת נתוני העסקאות: {{ yearSliderPreview }}</span></div>
                       <input class="year-slider" dir="ltr" type="range" :min="yearSliderMin" :max="yearSliderMax" step="1" v-model.number="yearSliderPreview" @change="handleYearChanged" />
                       <div class="year-slider-labels"><span>{{ yearSliderMin }}</span><span>{{ yearSliderMax }}</span></div>
+                    </div>
+                    <div class="rental-filter-row">
+                      <span>צביעת המפה ודירוג היישובים:</span>
+                      <button :class="{ active: colorMode === 'deals' }" @click="setColorMode('deals')">עסקאות מול ממוצע</button>
+                      <button :class="{ active: colorMode === 'price' }" @click="setColorMode('price')">מחיר למ״ר</button>
+                      <button :class="{ active: colorMode === 'investment' }" @click="setColorMode('investment')">ציון השקעה</button>
+                    </div>
+                  </div>
+
+                  <article class="chart-panel">
+                    <h3>מחיר למ״ר לאורך השנים - {{ chartEntityName }}</h3>
+                    <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+                  </article>
+                  <article class="chart-panel">
+                    <h3>מספר עסקאות לאורך השנים - {{ chartEntityName }}</h3>
+                    <div class="chart-wrap sales-chart-wrap"><canvas id="salesChart"></canvas></div>
+                  </article>
+                </template>
+
+                <template v-else>
+                  <div class="rental-filter-panel data-set-panel quarterly-data-panel">
+                    <h3 class="rental-filter-title">נתוני שכירות רבעוניים</h3>
+                    <div class="year-slider-card embedded-slider-card quarter-slider-card">
+                      <div class="year-slider-title">
+                        <span>הרבעון הנבחר: {{ rentalSliderPreviewLabel }}</span>
+                        <small>הנתונים והמפה מתעדכנים לאחר שחרור הסליידר</small>
+                      </div>
+                      <input class="year-slider" dir="ltr" type="range" min="0" :max="rentalSliderMax" step="1" v-model.number="rentalPeriodSliderPreview" @change="handleRentalPeriodChanged" />
+                      <div class="year-slider-labels"><span>{{ rentalSliderMinLabel }}</span><span>{{ rentalSliderMaxLabel }}</span></div>
+                    </div>
+                    <div class="rental-filter-row">
+                      <span>סוג נכס:</span>
+                      <button :class="{ active: rentalDataType === 'regular' }" @click="setQuarterlyDataType('regular')">מגורים</button>
+                      <button :class="{ active: rentalDataType === 'commercial' }" @click="setQuarterlyDataType('commercial')">מסחרי</button>
+                    </div>
+                    <div v-if="rentalDataType === 'regular'" class="rental-filter-row">
+                      <span>מספר חדרים:</span>
+                      <button v-for="option in roomGroupOptions" :key="option.key" :class="{ active: selectedRoomGroup === option.key }" @click="selectedRoomGroup = option.key">{{ option.label }}</button>
                     </div>
                     <div class="rental-filter-row">
                       <span>צביעת המפה ודירוג:</span>
