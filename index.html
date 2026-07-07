@@ -699,21 +699,7 @@
             </div>
             <p v-else class="note">בחר עיר ראשונה כדי להשוות את נתוני {{ mainDataSection === 'sales' ? 'המכירות השנתיים' : `השכירות ברבעון ${selectedRentalPeriodLabel}` }}.</p>
           </section>
-
-        
-
-                  <article class="chart-panel">
-                    <h3>מחיר למ״ר לאורך השנים - {{ chartEntityName }}</h3>
-                    <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
-                  </article>
-                  <article class="chart-panel">
-                    <h3>מספר עסקאות לאורך השנים - {{ chartEntityName }}</h3>
-                    <div class="chart-wrap sales-chart-wrap"><canvas id="salesChart"></canvas></div>
-                  </article>
-                </template>
-
-                <template v-else>
-                  <div class="rental-filter-panel data-set-panel quarterly-data-panel">
+<div class="rental-filter-panel data-set-panel quarterly-data-panel">
                     <h3 class="rental-filter-title">נתוני שכירות רבעוניים</h3>
                     <div class="year-slider-card embedded-slider-card quarter-slider-card">
                       <div class="year-slider-title">
@@ -3645,3 +3631,19 @@
   </script>
 </body>
 </html>
+
+
+        
+
+                  <article class="chart-panel">
+                    <h3>מחיר למ״ר לאורך השנים - {{ chartEntityName }}</h3>
+                    <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+                  </article>
+                  <article class="chart-panel">
+                    <h3>מספר עסקאות לאורך השנים - {{ chartEntityName }}</h3>
+                    <div class="chart-wrap sales-chart-wrap"><canvas id="salesChart"></canvas></div>
+                  </article>
+                </template>
+
+                <template v-else>
+                  
