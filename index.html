@@ -650,23 +650,6 @@
             <div class="chart-area">
               <div v-if="selectedSettlement" class="chart-stack">
                 <template v-if="mainDataSection === 'sales'">
-                  <div class="rental-filter-panel data-set-panel annual-data-panel">
-                    <h3 class="rental-filter-title">נתוני קנייה שנתיים</h3>
-                    <div class="year-slider-card embedded-slider-card">
-                      <div class="year-slider-title"><span>שנת נתוני העסקאות: {{ yearSliderPreview }}</span></div>
-                      <input class="year-slider" dir="ltr" type="range" :min="yearSliderMin" :max="yearSliderMax" step="1" v-model.number="yearSliderPreview" @change="handleYearChanged" />
-                      <div class="year-slider-labels"><span>{{ yearSliderMin }}</span><span>{{ yearSliderMax }}</span></div>
-                    </div>
-                    <div class="rental-filter-row">
-                      <span>צביעת המפה ודירוג היישובים:</span>
-                      <button :class="{ active: colorMode === 'deals' }" @click="setColorMode('deals')">עסקאות מול ממוצע</button>
-                      <button :class="{ active: colorMode === 'price' }" @click="setColorMode('price')">מחיר למ״ר</button>
-                      <button :class="{ active: colorMode === 'investment' }" @click="setColorMode('investment')">ציון השקעה</button>
-                    </div>
-                  </div>
-
-
-
           <section class="compare-panel">
             <h3>השוואה בין שני יישובים</h3>
             <div class="compare-controls">
@@ -699,7 +682,69 @@
             </div>
             <p v-else class="note">בחר עיר ראשונה כדי להשוות את נתוני {{ mainDataSection === 'sales' ? 'המכירות השנתיים' : `השכירות ברבעון ${selectedRentalPeriodLabel}` }}.</p>
           </section>
-<div class="rental-filter-panel data-set-panel quarterly-data-panel">
+
+                  <div class="rental-filter-panel data-set-panel annual-data-panel">
+                    <h3 class="rental-filter-title">נתוני קנייה שנתיים</h3>
+                    <div class="year-slider-card embedded-slider-card">
+                      <div class="year-slider-title"><span>שנת נתוני העסקאות: {{ yearSliderPreview }}</span></div>
+                      <input class="year-slider" dir="ltr" type="range" :min="yearSliderMin" :max="yearSliderMax" step="1" v-model.number="yearSliderPreview" @change="handleYearChanged" />
+                      <div class="year-slider-labels"><span>{{ yearSliderMin }}</span><span>{{ yearSliderMax }}</span></div>
+                    </div>
+                    <div class="rental-filter-row">
+                      <span>צביעת המפה ודירוג היישובים:</span>
+                      <button :class="{ active: colorMode === 'deals' }" @click="setColorMode('deals')">עסקאות מול ממוצע</button>
+                      <button :class="{ active: colorMode === 'price' }" @click="setColorMode('price')">מחיר למ״ר</button>
+                      <button :class="{ active: colorMode === 'investment' }" @click="setColorMode('investment')">ציון השקעה</button>
+                    </div>
+                  </div>
+
+        
+
+                  <article class="chart-panel">
+                    <h3>מחיר למ״ר לאורך השנים - {{ chartEntityName }}</h3>
+                    <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+                  </article>
+                  <article class="chart-panel">
+                    <h3>מספר עסקאות לאורך השנים - {{ chartEntityName }}</h3>
+                    <div class="chart-wrap sales-chart-wrap"><canvas id="salesChart"></canvas></div>
+                  </article>
+                </template>
+
+                <template v-else>
+          <section class="compare-panel">
+            <h3>השוואה בין שני יישובים</h3>
+            <div class="compare-controls">
+              <label class="field"><span>עיר ראשונה</span>
+                <select v-model="compareSidA" @change="selectCompareASettlement">
+                  <option value="">בחר עיר</option>
+                  <option v-for="item in settlementOptions" :key="'a-' + item.sid" :value="item.sid">{{ item.name }}</option>
+                </select>
+              </label>
+              <label class="field"><span>עיר שנייה</span>
+                <select v-model="compareSidB">
+                  <option :value="NATIONAL_SID">כל הארץ</option>
+                  <option value="">בחר עיר</option>
+                  <option v-for="item in settlementOptions" :key="'b-' + item.sid" :value="item.sid">{{ item.name }}</option>
+                </select>
+              </label>
+              <button class="secondary-btn" @click="clearComparison" :disabled="!compareSidA && !compareSidB">בטל השוואה</button>
+            </div>
+            <div v-if="compareSettlementA" class="compare-table">
+              <div class="compare-row">
+                <div class="metric">מדד</div>
+                <div class="city-name">{{ compareSettlementA.name }}</div>
+                <div class="city-name">{{ compareSettlementB.name }}</div>
+              </div>
+              <div v-for="row in comparisonRows" :key="row.label" class="compare-row">
+                <div class="metric">{{ row.label }}</div>
+                <div class="metric-value">{{ row.a }}</div>
+                <div class="metric-value">{{ row.b }}</div>
+              </div>
+            </div>
+            <p v-else class="note">בחר עיר ראשונה כדי להשוות את נתוני {{ mainDataSection === 'sales' ? 'המכירות השנתיים' : `השכירות ברבעון ${selectedRentalPeriodLabel}` }}.</p>
+          </section>
+
+                  <div class="rental-filter-panel data-set-panel quarterly-data-panel">
                     <h3 class="rental-filter-title">נתוני שכירות רבעוניים</h3>
                     <div class="year-slider-card embedded-slider-card quarter-slider-card">
                       <div class="year-slider-title">
@@ -735,41 +780,6 @@
                       </div>
                     </details>
                   </div>
-
-
-
-          <section class="compare-panel">
-            <h3>השוואה בין שני יישובים</h3>
-            <div class="compare-controls">
-              <label class="field"><span>עיר ראשונה</span>
-                <select v-model="compareSidA" @change="selectCompareASettlement">
-                  <option value="">בחר עיר</option>
-                  <option v-for="item in settlementOptions" :key="'a-' + item.sid" :value="item.sid">{{ item.name }}</option>
-                </select>
-              </label>
-              <label class="field"><span>עיר שנייה</span>
-                <select v-model="compareSidB">
-                  <option :value="NATIONAL_SID">כל הארץ</option>
-                  <option value="">בחר עיר</option>
-                  <option v-for="item in settlementOptions" :key="'b-' + item.sid" :value="item.sid">{{ item.name }}</option>
-                </select>
-              </label>
-              <button class="secondary-btn" @click="clearComparison" :disabled="!compareSidA && !compareSidB">בטל השוואה</button>
-            </div>
-            <div v-if="compareSettlementA" class="compare-table">
-              <div class="compare-row">
-                <div class="metric">מדד</div>
-                <div class="city-name">{{ compareSettlementA.name }}</div>
-                <div class="city-name">{{ compareSettlementB.name }}</div>
-              </div>
-              <div v-for="row in comparisonRows" :key="row.label" class="compare-row">
-                <div class="metric">{{ row.label }}</div>
-                <div class="metric-value">{{ row.a }}</div>
-                <div class="metric-value">{{ row.b }}</div>
-              </div>
-            </div>
-            <p v-else class="note">בחר עיר ראשונה כדי להשוות את נתוני {{ mainDataSection === 'sales' ? 'המכירות השנתיים' : `השכירות ברבעון ${selectedRentalPeriodLabel}` }}.</p>
-          </section>
 
         
 
@@ -3631,19 +3641,3 @@
   </script>
 </body>
 </html>
-
-
-        
-
-                  <article class="chart-panel">
-                    <h3>מחיר למ״ר לאורך השנים - {{ chartEntityName }}</h3>
-                    <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
-                  </article>
-                  <article class="chart-panel">
-                    <h3>מספר עסקאות לאורך השנים - {{ chartEntityName }}</h3>
-                    <div class="chart-wrap sales-chart-wrap"><canvas id="salesChart"></canvas></div>
-                  </article>
-                </template>
-
-                <template v-else>
-                  
