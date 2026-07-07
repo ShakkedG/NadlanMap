@@ -479,7 +479,7 @@
         <div class="map-search-floating" aria-label="חיפוש יישוב על המפה">
           <label class="field"><span>חיפוש יישוב</span><input v-model="searchText" @keyup.enter="selectFirstSearchResult" placeholder="לדוגמה: מודיעין / 1200" /></label>
           <button class="primary-btn" @click="selectFirstSearchResult" :disabled="filteredSettlementList.length===0">בחר</button>
-          <button class="secondary-btn" @click="selectNational" :disabled="selectedSettlement?.sid === '__national__' && !compareSidA && !compareSidB">כל הארץ</button>
+          <button class="secondary-btn" @click="selectNational" :disabled="selectedSettlement?.sid === NATIONAL_SID && compareSidA === NATIONAL_SID && !compareSidB">כל הארץ</button>
         </div>
 
         <div id="mapLegend" class="map-legend" aria-label="מקרא מפה">
@@ -655,24 +655,23 @@
             <div class="compare-controls">
               <label class="field"><span>עיר ראשונה</span>
                 <select v-model="compareSidA" @change="selectCompareASettlement">
-                  <option value="">בחר עיר</option>
+                  <option :value="NATIONAL_SID">כל הארץ</option>
                   <option v-for="item in settlementOptions" :key="'a-' + item.sid" :value="item.sid">{{ item.name }}</option>
                 </select>
               </label>
               <label class="field"><span>עיר שנייה</span>
                 <select v-model="compareSidB">
-                  <option :value="NATIONAL_SID">כל הארץ</option>
-                  <option value="">בחר עיר</option>
+                  <option value="">העיר שנבחרה</option>
                   <option v-for="item in settlementOptions" :key="'b-' + item.sid" :value="item.sid">{{ item.name }}</option>
                 </select>
               </label>
-              <button class="secondary-btn" @click="clearComparison" :disabled="!compareSidA && !compareSidB">בטל השוואה</button>
+              <button class="secondary-btn" @click="clearComparison" :disabled="compareSidA === NATIONAL_SID && !compareSidB">בטל השוואה</button>
             </div>
             <div v-if="compareSettlementA" class="compare-table">
               <div class="compare-row">
                 <div class="metric">מדד</div>
                 <div class="city-name">{{ compareSettlementA.name }}</div>
-                <div class="city-name">{{ compareSettlementB.name }}</div>
+                <div class="city-name">{{ compareSettlementB?.name || 'העיר שנבחרה' }}</div>
               </div>
               <div v-for="row in comparisonRows" :key="row.label" class="compare-row">
                 <div class="metric">{{ row.label }}</div>
@@ -716,24 +715,23 @@
             <div class="compare-controls">
               <label class="field"><span>עיר ראשונה</span>
                 <select v-model="compareSidA" @change="selectCompareASettlement">
-                  <option value="">בחר עיר</option>
+                  <option :value="NATIONAL_SID">כל הארץ</option>
                   <option v-for="item in settlementOptions" :key="'a-' + item.sid" :value="item.sid">{{ item.name }}</option>
                 </select>
               </label>
               <label class="field"><span>עיר שנייה</span>
                 <select v-model="compareSidB">
-                  <option :value="NATIONAL_SID">כל הארץ</option>
-                  <option value="">בחר עיר</option>
+                  <option value="">העיר שנבחרה</option>
                   <option v-for="item in settlementOptions" :key="'b-' + item.sid" :value="item.sid">{{ item.name }}</option>
                 </select>
               </label>
-              <button class="secondary-btn" @click="clearComparison" :disabled="!compareSidA && !compareSidB">בטל השוואה</button>
+              <button class="secondary-btn" @click="clearComparison" :disabled="compareSidA === NATIONAL_SID && !compareSidB">בטל השוואה</button>
             </div>
             <div v-if="compareSettlementA" class="compare-table">
               <div class="compare-row">
                 <div class="metric">מדד</div>
                 <div class="city-name">{{ compareSettlementA.name }}</div>
-                <div class="city-name">{{ compareSettlementB.name }}</div>
+                <div class="city-name">{{ compareSettlementB?.name || 'העיר שנבחרה' }}</div>
               </div>
               <div v-for="row in comparisonRows" :key="row.label" class="compare-row">
                 <div class="metric">{{ row.label }}</div>
@@ -1035,8 +1033,8 @@
         const rentalDataType = ref('regular');
         const selectedRoomGroup = ref('all');
         const colorMode = ref('deals');
-        const compareSidA = ref('');
-        const compareSidB = ref(NATIONAL_SID);
+        const compareSidA = ref(NATIONAL_SID);
+        const compareSidB = ref('');
         const showInvestmentExplanation = ref(false);
         const roomGroupOptions = [
           { key: 'all', label: 'כל החדרים' }
@@ -1813,32 +1811,30 @@
         function settlementForCompare(sid) {
           const key = String(sid || '');
           if (!key) return null;
+          if (key === NATIONAL_SID) return nationalSettlement.value;
           return joinedSettlements.value.find((item) => String(item.sid) === key) || null;
         }
         const compareSettlementA = computed(() => {
-          return compareSidA.value ? settlementForCompare(compareSidA.value) : null;
+          return settlementForCompare(compareSidA.value || NATIONAL_SID) || nationalSettlement.value;
         });
         const compareSettlementB = computed(() => {
-          if (!compareSidB.value || String(compareSidB.value) === NATIONAL_SID) return nationalSettlement.value;
-          return settlementForCompare(compareSidB.value);
+          if (compareSidB.value) return settlementForCompare(compareSidB.value);
+          return selectedSettlement.value || null;
         });
         function setCompareAFromSelected() {
-          const sid = selectedSettlement.value?.sid ? String(selectedSettlement.value.sid) : '';
-          if (sid && sid !== NATIONAL_SID) compareSidA.value = sid;
+          const sid = selectedSettlement.value?.sid == null ? NATIONAL_SID : String(selectedSettlement.value.sid);
+          compareSidA.value = sid || NATIONAL_SID;
         }
         function selectCompareASettlement() {
           const item = compareSettlementA.value;
           if (!item) return;
-          selectSettlement(item, true);
-          statusMessage.value = `הנתונים והמפה עודכנו לפי ${item.name}.`;
+          statusMessage.value = `עיר 1 בהשוואה עודכנה ל${item.name}.`;
+          nextTick(() => renderCharts({ animate: false }));
         }
         function clearComparison() {
-          const sid = selectedSettlement.value?.sid ? String(selectedSettlement.value.sid) : '';
-          compareSidA.value = sid && sid !== NATIONAL_SID ? sid : '';
-          compareSidB.value = NATIONAL_SID;
-          statusMessage.value = compareSidA.value
-            ? `ההשוואה בוטלה. מוצגים כעת ${selectedSettlement.value.name} מול כל הארץ.`
-            : 'ההשוואה בוטלה.';
+          compareSidA.value = NATIONAL_SID;
+          compareSidB.value = '';
+          statusMessage.value = 'ההשוואה אופסה. עיר 1 היא כל הארץ עד שתבחר יישוב באתר, ועיר 2 תציג את העיר שנבחרה.';
           nextTick(() => renderCharts({ animate: false }));
         }
         function currentYieldForDisplay(item) {
@@ -1896,28 +1892,21 @@
           }
           return rows;
         });
-        watch(selectedSettlement, (next) => {
-          const sid = next?.sid ? String(next.sid) : '';
-          if (sid && sid !== NATIONAL_SID) compareSidA.value = sid;
+        watch(selectedSettlement, () => {
+          if (!compareSidB.value) nextTick(() => renderCharts({ animate: false }));
         });
 
-        watch(compareSidA, (sid, previousSid) => {
-          if (!sid || sid === previousSid) return;
-          const item = settlementForCompare(sid);
-          if (!item) return;
-          const selectedSid = selectedSettlement.value?.sid == null ? '' : String(selectedSettlement.value.sid);
-          if (selectedSid !== String(item.sid)) {
-            selectSettlement(item, true);
-            statusMessage.value = `הנתונים והמפה עודכנו לפי ${item.name}.`;
-          }
-        });
 
         const selectedRows = computed(() => {
           if (!selectedSettlement.value) return [];
           if (String(selectedSettlement.value.sid) === NATIONAL_SID) return nationalRows.value;
           return rowGroups.value.get(String(selectedSettlement.value.sid)) || [];
         });
-        const chartComparisonActive = computed(() => !!(compareSettlementA.value && compareSettlementB.value));
+        const chartComparisonActive = computed(() => {
+          const a = compareSettlementA.value;
+          const b = compareSettlementB.value;
+          return !!(a && b && String(a.sid) !== String(b.sid));
+        });
         const chartEntityName = computed(() => {
           if (chartComparisonActive.value) {
             return `${compareSettlementA.value.name} מול ${compareSettlementB.value.name}`;
@@ -2913,14 +2902,14 @@
           const nextSid = String(item.sid);
           const isSameSettlement = previousSid === nextSid;
           selectedSettlement.value = { ...item };
-          if (nextSid && nextSid !== NATIONAL_SID) compareSidA.value = nextSid;
+          compareSidA.value = nextSid || NATIONAL_SID;
           if (!isSameSettlement) nextTick(() => renderCharts({ animate: true }));
           if (shouldFocus && !isSameSettlement) focusSettlement(item);
           return !isSameSettlement;
         }
         function selectFirstSearchResult() { if (filteredSettlementList.value.length) selectSettlement(filteredSettlementList.value[0]); }
         function selectNational() {
-          compareSidA.value = '';
+          compareSidA.value = NATIONAL_SID;
           compareSidB.value = '';
           const changed = selectSettlement(nationalSettlement.value, false);
           statusMessage.value = changed
@@ -3167,8 +3156,8 @@
           const primaryBarBorder = 'rgba(15,91,255,1)';
           const secondaryBarColor = 'rgba(22,163,74,.48)';
           const secondaryBarBorder = 'rgba(22,163,74,1)';
-          const primaryMutedBar = 'rgba(124,58,237,.40)';
-          const primaryMutedBarBorder = 'rgba(124,58,237,.95)';
+          const primaryMutedBar = 'rgba(100,116,139,.36)';
+          const primaryMutedBarBorder = 'rgba(100,116,139,.85)';
           const secondaryMutedBar = 'rgba(34,197,94,.28)';
           const secondaryMutedBarBorder = 'rgba(22,163,74,.9)';
 
