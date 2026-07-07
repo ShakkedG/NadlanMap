@@ -456,6 +456,16 @@
       display: none !important;
     }
 
+
+    .chart-stack > .compare-panel {
+      max-width: 100%;
+      margin: 0 0 18px;
+      box-shadow: none;
+    }
+    .chart-stack > .compare-panel .compare-controls {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    }
+
 </style>
 </head>
 <body>
@@ -655,6 +665,43 @@
                     </div>
                   </div>
 
+
+
+          <section class="compare-panel">
+            <h3>השוואה בין שני יישובים</h3>
+            <div class="compare-controls">
+              <label class="field"><span>עיר ראשונה</span>
+                <select v-model="compareSidA" @change="selectCompareASettlement">
+                  <option value="">בחר עיר</option>
+                  <option v-for="item in settlementOptions" :key="'a-' + item.sid" :value="item.sid">{{ item.name }}</option>
+                </select>
+              </label>
+              <label class="field"><span>עיר שנייה</span>
+                <select v-model="compareSidB">
+                  <option :value="NATIONAL_SID">כל הארץ</option>
+                  <option value="">בחר עיר</option>
+                  <option v-for="item in settlementOptions" :key="'b-' + item.sid" :value="item.sid">{{ item.name }}</option>
+                </select>
+              </label>
+              <button class="secondary-btn" @click="clearComparison" :disabled="!compareSidA && !compareSidB">בטל השוואה</button>
+            </div>
+            <div v-if="compareSettlementA" class="compare-table">
+              <div class="compare-row">
+                <div class="metric">מדד</div>
+                <div class="city-name">{{ compareSettlementA.name }}</div>
+                <div class="city-name">{{ compareSettlementB.name }}</div>
+              </div>
+              <div v-for="row in comparisonRows" :key="row.label" class="compare-row">
+                <div class="metric">{{ row.label }}</div>
+                <div class="metric-value">{{ row.a }}</div>
+                <div class="metric-value">{{ row.b }}</div>
+              </div>
+            </div>
+            <p v-else class="note">בחר עיר ראשונה כדי להשוות את נתוני {{ mainDataSection === 'sales' ? 'המכירות השנתיים' : `השכירות ברבעון ${selectedRentalPeriodLabel}` }}.</p>
+          </section>
+
+        
+
                   <article class="chart-panel">
                     <h3>מחיר למ״ר לאורך השנים - {{ chartEntityName }}</h3>
                     <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
@@ -703,6 +750,43 @@
                     </details>
                   </div>
 
+
+
+          <section class="compare-panel">
+            <h3>השוואה בין שני יישובים</h3>
+            <div class="compare-controls">
+              <label class="field"><span>עיר ראשונה</span>
+                <select v-model="compareSidA" @change="selectCompareASettlement">
+                  <option value="">בחר עיר</option>
+                  <option v-for="item in settlementOptions" :key="'a-' + item.sid" :value="item.sid">{{ item.name }}</option>
+                </select>
+              </label>
+              <label class="field"><span>עיר שנייה</span>
+                <select v-model="compareSidB">
+                  <option :value="NATIONAL_SID">כל הארץ</option>
+                  <option value="">בחר עיר</option>
+                  <option v-for="item in settlementOptions" :key="'b-' + item.sid" :value="item.sid">{{ item.name }}</option>
+                </select>
+              </label>
+              <button class="secondary-btn" @click="clearComparison" :disabled="!compareSidA && !compareSidB">בטל השוואה</button>
+            </div>
+            <div v-if="compareSettlementA" class="compare-table">
+              <div class="compare-row">
+                <div class="metric">מדד</div>
+                <div class="city-name">{{ compareSettlementA.name }}</div>
+                <div class="city-name">{{ compareSettlementB.name }}</div>
+              </div>
+              <div v-for="row in comparisonRows" :key="row.label" class="compare-row">
+                <div class="metric">{{ row.label }}</div>
+                <div class="metric-value">{{ row.a }}</div>
+                <div class="metric-value">{{ row.b }}</div>
+              </div>
+            </div>
+            <p v-else class="note">בחר עיר ראשונה כדי להשוות את נתוני {{ mainDataSection === 'sales' ? 'המכירות השנתיים' : `השכירות ברבעון ${selectedRentalPeriodLabel}` }}.</p>
+          </section>
+
+        
+
                   <article class="chart-panel quarterly-chart-panel">
                     <h3>{{ activeRentChartTitle }} - {{ chartEntityName }}</h3>
                     <p class="comparison-chart-note">הקו מציג את השכירות החודשית המייצגת בכל שנה והעמודות מציגות את מספר המודעות השנתי.</p>
@@ -724,40 +808,7 @@
             </div>
 
           </section>
-
-          <section class="compare-panel">
-            <h3>השוואה בין שתי ערים</h3>
-            <div class="compare-controls">
-              <label class="field"><span>עיר ראשונה</span>
-                <select v-model="compareSidA">
-                  <option value="">בחר עיר</option>
-                  <option v-for="item in settlementOptions" :key="'a-' + item.sid" :value="item.sid">{{ item.name }}</option>
-                </select>
-              </label>
-              <label class="field"><span>עיר שנייה</span>
-                <select v-model="compareSidB">
-                  <option value="">בחר עיר</option>
-                  <option v-for="item in settlementOptions" :key="'b-' + item.sid" :value="item.sid">{{ item.name }}</option>
-                </select>
-              </label>
-              <button class="secondary-btn" @click="clearComparison" :disabled="!compareSidA && !compareSidB">בטל השוואה</button>
-            </div>
-            <div v-if="compareSettlementA" class="compare-table">
-              <div class="compare-row">
-                <div class="metric">מדד</div>
-                <div class="city-name">{{ compareSettlementA.name }}</div>
-                <div class="city-name">{{ compareSettlementB.name }}</div>
-              </div>
-              <div v-for="row in comparisonRows" :key="row.label" class="compare-row">
-                <div class="metric">{{ row.label }}</div>
-                <div class="metric-value">{{ row.a }}</div>
-                <div class="metric-value">{{ row.b }}</div>
-              </div>
-            </div>
-            <p v-else class="note">בחר שתי ערים כדי להשוות את נתוני {{ mainDataSection === 'sales' ? 'המכירות השנתיים' : `השכירות ברבעון ${selectedRentalPeriodLabel}` }}.</p>
-          </section>
-
-        </div>
+</div>
       </section>
     </main>
   </div>
@@ -989,7 +1040,7 @@
         const selectedRoomGroup = ref('all');
         const colorMode = ref('deals');
         const compareSidA = ref('');
-        const compareSidB = ref('');
+        const compareSidB = ref(NATIONAL_SID);
         const showInvestmentExplanation = ref(false);
         const roomGroupOptions = [
           { key: 'all', label: 'כל החדרים' }
@@ -1769,27 +1820,29 @@
           return joinedSettlements.value.find((item) => String(item.sid) === key) || null;
         }
         const compareSettlementA = computed(() => {
-          const sid = selectedSettlement.value?.sid ? String(selectedSettlement.value.sid) : '';
-          if (sid && sid !== NATIONAL_SID) return settlementForCompare(sid) || selectedSettlement.value;
-          return nationalSettlement.value;
+          return compareSidA.value ? settlementForCompare(compareSidA.value) : null;
         });
         const compareSettlementB = computed(() => {
-          return compareSidB.value ? settlementForCompare(compareSidB.value) : nationalSettlement.value;
+          if (!compareSidB.value || String(compareSidB.value) === NATIONAL_SID) return nationalSettlement.value;
+          return settlementForCompare(compareSidB.value);
         });
         function setCompareAFromSelected() {
           const sid = selectedSettlement.value?.sid ? String(selectedSettlement.value.sid) : '';
           if (sid && sid !== NATIONAL_SID) compareSidA.value = sid;
         }
+        function selectCompareASettlement() {
+          const item = compareSettlementA.value;
+          if (!item) return;
+          selectSettlement(item, true);
+          statusMessage.value = `הנתונים והמפה עודכנו לפי ${item.name}.`;
+        }
         function clearComparison() {
-          const fallback = compareSettlementA.value || selectedSettlement.value;
-          compareSidA.value = '';
-          compareSidB.value = '';
-          if (fallback?.sid && String(fallback.sid) !== NATIONAL_SID) {
-            selectedSettlement.value = { ...fallback };
-            statusMessage.value = `ההשוואה בוטלה. מוצגים כעת הנתונים של ${fallback.name}.`;
-          } else {
-            statusMessage.value = 'ההשוואה בוטלה.';
-          }
+          const sid = selectedSettlement.value?.sid ? String(selectedSettlement.value.sid) : '';
+          compareSidA.value = sid && sid !== NATIONAL_SID ? sid : '';
+          compareSidB.value = NATIONAL_SID;
+          statusMessage.value = compareSidA.value
+            ? `ההשוואה בוטלה. מוצגים כעת ${selectedSettlement.value.name} מול כל הארץ.`
+            : 'ההשוואה בוטלה.';
           nextTick(() => renderCharts({ animate: false }));
         }
         function currentYieldForDisplay(item) {
@@ -1850,6 +1903,17 @@
         watch(selectedSettlement, (next) => {
           const sid = next?.sid ? String(next.sid) : '';
           if (sid && sid !== NATIONAL_SID) compareSidA.value = sid;
+        });
+
+        watch(compareSidA, (sid, previousSid) => {
+          if (!sid || sid === previousSid) return;
+          const item = settlementForCompare(sid);
+          if (!item) return;
+          const selectedSid = selectedSettlement.value?.sid == null ? '' : String(selectedSettlement.value.sid);
+          if (selectedSid !== String(item.sid)) {
+            selectSettlement(item, true);
+            statusMessage.value = `הנתונים והמפה עודכנו לפי ${item.name}.`;
+          }
         });
 
         const selectedRows = computed(() => {
@@ -2853,6 +2917,7 @@
           const nextSid = String(item.sid);
           const isSameSettlement = previousSid === nextSid;
           selectedSettlement.value = { ...item };
+          if (nextSid && nextSid !== NATIONAL_SID) compareSidA.value = nextSid;
           if (!isSameSettlement) nextTick(() => renderCharts({ animate: true }));
           if (shouldFocus && !isSameSettlement) focusSettlement(item);
           return !isSameSettlement;
@@ -3574,7 +3639,7 @@
           document.addEventListener('visibilitychange', handleVisibility);
           boot();
         });
-        return { ESTIMATED_APARTMENT_SQM, mainDataSection, setMainDataSection, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, yearSliderPreview, rentalPeriodSliderPreview, rentalSliderPreviewLabel, rentalShowAllQuarters, availableYears, availableRentalYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, rentalYearSliderMin, rentalYearSliderMax, hasTransactionDataForSelectedRentalYear, colorMode, colorMetricLabel, colorModeNote, rankingTitle, investmentScoreTypeLabel, investmentScoreSubtitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, formatInvestmentScore, rankingRowSubtitle, setColorMode, setQuarterlyDataType, setRentalColorMetric, formatNumber, formatInteger, formatSocioEconomicCluster, formatRatio, formatCurrency, formatCommercialRent, formatActiveRent, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearChanged, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartComparisonActive, chartEntityName, pageTitle, activeRentValue, activeListingsValue, activeRentQoq, activeAnnualRentValue, activeAnnualListingsValue, activeQuarterCount, activeAnnualIsComplete, activeRentYoy, activeRentTitle, activeRentChartTitle, activeYieldValue, activeAnnualYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData, compareSidA, compareSidB, showInvestmentExplanation, settlementOptions, compareSettlementA, compareSettlementB, comparisonRows, setCompareAFromSelected, clearComparison };
+        return { ESTIMATED_APARTMENT_SQM, NATIONAL_SID, mainDataSection, setMainDataSection, isBooting, isDrawing, statusMessage, errorMessage, baseLayerVisible, overlayVisible, searchText, listSortDirection, selectedSettlement, ignoreZeroYears, targetYear, rentalPeriodIndex, yearSliderPreview, rentalPeriodSliderPreview, rentalSliderPreviewLabel, rentalShowAllQuarters, availableYears, availableRentalYears, filteredSettlementList, rankedSettlementList, stats, legendItems, topSettlements, bottomSettlements, showLayers, mapFullscreen, rentalDataType, selectedRoomGroup, selectedRoomGroupSqm, roomGroupOptions, selectedRoomGroupLabel, selectedRentalPeriodLabel, rentalSliderMax, rentalSliderMinLabel, rentalSliderMaxLabel, rentalChartScopeLabel, rentalYearSliderMin, rentalYearSliderMax, hasTransactionDataForSelectedRentalYear, colorMode, colorMetricLabel, colorModeNote, rankingTitle, investmentScoreTypeLabel, investmentScoreSubtitle, isAnnualColorMode, isRentalColorMode, formatColorMetric, formatInvestmentScore, rankingRowSubtitle, setColorMode, setQuarterlyDataType, setRentalColorMetric, formatNumber, formatInteger, formatSocioEconomicCluster, formatRatio, formatCurrency, formatCommercialRent, formatActiveRent, formatPercent, formatYield, listingQualityLabel, listingQualityClass, marketScoreLabel, rgbaCss, drawOverlay, toggleOverlay, toggleBaseLayer, focusSettlement, selectSettlement, selectFirstSearchResult, selectNational, handleAverageModeChanged, handleYearChanged, handleRentalPeriodChanged, setRentalShowAll, yearSliderMin, yearSliderMax, reversedYearSliderValue, nationalSettlement, chartComparisonActive, chartEntityName, pageTitle, activeRentValue, activeListingsValue, activeRentQoq, activeAnnualRentValue, activeAnnualListingsValue, activeQuarterCount, activeAnnualIsComplete, activeRentYoy, activeRentTitle, activeRentChartTitle, activeYieldValue, activeAnnualYieldValue, activeYieldTitle, activeYieldSubtitle, hasResidentialRentData, hasCommercialRentData, hasResidentialYieldData, hasCommercialYieldData, compareSidA, compareSidB, showInvestmentExplanation, settlementOptions, compareSettlementA, compareSettlementB, comparisonRows, setCompareAFromSelected, selectCompareASettlement, clearComparison };
       }
     }).mount('#app');
   </script>
